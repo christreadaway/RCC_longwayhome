@@ -1,0 +1,442 @@
+{
+  "cwm_feed_hungry_helped": {
+    "k2": {
+      "valence": "positive",
+      "title": "KINDNESS!",
+      "body": "You shared your food with someone who was hungry. That was so kind of you!",
+      "forward_prompt": "Jesus is happy when we share our food! He said, 'I was hungry and you gave me food.'"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Corporal Work of Mercy: Feed the Hungry",
+      "body": "You chose to feed someone who was hungry, even though it cost you some of your own food. This is one of the seven Corporal Works of Mercy that Jesus asks us to do.",
+      "scripture": "Matthew 25:35 — 'For I was hungry and you gave me food.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Work of Mercy: Feeding the Hungry",
+      "body": "You chose to share your food with a stranger in need. Feeding the hungry is the first of the Corporal Works of Mercy. On the Oregon Trail, sharing food could mean the difference between life and death. Your sacrifice reflects Christ's command to care for 'the least of these.'",
+      "scripture": "Matthew 25:35-40 — 'For I was hungry and you gave me food... whatever you did for one of the least of these brothers and sisters of mine, you did for me.'"
+    }
+  },
+  "cwm_feed_hungry_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "A Missed Chance",
+      "body": "The hungry person is still hungry. Maybe next time you can share!",
+      "forward_prompt": "Jesus wants us to help people who are hungry. Can you share next time?"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "A Missed Opportunity",
+      "body": "You chose not to share your food. It is understandable to worry about your own family, but Jesus calls us to feed the hungry even when it is hard.",
+      "scripture": "Proverbs 22:9 — 'The generous will themselves be blessed, for they share their food with the poor.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "A Missed Work of Mercy",
+      "body": "You chose not to feed the hungry stranger. While protecting your family's supplies is practical, Christ's teaching challenges us to trust in God's providence and share what we have. The early Church Fathers taught that when we fail to share our surplus with the needy, we withhold what rightly belongs to them.",
+      "scripture": "James 2:15-16 — 'If a brother or sister is poorly clothed and lacking in daily food, and one of you says to them, \"Go in peace, be warmed and filled,\" without giving them the things needed for the body, what good is that?'"
+    }
+  },
+  "cwm_give_drink_helped": {
+    "k2": {
+      "valence": "positive",
+      "title": "SO NICE!",
+      "body": "You gave water to someone who was very thirsty. That was really nice!",
+      "forward_prompt": "When we share our water, we make Jesus smile! Water is so important!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Corporal Work of Mercy: Give Drink to the Thirsty",
+      "body": "You shared your water with someone who was suffering from thirst. On the trail, water was precious, and sharing it was a true act of mercy and love.",
+      "scripture": "Matthew 25:35 — 'I was thirsty and you gave me drink.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Work of Mercy: Giving Drink to the Thirsty",
+      "body": "You chose to share your water with the thirsty, even at a cost to your own supplies. Giving drink to the thirsty is a Corporal Work of Mercy. On the Oregon Trail, water was literally a matter of life and death, making this sacrifice all the more meaningful.",
+      "scripture": "Matthew 10:42 — 'And whoever gives one of these little ones even a cup of cold water because he is a disciple, truly, I say to you, he will by no means lose his reward.'"
+    }
+  },
+  "cwm_give_drink_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "They Are Still Thirsty",
+      "body": "The thirsty person still needs water. Sharing is important!",
+      "forward_prompt": "Everyone needs water to live. Jesus wants us to share, especially when someone really needs it."
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "A Missed Opportunity",
+      "body": "You chose not to share your water. Water is precious on the trail, but so are the lives of those who need it. Jesus asks us to give drink to the thirsty.",
+      "scripture": "Matthew 25:42 — 'For I was thirsty and you gave me no drink.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "A Missed Work of Mercy",
+      "body": "You chose not to share your water with those in desperate need. While conserving water is wise, Christ calls us to trust in God's providence. The woman at the well received living water from Jesus; we are called to share what water we have with those who thirst.",
+      "scripture": "Isaiah 58:10-11 — 'If you pour yourself out for the hungry and satisfy the desire of the afflicted, then shall your light rise in the darkness.'"
+    }
+  },
+  "cwm_visit_sick_helped": {
+    "k2": {
+      "valence": "positive",
+      "title": "CARING!",
+      "body": "You helped someone who was hurt or sick. You are a caring person!",
+      "forward_prompt": "Jesus loves it when we take care of people who do not feel well. You did a great job!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Corporal Work of Mercy: Visit the Sick",
+      "body": "You chose to visit and care for someone who was sick, even though it took time and supplies. Visiting the sick is one of the Works of Mercy that Jesus taught us.",
+      "scripture": "Matthew 25:36 — 'I was sick and you visited me.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Work of Mercy: Visiting the Sick",
+      "body": "You chose to risk your own health and comfort to care for a sick neighbor. Visiting the sick is a Corporal Work of Mercy that requires real courage, especially on the trail where disease spread easily. Your compassion reflects Christ's own healing ministry.",
+      "scripture": "Matthew 25:36 — 'I was sick and you visited me.' Also: Sirach 7:35 — 'Do not hesitate to visit the sick, because for such deeds you will be loved.'"
+    }
+  },
+  "cwm_visit_sick_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "They Still Need Help",
+      "body": "The sick person still needs someone to take care of them.",
+      "forward_prompt": "When someone is not feeling well, Jesus wants us to help them feel better. Even a visit can help!"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "A Missed Opportunity",
+      "body": "You chose not to visit the sick neighbor. It is natural to be afraid of getting sick yourself, but Jesus calls us to care for the sick even when it is hard or scary.",
+      "scripture": "Matthew 25:43 — 'I was sick and you did not visit me.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "A Missed Work of Mercy",
+      "body": "You chose not to visit the sick, prioritizing safety over compassion. While caution is understandable, Christ's example shows us that love sometimes requires risk. The saints who cared for plague victims throughout history remind us that mercy often means putting others' needs above our own fears.",
+      "scripture": "Matthew 25:43-45 — 'I was sick and in prison and you did not visit me... whatever you did not do for one of the least of these, you did not do for me.'"
+    }
+  },
+  "cwm_shelter_homeless_helped": {
+    "k2": {
+      "valence": "positive",
+      "title": "HELPFUL!",
+      "body": "You shared your warm space with a cold family. That was so helpful and kind!",
+      "forward_prompt": "God is happy when we help people who need a warm place. You have a good heart!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Corporal Work of Mercy: Shelter the Homeless",
+      "body": "You opened your camp to a family with no shelter. Giving shelter to those who have none is a Work of Mercy that shows real love for our neighbors.",
+      "scripture": "Isaiah 58:7 — 'Is it not to share your bread with the hungry and bring the homeless poor into your house?'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Work of Mercy: Sheltering the Homeless",
+      "body": "You chose to share your shelter with a family that had lost everything. Sheltering the homeless is a Corporal Work of Mercy that directly reflects the Holy Family's own experience — Mary and Joseph, too, found no room at the inn. Your generosity gave a family safety and warmth when they had none.",
+      "scripture": "Isaiah 58:7 — 'Is it not to share your bread with the hungry and bring the homeless poor into your house; when you see the naked, to cover him?'"
+    }
+  },
+  "cwm_shelter_homeless_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "They Are Still Cold",
+      "body": "The cold family is still out in the cold. Maybe you can help next time!",
+      "forward_prompt": "Jesus wants us to help people who need a warm place. Remember, Mary and Joseph needed shelter too!"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "A Missed Opportunity",
+      "body": "You chose not to shelter the homeless family. Having limited space is a real concern, but Jesus calls us to make room for those in need, just as He wished someone had made room for His family in Bethlehem.",
+      "scripture": "Luke 2:7 — 'She wrapped him in swaddling cloths and laid him in a manger, because there was no room for them in the inn.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "A Missed Work of Mercy",
+      "body": "You chose not to shelter a homeless family. The discomfort of sharing limited space is real, but Christ identifies Himself with the homeless and displaced. The early Christians were known for their radical hospitality, opening their homes to strangers. This is a challenging call, but it is at the heart of the Gospel.",
+      "scripture": "Hebrews 13:2 — 'Do not neglect to show hospitality to strangers, for thereby some have entertained angels unawares.'"
+    }
+  },
+  "cwm_bury_dead_helped": {
+    "k2": {
+      "valence": "positive",
+      "title": "RESPECTFUL!",
+      "body": "You showed respect for someone who passed away. That was very good.",
+      "forward_prompt": "God wants us to treat everyone with respect, and to pray for those who have gone to heaven."
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Corporal Work of Mercy: Bury the Dead",
+      "body": "You stopped to give a proper burial to someone who died alone on the trail. Burying the dead with dignity is one of the oldest Works of Mercy, showing respect for every human life.",
+      "scripture": "Tobit 1:17-18 — 'I would give my bread to the hungry and clothing to the naked; and if I saw any of my people dead and thrown outside the wall of Nineveh, I would bury them.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Work of Mercy: Burying the Dead",
+      "body": "You chose to stop and give a stranger a proper Christian burial, even at a cost of precious time. Burying the dead is the seventh Corporal Work of Mercy, rooted in the belief that every person — created in God's image — deserves dignity in death. The Book of Tobit praises this act as one of the highest forms of charity.",
+      "scripture": "Tobit 12:12-13 — 'When you buried the dead, I was likewise present with you. When you did not hesitate to rise and leave your dinner in order to go and bury the dead, your good deed was not hidden from me.'"
+    }
+  },
+  "cwm_bury_dead_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "A Sad Moment",
+      "body": "The person by the trail still needs someone to help them rest in peace.",
+      "forward_prompt": "Everyone deserves to be treated with love and respect, even after they have gone to heaven."
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "A Missed Opportunity",
+      "body": "You chose to pass by without burying the dead. Time pressure is real, but leaving someone unburied goes against the Christian duty to show dignity to every person, even in death.",
+      "scripture": "Sirach 38:16 — 'My child, let your tears fall for the dead, and as one in great pain begin the lament.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "A Missed Work of Mercy",
+      "body": "You chose to pass by the unburied dead without stopping. While urgency is understandable, the Church teaches that care for the dead is a sacred duty. Tobit risked his life to bury the dead, and God rewarded his faithfulness. Failing to honor the dead diminishes our own humanity.",
+      "scripture": "Tobit 2:7-8 — 'I remembered the prophecy of Amos... So I wept. Then when the sun had set, I went out, dug a grave, and buried the body.'"
+    }
+  },
+  "cwm_fair_trade_helped": {
+    "k2": {
+      "valence": "positive",
+      "title": "FAIR!",
+      "body": "You were fair and honest when trading. That is the right thing to do!",
+      "forward_prompt": "God loves it when we are fair and honest with everyone. Good job being fair!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Honesty and Fair Dealing",
+      "body": "You chose to pay a fair price instead of taking advantage of someone in a difficult situation. Being honest and fair in our dealings with others is what God asks of us.",
+      "scripture": "Leviticus 19:35-36 — 'You shall do no wrong in judgment, in measures of length or weight or quantity. You shall have just balances and just weights.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Justice: Fair Dealing",
+      "body": "You chose honesty over exploitation, paying a fair price when you could have taken advantage of someone's desperation. The virtue of justice requires giving to each person what is rightfully theirs. The Catechism teaches that the seventh commandment demands respect for the goods of others and just dealings in commerce.",
+      "scripture": "Proverbs 11:1 — 'A false balance is an abomination to the Lord, but a just weight is his delight.'"
+    }
+  },
+  "cwm_fair_trade_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "That Was Not Fair",
+      "body": "Taking advantage of someone is not kind. We should always be fair!",
+      "forward_prompt": "Jesus wants us to be fair and honest. How would you feel if someone was not fair to you?"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "An Unfair Deal",
+      "body": "You took advantage of someone who was desperate. Even though you got a good deal, it was not honest or fair. God calls us to treat others the way we would want to be treated.",
+      "scripture": "Luke 6:31 — 'Do to others as you would have them do to you.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "Injustice: Exploitation",
+      "body": "You chose to exploit another person's desperation for your own gain. The seventh commandment forbids taking advantage of others in commerce. The Church teaches that just prices and fair wages are moral obligations, not merely suggestions. When we exploit the vulnerable, we sin against both justice and charity.",
+      "scripture": "Deuteronomy 25:13-15 — 'You shall not have in your bag two kinds of weights, a large and a small... A full and fair weight you shall have, that your days may be long in the land.'"
+    }
+  },
+  "cwm_forgive_thief_helped": {
+    "k2": {
+      "valence": "positive",
+      "title": "FORGIVING!",
+      "body": "You forgave someone who did something wrong. That takes a very big heart!",
+      "forward_prompt": "Jesus forgives us when we make mistakes, and He wants us to forgive others too. You are so brave!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "The Power of Forgiveness",
+      "body": "You chose to forgive the thief instead of demanding punishment. Forgiveness is one of the hardest things Jesus asks us to do, but it is also one of the most powerful.",
+      "scripture": "Matthew 6:14 — 'For if you forgive others their trespasses, your heavenly Father will also forgive you.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Mercy: Forgiving the Offender",
+      "body": "You chose mercy over retribution, forgiving the thief and offering him food. Forgiving those who wrong us is a Spiritual Work of Mercy and one of the most radical demands of the Gospel. Christ forgave from the Cross; He calls us to do the same. Your mercy may have changed a life.",
+      "scripture": "Luke 6:36-37 — 'Be merciful, just as your Father is merciful. Do not judge, and you will not be judged; do not condemn, and you will not be condemned. Forgive, and you will be forgiven.'"
+    }
+  },
+  "cwm_forgive_thief_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "Still Angry",
+      "body": "It is hard to forgive, but holding onto anger makes us feel bad inside.",
+      "forward_prompt": "Jesus says to forgive people who make mistakes. It is hard, but it makes our hearts feel lighter!"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "Choosing Punishment Over Mercy",
+      "body": "You chose punishment instead of forgiveness. While justice is important, Jesus teaches us to show mercy, even to those who have wronged us. Forgiveness does not mean what they did was okay — it means choosing love over anger.",
+      "scripture": "Matthew 18:21-22 — 'Then Peter came up and said to him, \"Lord, how often will my brother sin against me, and I forgive him? As many as seven times?\" Jesus said to him, \"I do not say to you seven times, but seventy-seven times.\"'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "Justice Without Mercy",
+      "body": "You chose strict justice over mercy. While justice is a virtue, the Gospel calls us to temper justice with mercy. Christ warns that we will be judged by the same measure we use to judge others. The thief may have been driven by desperation; mercy acknowledges the full humanity of even those who wrong us.",
+      "scripture": "James 2:13 — 'For judgment is without mercy to one who has shown no mercy. Mercy triumphs over judgment.'"
+    }
+  },
+  "reconciliation_taken": {
+    "k2": {
+      "valence": "positive",
+      "title": "SECOND CHANCE!",
+      "body": "You made a better choice this time! Everyone makes mistakes, and it is wonderful when we try again!",
+      "forward_prompt": "God always gives us another chance to do the right thing. You did it!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Making It Right",
+      "body": "When you were given a second chance, you chose differently. Making up for our past mistakes is what reconciliation is all about. God is always ready to welcome us back when we turn toward doing good.",
+      "scripture": "1 John 1:9 — 'If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Reconciliation: Making It Right",
+      "body": "You were given a second chance, and you took it. This mirrors the Sacrament of Reconciliation, where we acknowledge our failings, resolve to do better, and receive God's merciful forgiveness. Your choice to make amends shows genuine conversion of heart — the metanoia that Christ calls us to.",
+      "scripture": "Ezekiel 33:15-16 — 'If the wicked restores the pledge, gives back what he has taken by robbery, and walks in the statutes of life... he shall surely live; he shall not die. None of the sins that he has committed shall be remembered against him.'"
+    }
+  },
+  "reconciliation_declined": {
+    "k2": {
+      "valence": "negative",
+      "title": "Maybe Next Time",
+      "body": "You had a chance to make a different choice, but you chose the same way again. It is never too late to change!",
+      "forward_prompt": "God never stops loving us, and He always hopes we will try to do better. You can still change!"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "The Same Choice Again",
+      "body": "God gave you another chance to choose differently, but you made the same choice. God's mercy is endless, but we must be willing to open our hearts to it. There may be another chance — will you take it?",
+      "scripture": "Hebrews 3:15 — 'Today, if you hear his voice, do not harden your hearts.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "Hardened Heart",
+      "body": "You were offered a chance at reconciliation and declined it a second time. The Church teaches that while God's mercy is infinite, we must cooperate with grace by opening our hearts to conversion. A pattern of choosing selfishness over charity hardens the heart and makes future conversion more difficult. Yet God never stops calling us back.",
+      "scripture": "Romans 2:4-5 — 'Do you presume on the riches of his kindness and forbearance and patience, not knowing that God's kindness is meant to lead you to repentance? But by your hard and impenitent heart you are storing up wrath for yourself.'"
+    }
+  },
+  "sunday_rest_taken": {
+    "k2": {
+      "valence": "positive",
+      "title": "REST DAY!",
+      "body": "You took a day to rest and be with your family. What a wonderful day!",
+      "forward_prompt": "God rested on the seventh day, and He wants us to rest too! Rest helps us feel better and closer to God."
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Keeping the Lord's Day",
+      "body": "You chose to rest on Sunday and honor God. Many pioneer families kept the Sabbath even on the trail. Studies show that wagon trains that rested on Sundays actually arrived healthier because the rest helped people and animals recover.",
+      "scripture": "Exodus 20:8 — 'Remember the sabbath day, to keep it holy.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Honoring the Sabbath",
+      "body": "You chose to keep the Lord's Day holy, trusting that rest and worship matter more than making miles. Historical records show that wagon trains observing the Sabbath often arrived in Oregon in better condition. This is a powerful lesson about trusting God's design: the commandment to rest is not a burden but a gift.",
+      "scripture": "Mark 2:27 — 'The sabbath was made for man, not man for the sabbath.'"
+    }
+  },
+  "sunday_rest_skipped": {
+    "k2": {
+      "valence": "negative",
+      "title": "No Rest Today",
+      "body": "You kept walking on the special rest day. Everyone is a little more tired now.",
+      "forward_prompt": "God made a special day for resting. When we skip it, we get extra tired! Rest is important."
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "Skipping the Lord's Day",
+      "body": "You chose to travel on Sunday instead of resting. While the urgency is understandable, God gave us the Sabbath as a gift. Resting shows that we trust God to provide, even when time seems short.",
+      "scripture": "Exodus 20:8-10 — 'Remember the sabbath day, to keep it holy. Six days you shall labor and do all your work, but the seventh day is a sabbath to the Lord your God.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "Breaking the Sabbath",
+      "body": "You chose to work on the Lord's Day. The third commandment calls us to keep holy the Sabbath. While emergencies can justify work on Sunday, routine disregard for the Sabbath reflects a lack of trust in God's providence. The Sabbath is a reminder that we are not defined by our productivity but by our relationship with God.",
+      "scripture": "Catechism of the Catholic Church 2185 — 'On Sundays and other holy days of obligation, the faithful are to refrain from engaging in work or activities that hinder the worship owed to God.'"
+    }
+  },
+  "prayer_offered": {
+    "k2": {
+      "valence": "positive",
+      "title": "PRAYER TIME!",
+      "body": "You talked to God! He loves hearing from you, no matter what you say.",
+      "forward_prompt": "God always listens when we talk to Him. You can pray anytime, anywhere!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "Time for Prayer",
+      "body": "You gathered your family for prayer. Pioneer families often prayed together on the trail, asking God for protection and giving thanks for each day's journey.",
+      "scripture": "Matthew 18:20 — 'For where two or three are gathered in my name, there am I among them.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "Family Prayer",
+      "body": "You chose to gather your family for evening prayer. On the Oregon Trail, prayer was a lifeline for many families — a source of strength, comfort, and community in the midst of hardship. The domestic church — the family gathered in prayer — is the foundation of Christian life.",
+      "scripture": "Philippians 4:6 — 'Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God.'"
+    }
+  },
+  "last_rites_given": {
+    "k2": {
+      "valence": "positive",
+      "title": "HELPING SOMEONE",
+      "body": "You helped someone who was very sick feel God's love. That was very special.",
+      "forward_prompt": "God is with us all the time, especially when we are sick or scared. You helped someone feel that!"
+    },
+    "3_5": {
+      "valence": "positive",
+      "title": "The Sacrament of the Sick",
+      "body": "You helped someone receive the Last Rites — a special sacrament that brings God's comfort and strength to those who are very sick. This is one of the most important things a Catholic can do for a dying person.",
+      "scripture": "James 5:14 — 'Is anyone among you sick? Let him call for the elders of the church, and let them pray over him, anointing him with oil in the name of the Lord.'"
+    },
+    "6_8": {
+      "valence": "positive",
+      "title": "The Anointing of the Sick",
+      "body": "You stopped so that a dying person could receive the Sacrament of the Anointing of the Sick. On the frontier, far from any church, the presence of a priest was rare and precious. The sacrament brings grace, forgiveness, and spiritual strength to the dying — preparing them for their final journey home to God.",
+      "scripture": "James 5:14-15 — 'Is anyone among you sick? Let him call for the elders of the church, and let them pray over him, anointing him with oil in the name of the Lord. And the prayer of faith will save the one who is sick, and the Lord will raise him up.'"
+    }
+  },
+  "grueling_while_sick": {
+    "k2": {
+      "valence": "negative",
+      "title": "TOO FAST!",
+      "body": "Someone in your family is sick and needs to rest. Going too fast can make them feel worse!",
+      "forward_prompt": "When someone is sick, we need to slow down and take care of them. Rest helps us heal!"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "Pushing Too Hard",
+      "body": "You are traveling at a grueling pace while someone in your party is sick. This could make their illness much worse. Taking care of the sick is more important than making good time.",
+      "scripture": "Proverbs 12:10 — 'Whoever is righteous has regard for the life of his beast, but the mercy of the wicked is cruel.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "Reckless Pace",
+      "body": "You are pushing a grueling pace while a member of your party is gravely ill. The fifth commandment — 'You shall not kill' — extends to reckless disregard for human life and health. Treating people as obstacles to your schedule rather than souls in your care violates the dignity of the human person.",
+      "scripture": "Catechism of the Catholic Church 2288 — 'Life and physical health are precious gifts entrusted to us by God. We must take reasonable care of them.'"
+    }
+  },
+  "overhunting": {
+    "k2": {
+      "valence": "negative",
+      "title": "TOO MUCH!",
+      "body": "You took more than you need. The animals and plants are gifts from God, and we should not waste them!",
+      "forward_prompt": "God made all the animals and plants. We should only take what we need and not waste anything!"
+    },
+    "3_5": {
+      "valence": "negative",
+      "title": "Taking Too Much",
+      "body": "You hunted more than your family can use. God gave us the animals and the land to take care of, not to waste. We should only take what we need and be grateful for it.",
+      "scripture": "Genesis 1:28 — 'God blessed them and said to them... Rule over the fish in the sea and the birds in the sky and over every living creature that moves on the ground.'"
+    },
+    "6_8": {
+      "valence": "negative",
+      "title": "Stewardship: Overhunting",
+      "body": "You took far more game than your party can use. Catholic social teaching emphasizes our responsibility as stewards of creation. God entrusted the earth to humanity not for exploitation but for careful stewardship. The wanton destruction of the great bison herds — driven partly by emigrant overhunting — was an ecological catastrophe with devastating consequences for Native American peoples.",
+      "scripture": "Genesis 2:15 — 'The Lord God took the man and put him in the garden of Eden to work it and keep it.' Also: Laudato Si' 67 — 'Each community can take from the bounty of the earth whatever it needs for subsistence, but it also has the duty to protect the earth.'"
+    }
+  }
+}

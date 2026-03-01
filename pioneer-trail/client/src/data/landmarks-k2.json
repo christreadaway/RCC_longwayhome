@@ -1,0 +1,68 @@
+{
+  "trail_name": "The Long Way Home",
+  "total_distance_miles": 5,
+  "grade_band": "k2",
+  "description": "A simplified, friendly trail for K-2 students with 5 cheerful stops along the way.",
+  "landmarks": [
+    {
+      "id": "home",
+      "name": "Home",
+      "type": "town",
+      "distance_from_previous": 0,
+      "stop_number": 1,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.0,
+      "description": "This is where your adventure begins! Your family is packing up the wagon to travel to a beautiful new home far away. Say goodbye to your friends and get ready for the journey!",
+      "icon": "house",
+      "background_color": "#FFE4B5"
+    },
+    {
+      "id": "sunny_meadow",
+      "name": "Sunny Meadow",
+      "type": "natural",
+      "distance_from_previous": 1,
+      "stop_number": 2,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.3,
+      "description": "A bright, sunny meadow full of wildflowers and butterflies! Your family stops to let the animals rest and eat. What a lovely place to have a picnic!",
+      "icon": "sun",
+      "background_color": "#FFFACD"
+    },
+    {
+      "id": "river_crossing",
+      "name": "River Crossing",
+      "type": "natural",
+      "distance_from_previous": 1,
+      "stop_number": 3,
+      "terrain_type": "river",
+      "hazard_multiplier": 0.6,
+      "description": "Oh no, there is a big river in the way! Your family needs to figure out how to get the wagon across. The water looks deep, but do not worry — you can do it together!",
+      "icon": "water",
+      "background_color": "#B0E0E6"
+    },
+    {
+      "id": "big_mountain",
+      "name": "Big Mountain",
+      "type": "natural",
+      "distance_from_previous": 1,
+      "stop_number": 4,
+      "terrain_type": "mountains",
+      "hazard_multiplier": 0.8,
+      "description": "Look how tall that mountain is! The trail goes up, up, up. It is hard work, but your family keeps going. From the top, you can see so far! You are almost there!",
+      "icon": "mountain",
+      "background_color": "#D8BFD8"
+    },
+    {
+      "id": "the_valley",
+      "name": "The Valley",
+      "type": "destination",
+      "distance_from_previous": 1,
+      "stop_number": 5,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.0,
+      "description": "You made it! The Valley is green and beautiful, with trees and a little stream. Your family found a wonderful new home. What a great adventure you had together!",
+      "icon": "star",
+      "background_color": "#98FB98"
+    }
+  ]
+}

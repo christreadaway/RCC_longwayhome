@@ -1,0 +1,243 @@
+{
+  "cwm_names": [
+    {
+      "id": "feed_hungry",
+      "name": "Feed the Hungry",
+      "description": "Providing food to those who do not have enough to eat. On the Oregon Trail, this meant sharing precious food supplies with starving fellow travelers.",
+      "scripture": "Matthew 25:35",
+      "scripture_text": "For I was hungry and you gave me food."
+    },
+    {
+      "id": "give_drink",
+      "name": "Give Drink to the Thirsty",
+      "description": "Providing water and drink to those who are in need. On the trail, water was essential for survival, and sharing it was a true sacrifice.",
+      "scripture": "Matthew 25:35",
+      "scripture_text": "I was thirsty and you gave me drink."
+    },
+    {
+      "id": "clothe_naked",
+      "name": "Clothe the Naked",
+      "description": "Providing clothing to those who lack adequate covering. Pioneer families sometimes shared clothing and blankets with those who had lost theirs to river crossings or theft.",
+      "scripture": "Matthew 25:36",
+      "scripture_text": "I was naked and you clothed me."
+    },
+    {
+      "id": "shelter_homeless",
+      "name": "Shelter the Homeless",
+      "description": "Providing shelter and housing to those without a place to stay. On the trail, this meant sharing wagon space and campfire warmth with families who had lost their wagons.",
+      "scripture": "Isaiah 58:7",
+      "scripture_text": "Is it not to share your bread with the hungry and bring the homeless poor into your house?"
+    },
+    {
+      "id": "visit_sick",
+      "name": "Visit the Sick",
+      "description": "Caring for and comforting those who are ill. On the Oregon Trail, visiting the sick meant risking your own health to nurse a neighbor through cholera, typhoid, or other diseases.",
+      "scripture": "Matthew 25:36",
+      "scripture_text": "I was sick and you visited me."
+    },
+    {
+      "id": "visit_imprisoned",
+      "name": "Visit the Imprisoned",
+      "description": "Comforting and ministering to those who are confined or in prison. On the frontier, this could include those held captive or isolated by circumstance.",
+      "scripture": "Matthew 25:36",
+      "scripture_text": "I was in prison and you came to me."
+    },
+    {
+      "id": "bury_dead",
+      "name": "Bury the Dead",
+      "description": "Giving proper burial to those who have died, treating the human body with dignity and respect. On the Oregon Trail, thousands of graves lined the route, and stopping to bury the dead was a significant act of mercy.",
+      "scripture": "Tobit 1:17",
+      "scripture_text": "I would give my bread to the hungry and clothing to the naked; and if I saw any of my people dead and thrown outside the wall of Nineveh, I would bury them."
+    }
+  ],
+  "commandments": [
+    {
+      "number": 1,
+      "text": "I am the Lord your God; you shall not have strange gods before me.",
+      "short_text": "Love God above all things.",
+      "trail_application": "Trusting in God's providence even when the trail seems impossible."
+    },
+    {
+      "number": 2,
+      "text": "You shall not take the name of the Lord your God in vain.",
+      "short_text": "Respect God's name.",
+      "trail_application": "Speaking of God with reverence, even in moments of frustration and hardship."
+    },
+    {
+      "number": 3,
+      "text": "Remember to keep holy the Lord's Day.",
+      "short_text": "Keep Sunday holy.",
+      "trail_application": "Resting on Sundays, even when the pressure to keep moving is intense."
+    },
+    {
+      "number": 4,
+      "text": "Honor your father and your mother.",
+      "short_text": "Honor your parents.",
+      "trail_application": "Respecting family leadership and the sacrifices parents make for their children's future."
+    },
+    {
+      "number": 5,
+      "text": "You shall not kill.",
+      "short_text": "Respect all human life.",
+      "trail_application": "Caring for the sick and injured, not pushing people beyond their physical limits."
+    },
+    {
+      "number": 6,
+      "text": "You shall not commit adultery.",
+      "short_text": "Be faithful in marriage.",
+      "trail_application": "The faithfulness and partnership of married couples working together on the trail."
+    },
+    {
+      "number": 7,
+      "text": "You shall not steal.",
+      "short_text": "Respect others' property.",
+      "trail_application": "Fair trading and honest dealing with fellow emigrants and Native peoples."
+    },
+    {
+      "number": 8,
+      "text": "You shall not bear false witness against your neighbor.",
+      "short_text": "Be truthful and honest.",
+      "trail_application": "Giving honest reports about trail conditions and not deceiving fellow travelers."
+    },
+    {
+      "number": 9,
+      "text": "You shall not covet your neighbor's wife.",
+      "short_text": "Be pure in heart.",
+      "trail_application": "Maintaining purity of intention in all relationships along the trail."
+    },
+    {
+      "number": 10,
+      "text": "You shall not covet your neighbor's goods.",
+      "short_text": "Be content with what you have.",
+      "trail_application": "Not envying others' supplies or good fortune; being grateful for what God provides."
+    }
+  ],
+  "beatitudes": [
+    {
+      "number": 1,
+      "text": "Blessed are the poor in spirit, for theirs is the kingdom of heaven.",
+      "reference": "Matthew 5:3",
+      "trail_application": "Recognizing that material possessions do not define our worth. Many emigrants arrived in Oregon with almost nothing but found true wealth in community and faith."
+    },
+    {
+      "number": 2,
+      "text": "Blessed are those who mourn, for they shall be comforted.",
+      "reference": "Matthew 5:4",
+      "trail_application": "Grieving the losses along the trail — loved ones, possessions, the homes left behind — while trusting in God's comfort."
+    },
+    {
+      "number": 3,
+      "text": "Blessed are the meek, for they shall inherit the earth.",
+      "reference": "Matthew 5:5",
+      "trail_application": "Showing gentleness and patience with fellow travelers, even in moments of conflict and stress."
+    },
+    {
+      "number": 4,
+      "text": "Blessed are those who hunger and thirst for righteousness, for they shall be satisfied.",
+      "reference": "Matthew 5:6",
+      "trail_application": "Seeking to do what is right on the trail, even when selfishness would be easier and more practical."
+    },
+    {
+      "number": 5,
+      "text": "Blessed are the merciful, for they shall receive mercy.",
+      "reference": "Matthew 5:7",
+      "trail_application": "Showing mercy to those who wrong you — forgiving the thief, helping the stranger, caring for the enemy."
+    },
+    {
+      "number": 6,
+      "text": "Blessed are the pure in heart, for they shall see God.",
+      "reference": "Matthew 5:8",
+      "trail_application": "Acting with honest intentions — helping others because it is right, not for reward or recognition."
+    },
+    {
+      "number": 7,
+      "text": "Blessed are the peacemakers, for they shall be called sons of God.",
+      "reference": "Matthew 5:9",
+      "trail_application": "Resolving conflicts within the wagon train peacefully, and treating Native peoples with respect and dignity."
+    },
+    {
+      "number": 8,
+      "text": "Blessed are those who are persecuted for righteousness' sake, for theirs is the kingdom of heaven.",
+      "reference": "Matthew 5:10",
+      "trail_application": "Standing up for what is right even when the wagon train disagrees — defending the weak, insisting on fair treatment, keeping the Sabbath."
+    }
+  ],
+  "spiritual_works_of_mercy": [
+    {
+      "id": "instruct_ignorant",
+      "name": "Instruct the Ignorant",
+      "description": "Teaching others about the faith and about important knowledge."
+    },
+    {
+      "id": "counsel_doubtful",
+      "name": "Counsel the Doubtful",
+      "description": "Helping those who are uncertain or struggling with decisions."
+    },
+    {
+      "id": "admonish_sinners",
+      "name": "Admonish Sinners",
+      "description": "Charitably correcting those who are doing wrong."
+    },
+    {
+      "id": "bear_wrongs_patiently",
+      "name": "Bear Wrongs Patiently",
+      "description": "Enduring suffering and injustice with patience and faith."
+    },
+    {
+      "id": "forgive_offenses",
+      "name": "Forgive Offenses Willingly",
+      "description": "Choosing to forgive those who have wronged us."
+    },
+    {
+      "id": "comfort_afflicted",
+      "name": "Comfort the Afflicted",
+      "description": "Bringing consolation to those who are suffering or grieving."
+    },
+    {
+      "id": "pray_for_living_dead",
+      "name": "Pray for the Living and the Dead",
+      "description": "Offering prayers for others, both those still alive and those who have died."
+    }
+  ],
+  "virtues": {
+    "cardinal": [
+      {
+        "name": "Prudence",
+        "description": "The ability to discern the right course of action in every circumstance.",
+        "trail_example": "Deciding when to rest and when to push forward."
+      },
+      {
+        "name": "Justice",
+        "description": "Giving to each person what is rightfully theirs.",
+        "trail_example": "Fair trading and honest dealing with all people."
+      },
+      {
+        "name": "Fortitude",
+        "description": "Courage and strength in the face of difficulty and danger.",
+        "trail_example": "Pressing on through hardship and helping others when it costs you."
+      },
+      {
+        "name": "Temperance",
+        "description": "Moderation and self-control in all things.",
+        "trail_example": "Rationing supplies wisely and not taking more than your share."
+      }
+    ],
+    "theological": [
+      {
+        "name": "Faith",
+        "description": "Believing in God and trusting in His plan.",
+        "trail_example": "Trusting God's providence even when the trail seems hopeless."
+      },
+      {
+        "name": "Hope",
+        "description": "Confident expectation of God's promises.",
+        "trail_example": "Believing that you will reach Oregon and that God walks with you."
+      },
+      {
+        "name": "Charity",
+        "description": "Love of God and love of neighbor.",
+        "trail_example": "Every act of mercy toward fellow travelers on the trail."
+      }
+    ]
+  }
+}

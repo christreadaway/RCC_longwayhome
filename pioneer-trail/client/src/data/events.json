@@ -1,0 +1,1785 @@
+{
+  "events": [
+    {
+      "id": "weather_rain",
+      "category": "weather",
+      "type": "rain",
+      "title": "Heavy Rain",
+      "description": "Dark clouds roll in and a heavy rain begins to fall. The trail turns to thick mud, slowing the wagons to a crawl. Water seeps into the wagon covers and threatens your supplies.",
+      "choices": [
+        {
+          "id": "press_on",
+          "text": "Press on through the rain",
+          "effects": {
+            "health_change": -5,
+            "morale_change": -5,
+            "pace_modifier": 0.6,
+            "time_days": 0,
+            "food_lbs": 0
+          }
+        },
+        {
+          "id": "make_camp",
+          "text": "Make camp and wait for the rain to stop",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -2,
+            "pace_modifier": 1.0,
+            "time_days": 1,
+            "food_lbs": -5
+          }
+        }
+      ],
+      "probability_weight": 12,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "weather_blizzard",
+      "category": "weather",
+      "type": "blizzard",
+      "title": "Blizzard",
+      "description": "A fierce blizzard strikes without warning. Howling winds drive blinding snow across the trail, and the temperature plummets. Your family huddles together for warmth as the oxen struggle against the drifts.",
+      "choices": [
+        {
+          "id": "shelter_wagon",
+          "text": "Take shelter in the wagon and wait it out",
+          "effects": {
+            "health_change": -8,
+            "morale_change": -8,
+            "pace_modifier": 1.0,
+            "time_days": 2,
+            "food_lbs": -15
+          }
+        },
+        {
+          "id": "press_through",
+          "text": "Try to push through the storm",
+          "effects": {
+            "health_change": -15,
+            "morale_change": -10,
+            "pace_modifier": 0.3,
+            "time_days": 0,
+            "food_lbs": -5,
+            "lost_trail_chance": 0.3
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": ["mountains"]
+    },
+    {
+      "id": "weather_fog",
+      "category": "weather",
+      "type": "fog",
+      "title": "Dense Fog",
+      "description": "A thick fog settles over the trail at dawn, reducing visibility to just a few feet. The landmarks you rely on for navigation have disappeared into the white mist. The oxen are uneasy.",
+      "choices": [
+        {
+          "id": "wait_for_clear",
+          "text": "Wait for the fog to lift before moving",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -3,
+            "pace_modifier": 1.0,
+            "time_days": 1,
+            "food_lbs": -5
+          }
+        },
+        {
+          "id": "proceed_slowly",
+          "text": "Proceed very slowly and carefully",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -2,
+            "pace_modifier": 0.4,
+            "time_days": 0,
+            "food_lbs": 0,
+            "lost_trail_chance": 0.15
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["river", "mountains"]
+    },
+    {
+      "id": "weather_heat_wave",
+      "category": "weather",
+      "type": "heat_wave",
+      "title": "Scorching Heat Wave",
+      "description": "The sun beats down mercilessly and the air shimmers with heat. Water supplies are running low, and the oxen pant heavily in the blazing temperatures. There is no shade for miles.",
+      "choices": [
+        {
+          "id": "travel_at_night",
+          "text": "Rest during the day, travel at night",
+          "effects": {
+            "health_change": -3,
+            "morale_change": -5,
+            "pace_modifier": 0.7,
+            "time_days": 0,
+            "food_lbs": 0,
+            "water_change": -10
+          }
+        },
+        {
+          "id": "push_through_heat",
+          "text": "Push through the heat to find water sooner",
+          "effects": {
+            "health_change": -12,
+            "morale_change": -8,
+            "pace_modifier": 0.8,
+            "time_days": 0,
+            "food_lbs": 0,
+            "water_change": -20
+          }
+        }
+      ],
+      "probability_weight": 7,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["plains", "desert"]
+    },
+    {
+      "id": "illness_cholera",
+      "category": "illness",
+      "type": "cholera",
+      "title": "Cholera Strikes",
+      "description": "After drinking from a stagnant creek, {member_name} begins showing terrible symptoms of cholera. The dreaded disease has claimed thousands along this very trail. Quick action may save a life.",
+      "choices": [
+        {
+          "id": "stop_and_treat",
+          "text": "Stop the wagon and treat {member_name} with rest and clean water",
+          "effects": {
+            "health_change": -15,
+            "morale_change": -10,
+            "time_days": 3,
+            "food_lbs": -10,
+            "illness_id": "cholera",
+            "treatment": "rest_and_water"
+          }
+        },
+        {
+          "id": "use_medicine",
+          "text": "Use medicine from your supplies",
+          "effects": {
+            "health_change": -10,
+            "morale_change": -8,
+            "time_days": 2,
+            "food_lbs": -5,
+            "medicine_used": 1,
+            "illness_id": "cholera",
+            "treatment": "medicine"
+          }
+        }
+      ],
+      "probability_weight": 6,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["river", "plains"]
+    },
+    {
+      "id": "illness_typhoid",
+      "category": "illness",
+      "type": "typhoid",
+      "title": "Typhoid Fever",
+      "description": "{member_name} has developed a dangerously high fever and is delirious. The symptoms point to typhoid fever, a common and feared illness on the trail. The sick must be cared for, but the wagon train cannot wait forever.",
+      "choices": [
+        {
+          "id": "rest_and_care",
+          "text": "Rest for several days and provide constant care",
+          "effects": {
+            "health_change": -12,
+            "morale_change": -8,
+            "time_days": 4,
+            "food_lbs": -12,
+            "illness_id": "typhoid",
+            "treatment": "rest_and_water"
+          }
+        },
+        {
+          "id": "use_medicine",
+          "text": "Use medicine and continue traveling slowly",
+          "effects": {
+            "health_change": -8,
+            "morale_change": -6,
+            "time_days": 1,
+            "food_lbs": -5,
+            "pace_modifier": 0.5,
+            "medicine_used": 1,
+            "illness_id": "typhoid",
+            "treatment": "medicine"
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "illness_dysentery",
+      "category": "illness",
+      "type": "dysentery",
+      "title": "Dysentery",
+      "description": "{member_name} has fallen ill with dysentery, likely from contaminated water at the last campsite. The illness is painful and debilitating, and the trail ahead offers no comfort.",
+      "choices": [
+        {
+          "id": "rest_and_boil_water",
+          "text": "Rest and give only boiled water",
+          "effects": {
+            "health_change": -10,
+            "morale_change": -7,
+            "time_days": 3,
+            "food_lbs": -8,
+            "illness_id": "dysentery",
+            "treatment": "rest_and_water"
+          }
+        },
+        {
+          "id": "use_medicine",
+          "text": "Use medicine from your supplies",
+          "effects": {
+            "health_change": -6,
+            "morale_change": -5,
+            "time_days": 1,
+            "food_lbs": -4,
+            "medicine_used": 1,
+            "illness_id": "dysentery",
+            "treatment": "medicine"
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "illness_measles",
+      "category": "illness",
+      "type": "measles",
+      "title": "Measles Outbreak",
+      "description": "A wagon train you camped near last week was carrying measles, and now {member_name} has broken out in a rash with a high fever. Measles spreads quickly, and others in your party may be at risk.",
+      "choices": [
+        {
+          "id": "quarantine_and_rest",
+          "text": "Keep {member_name} separated and rest until the fever breaks",
+          "effects": {
+            "health_change": -8,
+            "morale_change": -6,
+            "time_days": 5,
+            "food_lbs": -15,
+            "illness_id": "measles",
+            "treatment": "rest"
+          }
+        },
+        {
+          "id": "medicine_and_move",
+          "text": "Use medicine and keep moving carefully",
+          "effects": {
+            "health_change": -5,
+            "morale_change": -4,
+            "time_days": 1,
+            "food_lbs": -5,
+            "pace_modifier": 0.6,
+            "medicine_used": 1,
+            "illness_id": "measles",
+            "treatment": "medicine"
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "illness_exhaustion",
+      "category": "illness",
+      "type": "exhaustion",
+      "title": "Exhaustion",
+      "description": "{member_name} has collapsed from sheer exhaustion. Walking fifteen to twenty miles a day, day after day, has taken a terrible toll. Without rest, things could get much worse.",
+      "choices": [
+        {
+          "id": "full_rest_day",
+          "text": "Take a full day of rest for the whole party",
+          "effects": {
+            "health_change": 5,
+            "morale_change": 5,
+            "time_days": 1,
+            "food_lbs": -5,
+            "illness_id": "exhaustion",
+            "treatment": "rest_day"
+          }
+        },
+        {
+          "id": "ride_in_wagon",
+          "text": "Let {member_name} ride in the wagon while others walk",
+          "effects": {
+            "health_change": -2,
+            "morale_change": -2,
+            "time_days": 0,
+            "food_lbs": 0,
+            "pace_modifier": 0.8,
+            "illness_id": "exhaustion",
+            "treatment": "light_duties"
+          }
+        }
+      ],
+      "probability_weight": 10,
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "illness_broken_leg",
+      "category": "illness",
+      "type": "broken_leg",
+      "title": "Broken Leg",
+      "description": "{member_name} has fallen from the wagon and broken a leg. The bone must be set and splinted, but there are no doctors on the trail. Travel will be slow and painful until the leg heals.",
+      "choices": [
+        {
+          "id": "splint_and_rest",
+          "text": "Splint the leg and rest for several days",
+          "effects": {
+            "health_change": -10,
+            "morale_change": -8,
+            "time_days": 3,
+            "food_lbs": -10,
+            "illness_id": "broken_leg",
+            "treatment": "splint_rest"
+          }
+        },
+        {
+          "id": "splint_and_move",
+          "text": "Splint the leg and keep moving",
+          "effects": {
+            "health_change": -5,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "pace_modifier": 0.5,
+            "illness_id": "broken_leg",
+            "treatment": "splint_rest"
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["mountains", "hills", "river"]
+    },
+    {
+      "id": "illness_snakebite",
+      "category": "illness",
+      "type": "snakebite",
+      "title": "Snakebite!",
+      "description": "While gathering firewood, {member_name} was bitten by a rattlesnake! The bite is on the lower leg, and the area is already beginning to swell. Quick treatment is essential.",
+      "choices": [
+        {
+          "id": "compress_rest",
+          "text": "Apply a compress and rest while the swelling goes down",
+          "effects": {
+            "health_change": -12,
+            "morale_change": -8,
+            "time_days": 2,
+            "food_lbs": -8,
+            "illness_id": "snakebite",
+            "treatment": "rest_compress"
+          }
+        },
+        {
+          "id": "medicine_treat",
+          "text": "Use medicine from your supplies to treat the bite",
+          "effects": {
+            "health_change": -6,
+            "morale_change": -5,
+            "time_days": 1,
+            "food_lbs": -3,
+            "medicine_used": 1,
+            "illness_id": "snakebite",
+            "treatment": "medicine"
+          }
+        }
+      ],
+      "probability_weight": 4,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["plains", "hills"]
+    },
+    {
+      "id": "hazard_wagon_breakdown_wheel",
+      "category": "trail_hazard",
+      "type": "wagon_breakdown_wheel",
+      "title": "Broken Wagon Wheel",
+      "description": "A deep rut in the trail catches your wagon wheel and snaps the spokes with a loud crack. The wagon lurches to one side and grinds to a halt. Without a working wheel, you cannot continue.",
+      "choices": [
+        {
+          "id": "use_spare",
+          "text": "Replace with a spare wheel from your supplies",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -3,
+            "time_days": 0.5,
+            "food_lbs": -2,
+            "spare_parts_used": "wheel"
+          }
+        },
+        {
+          "id": "attempt_repair",
+          "text": "Try to repair the broken wheel",
+          "effects": {
+            "health_change": -2,
+            "morale_change": -5,
+            "time_days": 1,
+            "food_lbs": -5,
+            "repair_success_chance": 0.6
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["hills", "mountains"]
+    },
+    {
+      "id": "hazard_wagon_breakdown_axle",
+      "category": "trail_hazard",
+      "type": "wagon_breakdown_axle",
+      "title": "Broken Axle",
+      "description": "Your wagon's axle has cracked under the strain of the rough trail. The heavy wagon cannot roll without a functioning axle. This is one of the most serious breakdowns a wagon train can face.",
+      "choices": [
+        {
+          "id": "use_spare",
+          "text": "Replace with a spare axle from your supplies",
+          "effects": {
+            "health_change": -2,
+            "morale_change": -4,
+            "time_days": 1,
+            "food_lbs": -5,
+            "spare_parts_used": "axle"
+          }
+        },
+        {
+          "id": "attempt_repair",
+          "text": "Try to find wood and fashion a replacement",
+          "effects": {
+            "health_change": -5,
+            "morale_change": -8,
+            "time_days": 2,
+            "food_lbs": -10,
+            "repair_success_chance": 0.4
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": ["mountains", "hills"]
+    },
+    {
+      "id": "hazard_wagon_breakdown_tongue",
+      "category": "trail_hazard",
+      "type": "wagon_breakdown_tongue",
+      "title": "Broken Wagon Tongue",
+      "description": "The wagon tongue — the long beam connecting the wagon to the oxen yoke — has snapped. Without it, the oxen cannot pull the wagon. You will need to repair or replace it before moving on.",
+      "choices": [
+        {
+          "id": "use_spare",
+          "text": "Replace with a spare tongue from your supplies",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -3,
+            "time_days": 0.5,
+            "food_lbs": -2,
+            "spare_parts_used": "tongue"
+          }
+        },
+        {
+          "id": "cut_timber",
+          "text": "Find a suitable tree and carve a new tongue",
+          "effects": {
+            "health_change": -3,
+            "morale_change": -5,
+            "time_days": 1.5,
+            "food_lbs": -8,
+            "repair_success_chance": 0.5
+          }
+        }
+      ],
+      "probability_weight": 6,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "hazard_river_crossing",
+      "category": "trail_hazard",
+      "type": "river_crossing",
+      "title": "Dangerous River Crossing",
+      "description": "You have reached a wide river that must be crossed. The water runs swift and deep. Other wagon trains have lost supplies and even lives here. You must decide the safest way across.",
+      "choices": [
+        {
+          "id": "ford_river",
+          "text": "Ford the river — drive the wagon through the water",
+          "effects": {
+            "health_change": -5,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "supply_loss_chance": 0.3,
+            "supply_loss_amount": 0.15,
+            "drowning_chance": 0.05
+          }
+        },
+        {
+          "id": "caulk_and_float",
+          "text": "Caulk the wagon and float it across",
+          "effects": {
+            "health_change": -2,
+            "morale_change": -3,
+            "time_days": 0.5,
+            "food_lbs": -2,
+            "supply_loss_chance": 0.15,
+            "supply_loss_amount": 0.10,
+            "drowning_chance": 0.02
+          }
+        },
+        {
+          "id": "pay_ferry",
+          "text": "Pay for a ferry crossing ($5)",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 0,
+            "time_days": 0.5,
+            "food_lbs": 0,
+            "cash": -5,
+            "supply_loss_chance": 0.02,
+            "supply_loss_amount": 0.05,
+            "drowning_chance": 0.0
+          }
+        }
+      ],
+      "probability_weight": 10,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["river"]
+    },
+    {
+      "id": "hazard_lost_trail",
+      "category": "trail_hazard",
+      "type": "lost_trail",
+      "title": "Lost the Trail",
+      "description": "The trail markers have disappeared and the path has become unclear. Your party is unsure which direction to travel. Getting lost on the frontier wastes precious time and supplies.",
+      "choices": [
+        {
+          "id": "scout_ahead",
+          "text": "Send scouts ahead to find the trail",
+          "effects": {
+            "health_change": -3,
+            "morale_change": -5,
+            "time_days": 1,
+            "food_lbs": -5
+          }
+        },
+        {
+          "id": "backtrack",
+          "text": "Backtrack to the last known trail marker",
+          "effects": {
+            "health_change": -2,
+            "morale_change": -8,
+            "time_days": 2,
+            "food_lbs": -10,
+            "miles_lost": 10
+          }
+        }
+      ],
+      "probability_weight": 6,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["plains", "hills"]
+    },
+    {
+      "id": "hazard_fire",
+      "category": "trail_hazard",
+      "type": "fire",
+      "title": "Prairie Fire!",
+      "description": "A wall of fire races across the dry prairie grass toward your wagon train! The smoke is thick and the heat intense. You must act quickly to save your family and supplies.",
+      "choices": [
+        {
+          "id": "flee_perpendicular",
+          "text": "Drive the wagon away from the fire at full speed",
+          "effects": {
+            "health_change": -8,
+            "morale_change": -10,
+            "time_days": 0,
+            "food_lbs": -5,
+            "supply_loss_chance": 0.2,
+            "supply_loss_amount": 0.10,
+            "oxen_injury_chance": 0.15
+          }
+        },
+        {
+          "id": "burn_firebreak",
+          "text": "Quickly burn a firebreak around your camp",
+          "effects": {
+            "health_change": -5,
+            "morale_change": -6,
+            "time_days": 0.5,
+            "food_lbs": -3,
+            "supply_loss_chance": 0.05,
+            "supply_loss_amount": 0.05
+          }
+        }
+      ],
+      "probability_weight": 4,
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": ["plains"]
+    },
+    {
+      "id": "resource_food_spoilage",
+      "category": "resource",
+      "type": "food_spoilage",
+      "title": "Food Spoilage",
+      "description": "The rain has gotten into your food stores. When you open the barrels this morning, you find that a portion of your flour and dried meat has gone moldy and must be thrown out.",
+      "choices": [
+        {
+          "id": "discard_all_spoiled",
+          "text": "Throw out all the spoiled food to be safe",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": -30
+          }
+        },
+        {
+          "id": "salvage_what_you_can",
+          "text": "Try to salvage what you can — eat the less spoiled parts",
+          "effects": {
+            "health_change": -5,
+            "morale_change": -3,
+            "time_days": 0,
+            "food_lbs": -15,
+            "illness_chance": 0.15
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "resource_oxen_death",
+      "category": "resource",
+      "type": "oxen_death",
+      "title": "Ox Has Died",
+      "description": "One of your oxen has collapsed and died, likely from a combination of exhaustion and poor grazing. With fewer oxen, your wagon will move slower and the remaining animals will tire more quickly.",
+      "choices": [
+        {
+          "id": "redistribute_load",
+          "text": "Redistribute the load and lighten the wagon",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -8,
+            "time_days": 0.5,
+            "food_lbs": -10,
+            "oxen_change": -1,
+            "pace_modifier": 0.8,
+            "supply_loss_amount": 0.10
+          }
+        },
+        {
+          "id": "butcher_for_meat",
+          "text": "Butcher the ox for meat and redistribute",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0.5,
+            "food_lbs": 50,
+            "oxen_change": -1,
+            "pace_modifier": 0.8
+          }
+        }
+      ],
+      "probability_weight": 6,
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "resource_theft",
+      "category": "resource",
+      "type": "theft",
+      "title": "Supplies Stolen",
+      "description": "During the night, someone crept into your camp and stole supplies. When you awake, you discover that food and clothing are missing. The thief's tracks lead away into the darkness.",
+      "choices": [
+        {
+          "id": "accept_loss",
+          "text": "Accept the loss and move on. Pray for the thief.",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": -20,
+            "clothing_change": -1,
+            "grace_change": 3
+          }
+        },
+        {
+          "id": "track_thief",
+          "text": "Send men to track down the thief and recover the supplies",
+          "effects": {
+            "health_change": -3,
+            "morale_change": -3,
+            "time_days": 1,
+            "food_lbs": -5,
+            "recovery_chance": 0.5,
+            "recovery_amount_food": 15,
+            "recovery_amount_clothing": 1
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "good_wild_fruit",
+      "category": "good",
+      "type": "wild_fruit",
+      "title": "Wild Berries Found",
+      "description": "Your party discovers a thicket of ripe wild berries along the trail! The children are delighted, and the fresh fruit is a welcome change from the usual trail diet of dried meat and hardtack.",
+      "choices": [
+        {
+          "id": "gather_berries",
+          "text": "Spend time gathering as many berries as you can",
+          "effects": {
+            "health_change": 5,
+            "morale_change": 8,
+            "time_days": 0.5,
+            "food_lbs": 15
+          }
+        },
+        {
+          "id": "eat_and_move",
+          "text": "Eat your fill and continue on the trail",
+          "effects": {
+            "health_change": 3,
+            "morale_change": 5,
+            "time_days": 0,
+            "food_lbs": 5
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": ["plains", "hills"]
+    },
+    {
+      "id": "good_weather_stretch",
+      "category": "good",
+      "type": "good_weather",
+      "title": "Beautiful Weather",
+      "description": "The weather is perfect — clear skies, a gentle breeze, and comfortable temperatures. The oxen are strong, the trail is dry and firm, and everyone's spirits are high. It is a fine day for traveling.",
+      "choices": [
+        {
+          "id": "enjoy_pace",
+          "text": "Enjoy the good weather and make excellent time",
+          "effects": {
+            "health_change": 3,
+            "morale_change": 8,
+            "time_days": 0,
+            "food_lbs": 0,
+            "pace_modifier": 1.3
+          }
+        },
+        {
+          "id": "rest_and_repair",
+          "text": "Use the good weather to rest and repair equipment",
+          "effects": {
+            "health_change": 5,
+            "morale_change": 10,
+            "time_days": 0.5,
+            "food_lbs": -3,
+            "repair_wagon": true
+          }
+        }
+      ],
+      "probability_weight": 10,
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "good_helpful_travelers",
+      "category": "good",
+      "type": "helpful_travelers",
+      "title": "Helpful Fellow Travelers",
+      "description": "You meet a friendly wagon train heading the same direction. They share news about the trail ahead, trade supplies at fair prices, and their experienced guide offers valuable advice about the route.",
+      "choices": [
+        {
+          "id": "travel_together",
+          "text": "Travel together for safety and companionship",
+          "effects": {
+            "health_change": 2,
+            "morale_change": 10,
+            "time_days": 0,
+            "food_lbs": 5,
+            "hazard_reduction": 0.2
+          }
+        },
+        {
+          "id": "trade_and_part",
+          "text": "Trade supplies, share a meal, and continue on your way",
+          "effects": {
+            "health_change": 2,
+            "morale_change": 8,
+            "time_days": 0.5,
+            "food_lbs": 10
+          }
+        }
+      ],
+      "probability_weight": 7,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "good_shortcut",
+      "category": "good",
+      "type": "shortcut",
+      "title": "Shortcut Discovered",
+      "description": "A mountain man passing by tells you about a shorter route that could save several days of travel. He says the path is clear but less traveled. It could be a great time-saver — or a risky gamble.",
+      "choices": [
+        {
+          "id": "take_shortcut",
+          "text": "Take the shortcut and save time",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 5,
+            "time_days": -2,
+            "food_lbs": 0,
+            "hazard_multiplier": 1.3,
+            "lost_trail_chance": 0.15
+          }
+        },
+        {
+          "id": "stay_on_trail",
+          "text": "Stay on the main trail — it is proven and safe",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 0,
+            "time_days": 0,
+            "food_lbs": 0
+          }
+        }
+      ],
+      "probability_weight": 4,
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": ["plains", "hills"]
+    },
+    {
+      "id": "cwm_feed_hungry",
+      "category": "cwm",
+      "type": "feed_hungry",
+      "title": "A Hungry Stranger",
+      "description": "You encounter a gaunt, exhausted stranger by the trail. He says his family's wagon broke down days ago and they have been without food. His children are crying from hunger. He asks if you can spare any food.",
+      "choices": [
+        {
+          "id": "share_food",
+          "text": "Share your food with the stranger's family",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 8,
+            "time_days": 0.5,
+            "food_lbs": -25,
+            "grace_change": 8,
+            "reciprocity_trigger": "feed_hungry"
+          }
+        },
+        {
+          "id": "decline",
+          "text": "Decline — you barely have enough for your own family",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -3,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -5
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": true,
+      "cwm_type": "feed_hungry",
+      "terrain_types": null
+    },
+    {
+      "id": "cwm_give_drink",
+      "category": "cwm",
+      "type": "give_drink",
+      "title": "Thirsty Travelers",
+      "description": "A family from another wagon train approaches your camp. Their water barrel cracked two days ago, and they are desperately thirsty. The mother carries a baby who looks weak from dehydration. They beg for water.",
+      "choices": [
+        {
+          "id": "share_water",
+          "text": "Share your water with the thirsty family",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 7,
+            "time_days": 0,
+            "food_lbs": 0,
+            "water_change": -15,
+            "grace_change": 8,
+            "reciprocity_trigger": "give_drink"
+          }
+        },
+        {
+          "id": "decline",
+          "text": "Decline — water is too precious to share",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -4,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -5
+          }
+        }
+      ],
+      "probability_weight": 7,
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": true,
+      "cwm_type": "give_drink",
+      "terrain_types": ["plains", "desert"]
+    },
+    {
+      "id": "cwm_visit_sick",
+      "category": "cwm",
+      "type": "visit_sick",
+      "title": "A Sick Neighbor",
+      "description": "A family in a nearby wagon is struggling. The father has fallen ill and cannot drive the oxen. The mother is trying to care for the children and manage the wagon alone. They have no medicine and look exhausted.",
+      "choices": [
+        {
+          "id": "help_sick",
+          "text": "Visit the sick man, share medicine, and help the family",
+          "effects": {
+            "health_change": -3,
+            "morale_change": 8,
+            "time_days": 1,
+            "food_lbs": -10,
+            "medicine_used": 1,
+            "grace_change": 8,
+            "reciprocity_trigger": "visit_sick",
+            "illness_risk": 0.10
+          }
+        },
+        {
+          "id": "decline",
+          "text": "Keep your distance — you cannot risk your family's health",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -3,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -5
+          }
+        }
+      ],
+      "probability_weight": 7,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": true,
+      "cwm_type": "visit_sick",
+      "terrain_types": null
+    },
+    {
+      "id": "cwm_shelter_homeless",
+      "category": "cwm",
+      "type": "shelter_homeless",
+      "title": "A Family Without Shelter",
+      "description": "You come across a family whose wagon was destroyed in a river crossing. They have saved some of their belongings but have no shelter. A cold night is coming, and the children are shivering.",
+      "choices": [
+        {
+          "id": "share_shelter",
+          "text": "Make room in your wagon and share your camp",
+          "effects": {
+            "health_change": -2,
+            "morale_change": 8,
+            "time_days": 1,
+            "food_lbs": -15,
+            "grace_change": 8,
+            "reciprocity_trigger": "shelter_homeless"
+          }
+        },
+        {
+          "id": "decline",
+          "text": "Wish them well but explain you have no room",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -4,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -5
+          }
+        }
+      ],
+      "probability_weight": 6,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": true,
+      "cwm_type": "shelter_homeless",
+      "terrain_types": null
+    },
+    {
+      "id": "cwm_bury_dead",
+      "category": "cwm",
+      "type": "bury_dead",
+      "title": "An Unburied Grave",
+      "description": "Beside the trail, you find the body of an emigrant who died alone. There is no marker, no grave — just a solitary figure who never reached their destination. Wolves have been circling. Burying the dead is a corporal work of mercy, but it will cost you time.",
+      "choices": [
+        {
+          "id": "bury_deceased",
+          "text": "Stop and give this person a proper Christian burial",
+          "effects": {
+            "health_change": -2,
+            "morale_change": 5,
+            "time_days": 0.5,
+            "food_lbs": -3,
+            "grace_change": 10,
+            "reciprocity_trigger": "bury_dead"
+          }
+        },
+        {
+          "id": "pass_by",
+          "text": "Say a quick prayer and move on — time is running out",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -5
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["6_8"],
+      "is_cwm": true,
+      "cwm_type": "bury_dead",
+      "terrain_types": null
+    },
+    {
+      "id": "cwm_fair_trade",
+      "category": "cwm",
+      "type": "fair_trade",
+      "title": "A Desperate Trader",
+      "description": "A fellow emigrant approaches your wagon with a desperate offer. He needs medicine badly and is willing to sell his spare wagon wheel for far less than it is worth. You could take advantage of his desperation — or pay him a fair price.",
+      "choices": [
+        {
+          "id": "pay_fair_price",
+          "text": "Pay a fair price for the wheel — he needs the money",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "cash": -10,
+            "spare_parts_gained": "wheel",
+            "grace_change": 6,
+            "reciprocity_trigger": "fair_trade"
+          }
+        },
+        {
+          "id": "lowball_offer",
+          "text": "Offer him much less — he is desperate and will take it",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -2,
+            "time_days": 0,
+            "food_lbs": 0,
+            "cash": -3,
+            "spare_parts_gained": "wheel",
+            "grace_change": -6
+          }
+        }
+      ],
+      "probability_weight": 5,
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": true,
+      "cwm_type": "fair_trade",
+      "terrain_types": null
+    },
+    {
+      "id": "cwm_forgive_thief",
+      "category": "cwm",
+      "type": "forgive_thief",
+      "title": "The Thief Is Caught",
+      "description": "The men of the wagon train have caught the person who stole supplies from your camp last night. He is a young man, thin and ragged, clearly starving. The wagon master asks you — the victim — what should be done. The crowd is angry.",
+      "choices": [
+        {
+          "id": "forgive",
+          "text": "Forgive the thief and give him food for his journey",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 5,
+            "time_days": 0,
+            "food_lbs": -15,
+            "grace_change": 10,
+            "reciprocity_trigger": "forgive_thief"
+          }
+        },
+        {
+          "id": "demand_punishment",
+          "text": "Demand that justice be served — he must be punished",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -3,
+            "time_days": 0.5,
+            "food_lbs": 0,
+            "grace_change": -4
+          }
+        }
+      ],
+      "probability_weight": 4,
+      "grade_bands": ["6_8"],
+      "is_cwm": true,
+      "cwm_type": "forgive_thief",
+      "terrain_types": null
+    },
+    {
+      "id": "feast_assumption",
+      "category": "feast_day",
+      "type": "assumption_aug15",
+      "title": "The Assumption of Mary — August 15",
+      "description": "Today is the Feast of the Assumption of the Blessed Virgin Mary, one of the holiest days in the Catholic calendar. Some families in your wagon train wish to stop and celebrate with prayer and rest. Others worry about the time lost.",
+      "choices": [
+        {
+          "id": "celebrate",
+          "text": "Rest and celebrate the feast day together as a community",
+          "effects": {
+            "health_change": 3,
+            "morale_change": 12,
+            "time_days": 1,
+            "food_lbs": -8,
+            "grace_change": 8
+          }
+        },
+        {
+          "id": "brief_prayer",
+          "text": "Offer a brief prayer and continue traveling",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 3,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": 2
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "date_aug_15",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "feast_all_saints",
+      "category": "feast_day",
+      "type": "all_saints_nov1",
+      "title": "All Saints' Day — November 1",
+      "description": "Today is All Saints' Day, when the Church honors all the saints in heaven. On the trail, far from any church, your family gathers to remember the holy men and women who have gone before you. Their example gives you strength.",
+      "choices": [
+        {
+          "id": "celebrate",
+          "text": "Spend the day in prayer, rest, and celebration",
+          "effects": {
+            "health_change": 3,
+            "morale_change": 12,
+            "time_days": 1,
+            "food_lbs": -8,
+            "grace_change": 8
+          }
+        },
+        {
+          "id": "brief_prayer",
+          "text": "Offer prayers to the saints and continue on",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 3,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": 2
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "date_nov_1",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "feast_all_souls",
+      "category": "feast_day",
+      "type": "all_souls_nov2",
+      "title": "All Souls' Day — November 2",
+      "description": "Today is All Souls' Day, a day to pray for the faithful departed. Many graves line the trail — emigrants who never finished the journey. Your family pauses to pray for the dead, both those you have known and those you have passed along the way.",
+      "choices": [
+        {
+          "id": "pray_and_rest",
+          "text": "Spend time in prayer for the souls of the departed",
+          "effects": {
+            "health_change": 2,
+            "morale_change": 10,
+            "time_days": 0.5,
+            "food_lbs": -4,
+            "grace_change": 8
+          }
+        },
+        {
+          "id": "brief_remembrance",
+          "text": "Offer a brief prayer and continue traveling",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 3,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": 2
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "date_nov_2",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "sunday_rest",
+      "category": "sabbath",
+      "type": "sunday_rest",
+      "title": "The Lord's Day",
+      "description": "Today is Sunday. Many wagon trains observed the Sabbath by resting from travel, attending prayer services, and spending time with family. But resting means falling behind, and winter waits for no one.",
+      "choices": [
+        {
+          "id": "rest_sunday",
+          "text": "Keep the Sabbath — rest, pray, and do no work",
+          "effects": {
+            "health_change": 5,
+            "morale_change": 8,
+            "time_days": 1,
+            "food_lbs": -5,
+            "grace_change": 5
+          }
+        },
+        {
+          "id": "travel_sunday",
+          "text": "Travel on Sunday — time is too precious to waste",
+          "effects": {
+            "health_change": -2,
+            "morale_change": -3,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -3
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "day_sunday",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "prayer_evening",
+      "category": "prayer",
+      "type": "prayer_offered",
+      "title": "Evening Prayer",
+      "description": "As the sun sets over the prairie, your family gathers around the campfire. The day has been long and hard. Someone suggests offering evening prayers together before sleep.",
+      "choices": [
+        {
+          "id": "pray_together",
+          "text": "Gather the family for evening prayers",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": 3
+          }
+        },
+        {
+          "id": "skip_prayer",
+          "text": "Everyone is too tired — go straight to sleep",
+          "effects": {
+            "health_change": 1,
+            "morale_change": 0,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": 0
+          }
+        }
+      ],
+      "probability_weight": 6,
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "last_rites_event",
+      "category": "sacrament",
+      "type": "last_rites",
+      "title": "Last Rites",
+      "description": "A member of a nearby wagon train is dying. By God's providence, a Catholic priest is traveling with your company. He can administer the Last Rites — but it will require stopping the wagon train.",
+      "choices": [
+        {
+          "id": "stop_for_rites",
+          "text": "Stop so the priest can administer the sacrament",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 5,
+            "time_days": 0.5,
+            "food_lbs": -3,
+            "grace_change": 8
+          }
+        },
+        {
+          "id": "send_priest_alone",
+          "text": "Let the priest go alone — the wagon train must keep moving",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -2,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": 2
+          }
+        }
+      ],
+      "probability_weight": 3,
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "reconciliation_feed_hungry",
+      "category": "reconciliation",
+      "type": "reconciliation_feed_hungry",
+      "title": "A Second Chance — Feeding the Hungry",
+      "description": "You encounter another family on the trail who is running low on food. Their children look thin and tired. You remember the last time someone asked for your help, and you turned them away. Here is another chance.",
+      "choices": [
+        {
+          "id": "help_this_time",
+          "text": "This time, share your food generously",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 10,
+            "time_days": 0.5,
+            "food_lbs": -20,
+            "grace_change": 12,
+            "clears_reconciliation": true
+          }
+        },
+        {
+          "id": "decline_again",
+          "text": "Decline again — your family comes first",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -8
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reconciliation_pending_feed_hungry",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "is_reconciliation": true,
+      "terrain_types": null
+    },
+    {
+      "id": "reconciliation_give_drink",
+      "category": "reconciliation",
+      "type": "reconciliation_give_drink",
+      "title": "A Second Chance — Giving Drink",
+      "description": "A lone traveler stumbles toward your wagon, parched and sunburned. He begs for water. You remember the thirsty family you turned away before. God seems to be offering you another chance to do the right thing.",
+      "choices": [
+        {
+          "id": "help_this_time",
+          "text": "Share your water freely this time",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 10,
+            "time_days": 0,
+            "food_lbs": 0,
+            "water_change": -10,
+            "grace_change": 12,
+            "clears_reconciliation": true
+          }
+        },
+        {
+          "id": "decline_again",
+          "text": "Refuse again — you need the water yourself",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -8
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reconciliation_pending_give_drink",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "is_reconciliation": true,
+      "terrain_types": null
+    },
+    {
+      "id": "reconciliation_visit_sick",
+      "category": "reconciliation",
+      "type": "reconciliation_visit_sick",
+      "title": "A Second Chance — Visiting the Sick",
+      "description": "Another wagon family's mother has fallen ill, and the father does not know what to do. The children are scared. You remember when you chose not to help a sick neighbor before. Will you make a different choice this time?",
+      "choices": [
+        {
+          "id": "help_this_time",
+          "text": "Go to the family, bring medicine, and offer comfort",
+          "effects": {
+            "health_change": -2,
+            "morale_change": 10,
+            "time_days": 0.5,
+            "food_lbs": -5,
+            "medicine_used": 1,
+            "grace_change": 12,
+            "clears_reconciliation": true
+          }
+        },
+        {
+          "id": "decline_again",
+          "text": "Stay away again — you cannot risk getting sick",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -8
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reconciliation_pending_visit_sick",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "is_reconciliation": true,
+      "terrain_types": null
+    },
+    {
+      "id": "reconciliation_shelter_homeless",
+      "category": "reconciliation",
+      "type": "reconciliation_shelter_homeless",
+      "title": "A Second Chance — Sheltering the Homeless",
+      "description": "Rain pours down as night falls. A family with young children huddles by the trail — their tent was carried away by the wind. You recall turning away a family in need before. Tonight, you have a chance to make it right.",
+      "choices": [
+        {
+          "id": "help_this_time",
+          "text": "Welcome them into your camp and share your shelter",
+          "effects": {
+            "health_change": -1,
+            "morale_change": 10,
+            "time_days": 0.5,
+            "food_lbs": -10,
+            "grace_change": 12,
+            "clears_reconciliation": true
+          }
+        },
+        {
+          "id": "decline_again",
+          "text": "Turn them away again — there is not enough room",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -8
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reconciliation_pending_shelter_homeless",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "is_reconciliation": true,
+      "terrain_types": null
+    },
+    {
+      "id": "reconciliation_fair_trade",
+      "category": "reconciliation",
+      "type": "reconciliation_fair_trade",
+      "title": "A Second Chance — Fair Dealing",
+      "description": "A widow is selling her late husband's tools to buy food for her children. The tools are valuable and she does not know their worth. You remember the last time you took advantage of someone's desperation. What will you do now?",
+      "choices": [
+        {
+          "id": "help_this_time",
+          "text": "Pay a fair price and tell her what the tools are worth",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 10,
+            "time_days": 0,
+            "food_lbs": 0,
+            "cash": -8,
+            "grace_change": 12,
+            "clears_reconciliation": true
+          }
+        },
+        {
+          "id": "decline_again",
+          "text": "Take advantage of the low price again",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "cash": -2,
+            "grace_change": -8
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reconciliation_pending_fair_trade",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "is_reconciliation": true,
+      "terrain_types": null
+    },
+    {
+      "id": "reconciliation_forgive_thief",
+      "category": "reconciliation",
+      "type": "reconciliation_forgive_thief",
+      "title": "A Second Chance — Forgiveness",
+      "description": "A young boy is caught stealing bread from another wagon. The wagon master brings him before the company. The boy is crying and clearly starving. You remember when you demanded punishment for a thief instead of showing mercy.",
+      "choices": [
+        {
+          "id": "help_this_time",
+          "text": "Speak up for mercy and offer the boy food",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 10,
+            "time_days": 0,
+            "food_lbs": -10,
+            "grace_change": 12,
+            "clears_reconciliation": true
+          }
+        },
+        {
+          "id": "decline_again",
+          "text": "Stay silent — let justice take its course",
+          "effects": {
+            "health_change": 0,
+            "morale_change": -5,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": -8
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reconciliation_pending_forgive_thief",
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "is_reconciliation": true,
+      "terrain_types": null
+    },
+    {
+      "id": "stranger_returns_feed_hungry",
+      "category": "stranger_returns",
+      "type": "stranger_returns_feed_hungry",
+      "title": "The Stranger Returns",
+      "description": "A wagon pulls alongside yours, and the driver calls out your name. It is the man whose family you fed weeks ago! He has recovered and his family is doing well. He insists on repaying your kindness with supplies from his now-plentiful stores.",
+      "choices": [
+        {
+          "id": "accept_gratefully",
+          "text": "Accept his generous gift with gratitude",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 12,
+            "time_days": 0,
+            "food_lbs": 40,
+            "grace_change": 3
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reciprocity_feed_hungry",
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "stranger_returns_give_drink",
+      "category": "stranger_returns",
+      "type": "stranger_returns_give_drink",
+      "title": "The Grateful Traveler",
+      "description": "The family you shared water with catches up to your wagon train. They found a spring and filled every container they have. Now they want to share their bounty with you, just as you shared with them.",
+      "choices": [
+        {
+          "id": "accept_gratefully",
+          "text": "Accept the water with thanks",
+          "effects": {
+            "health_change": 3,
+            "morale_change": 10,
+            "time_days": 0,
+            "food_lbs": 0,
+            "water_change": 25,
+            "grace_change": 3
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reciprocity_give_drink",
+      "grade_bands": ["k2", "3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "stranger_returns_visit_sick",
+      "category": "stranger_returns",
+      "type": "stranger_returns_visit_sick",
+      "title": "A Doctor's Gratitude",
+      "description": "The man you nursed back to health turns out to have medical knowledge. When one of your party falls ill, he appears at your wagon with herbs and remedies. 'You saved my life,' he says. 'Now let me help save theirs.'",
+      "choices": [
+        {
+          "id": "accept_gratefully",
+          "text": "Accept his medical help with deep gratitude",
+          "effects": {
+            "health_change": 15,
+            "morale_change": 10,
+            "time_days": 0,
+            "food_lbs": 0,
+            "grace_change": 3
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reciprocity_visit_sick",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "stranger_returns_shelter_homeless",
+      "category": "stranger_returns",
+      "type": "stranger_returns_shelter_homeless",
+      "title": "Shelter in the Storm",
+      "description": "A terrible storm hits, and your tent is torn by the wind. Just as your family huddles in the rain, the family you sheltered weeks ago rides up with a spare canvas. 'You gave us shelter when we had nothing,' they say. 'Now it is our turn.'",
+      "choices": [
+        {
+          "id": "accept_gratefully",
+          "text": "Accept the canvas with heartfelt thanks",
+          "effects": {
+            "health_change": 5,
+            "morale_change": 12,
+            "time_days": 0,
+            "food_lbs": 0,
+            "clothing_change": 1,
+            "grace_change": 3
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reciprocity_shelter_homeless",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "stranger_returns_fair_trade",
+      "category": "stranger_returns",
+      "type": "stranger_returns_fair_trade",
+      "title": "An Honest Reward",
+      "description": "The man you traded fairly with has prospered on the trail. He seeks you out to thank you and offers you valuable spare parts at no cost. 'Your honesty when I was desperate meant everything to my family,' he says.",
+      "choices": [
+        {
+          "id": "accept_gratefully",
+          "text": "Accept the spare parts with thanks",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 10,
+            "time_days": 0,
+            "food_lbs": 0,
+            "spare_parts_gained": "axle",
+            "grace_change": 3
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reciprocity_fair_trade",
+      "grade_bands": ["3_5", "6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "stranger_returns_forgive_thief",
+      "category": "stranger_returns",
+      "type": "stranger_returns_forgive_thief",
+      "title": "The Reformed Thief",
+      "description": "A young man approaches your wagon shyly. It takes a moment, but you recognize him — the thief you forgave. He has found work with another wagon train and saved up supplies. He hands you a bundle. 'You showed me mercy when no one else would. I will never forget it.'",
+      "choices": [
+        {
+          "id": "accept_gratefully",
+          "text": "Accept his gift and encourage him on his new path",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 12,
+            "time_days": 0,
+            "food_lbs": 20,
+            "clothing_change": 1,
+            "grace_change": 5
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reciprocity_forgive_thief",
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "stranger_returns_bury_dead",
+      "category": "stranger_returns",
+      "type": "stranger_returns_bury_dead",
+      "title": "A Widow's Thanks",
+      "description": "An elderly woman from another wagon train stops your family. 'I heard you buried a man beside the trail and gave him a Christian burial,' she says with tears in her eyes. 'That was my husband. Thank you for your mercy.' She presses a small pouch of coins into your hand.",
+      "choices": [
+        {
+          "id": "accept_gratefully",
+          "text": "Accept her thanks and promise to pray for her husband",
+          "effects": {
+            "health_change": 0,
+            "morale_change": 12,
+            "time_days": 0,
+            "food_lbs": 0,
+            "cash": 15,
+            "grace_change": 5
+          }
+        }
+      ],
+      "probability_weight": 0,
+      "trigger_condition": "reciprocity_bury_dead",
+      "grade_bands": ["6_8"],
+      "is_cwm": false,
+      "terrain_types": null
+    }
+  ]
+}

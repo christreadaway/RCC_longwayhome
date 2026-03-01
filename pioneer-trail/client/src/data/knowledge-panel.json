@@ -1,0 +1,162 @@
+{
+  "grade_band": "6_8",
+  "cards": [
+    {
+      "id": "cholera_explainer",
+      "trigger_events": ["illness_cholera"],
+      "trigger_landmarks": [],
+      "title": "Cholera: The Trail's Deadliest Killer",
+      "body": "Cholera was the most feared disease on the Oregon Trail, killing more emigrants than any other cause. Caused by bacteria in contaminated water, cholera could strike a healthy person in the morning and kill them by nightfall. The disease spread rapidly through wagon trains because emigrants drew water from the same rivers and streams used by thousands of travelers. Doctors of the era had no understanding of germ theory and often prescribed treatments that made patients worse. It is estimated that between 6,000 and 10,000 emigrants died of cholera along the trail during the peak migration years of 1849-1855.",
+      "image_key": "cholera_camp",
+      "grade_level": "6_8",
+      "sources": [
+        "Unruh, John D. 'The Plains Across.' University of Illinois Press, 1979.",
+        "Centers for Disease Control and Prevention. 'History of Cholera.'",
+        "National Park Service. 'Diseases on the Overland Trails.'"
+      ]
+    },
+    {
+      "id": "platte_river",
+      "trigger_events": [],
+      "trigger_landmarks": ["fort_kearney", "chimney_rock"],
+      "title": "The Platte River Road",
+      "body": "For nearly 500 miles, the Oregon Trail followed the Platte River across present-day Nebraska. Emigrants called it 'too thick to drink, too thin to plow' because of its heavy sediment. The Platte was wide and shallow, sometimes a mile across but rarely more than a few feet deep. Despite its muddy appearance, the Platte River valley was the natural highway of the Great Plains, providing water for livestock, fuel from dried buffalo dung (called 'buffalo chips'), and a relatively flat path for heavy wagons. The Platte River Road was the busiest stretch of the entire trail.",
+      "image_key": "platte_river",
+      "grade_level": "6_8",
+      "sources": [
+        "Mattes, Merrill J. 'The Great Platte River Road.' University of Nebraska Press, 1969.",
+        "National Park Service. 'The Platte River Valley.' Oregon National Historic Trail."
+      ]
+    },
+    {
+      "id": "jesuits_frontier",
+      "trigger_events": [],
+      "trigger_landmarks": ["st_marys_mission"],
+      "title": "Jesuits on the Frontier",
+      "body": "Catholic Jesuit missionaries were among the earliest Europeans to explore the Rocky Mountain West. Father Pierre-Jean De Smet, a Belgian Jesuit, made multiple expeditions into the Rocky Mountains beginning in 1840, establishing missions among Native American tribes who had requested Catholic priests. The Jesuits learned native languages, created dictionaries, and built schools and churches. St. Mary's Mission in present-day Montana was one of several Jesuit foundations. Unlike some Protestant missionaries of the era, the Jesuits often sought to work within existing native cultures rather than completely replacing them.",
+      "image_key": "jesuit_mission",
+      "grade_level": "6_8",
+      "sources": [
+        "Carriker, Robert C. 'Father Peter John De Smet: Jesuit in the West.' University of Oklahoma Press, 1995.",
+        "Burns, Robert Ignatius. 'The Jesuits and the Indian Wars of the Northwest.' Yale University Press, 1966."
+      ]
+    },
+    {
+      "id": "fort_laramie_history",
+      "trigger_events": [],
+      "trigger_landmarks": ["fort_laramie"],
+      "title": "Fort Laramie: Crossroads of the West",
+      "body": "Fort Laramie began as a fur trading post in 1834, built by William Sublette and Robert Campbell. Originally called Fort William, it was a center of the Rocky Mountain fur trade. As emigrant traffic increased in the 1840s, the U.S. Army purchased the fort in 1849 for $4,000 to protect travelers and maintain peace. Fort Laramie became the most important stopping point on the entire trail. Here, emigrants rested, repaired wagons, posted letters, and made the critical decision about what to keep and what to abandon before the mountain crossing. Piles of discarded furniture, stoves, and heavy goods lined the trail near the fort.",
+      "image_key": "fort_laramie",
+      "grade_level": "6_8",
+      "sources": [
+        "Lavender, David. 'Fort Laramie and the Changing Frontier.' National Park Service, 1983.",
+        "National Park Service. 'Fort Laramie National Historic Site.'"
+      ]
+    },
+    {
+      "id": "bison_herds",
+      "trigger_events": [],
+      "trigger_landmarks": ["fort_kearney", "chimney_rock", "fort_laramie"],
+      "title": "The Great Bison Herds",
+      "body": "Before emigrant traffic disrupted their habitat, the Great Plains were home to an estimated 30-60 million American bison. Emigrants on the Oregon Trail frequently encountered herds so vast they darkened the horizon and took hours to pass. Bison provided food, fuel, and leather, but overhunting by emigrants and commercial hunters dramatically reduced their numbers. By the 1870s, the great herds were nearly gone. The bison were sacred to the Plains Indian tribes, who used every part of the animal. The destruction of the herds had devastating consequences for Native American ways of life across the entire Great Plains.",
+      "image_key": "bison_herd",
+      "grade_level": "6_8",
+      "sources": [
+        "Isenberg, Andrew C. 'The Destruction of the Bison.' Cambridge University Press, 2000.",
+        "National Park Service. 'Bison and the Oregon Trail.'"
+      ]
+    },
+    {
+      "id": "death_on_trail",
+      "trigger_events": ["illness_cholera", "illness_typhoid", "illness_dysentery"],
+      "trigger_landmarks": [],
+      "title": "Death on the Trail",
+      "body": "Death was a constant companion on the Oregon Trail. Historians estimate that approximately 1 in 10 emigrants who started the journey did not survive to reach Oregon. The leading causes of death were disease (especially cholera, typhoid, and dysentery), accidental injuries (gunshot wounds, drowning, being crushed by wagon wheels), and exposure to harsh weather. Graves lined both sides of the trail for its entire length. Emigrants often buried their dead quickly and drove wagons over the graves to prevent animals from disturbing them. Despite the dangers, hundreds of thousands of people chose to make the journey, driven by the promise of free land and a new life in Oregon.",
+      "image_key": "trail_grave",
+      "grade_level": "6_8",
+      "sources": [
+        "Unruh, John D. 'The Plains Across.' University of Illinois Press, 1979.",
+        "National Oregon/California Trail Center. 'Trail Facts and Statistics.'"
+      ]
+    },
+    {
+      "id": "wagon_construction",
+      "trigger_events": ["hazard_wagon_breakdown_wheel", "hazard_wagon_breakdown_axle", "hazard_wagon_breakdown_tongue"],
+      "trigger_landmarks": [],
+      "title": "The Prairie Schooner",
+      "body": "The typical emigrant wagon was not the massive Conestoga freight wagon, but a smaller, lighter vehicle called a 'prairie schooner.' Built on a farm wagon frame with a canvas-covered wooden body, it measured about 10 feet long and 4 feet wide. A good prairie schooner cost between $200 and $400. The wagons were designed to carry about 2,500 pounds of supplies — not passengers. Most emigrants walked the entire 2,000-mile journey because the wagons were too full and the ride too rough. Spare parts (wheels, axles, and tongues) were essential because breakdowns were inevitable on the rugged trail. A broken axle with no spare could end a family's journey entirely.",
+      "image_key": "prairie_schooner",
+      "grade_level": "6_8",
+      "sources": [
+        "National Historic Oregon Trail Interpretive Center. 'Wagon Facts.'",
+        "Parkman, Francis. 'The Oregon Trail.' Little, Brown and Company, 1849."
+      ]
+    },
+    {
+      "id": "donner_party",
+      "trigger_events": [],
+      "trigger_landmarks": ["fort_bridger", "south_pass"],
+      "title": "The Donner Party: A Cautionary Tale",
+      "body": "The Donner Party is the most infamous disaster in Oregon Trail history. In 1846, a group of 87 emigrants led by George Donner took an untested shortcut called the Hastings Cutoff, which was supposed to save time. Instead, the detour through the Wasatch Mountains and Great Salt Lake Desert cost them weeks. They reached the Sierra Nevada mountains too late in the season and were trapped by early snowfall near present-day Truckee, California. Of the 87 members of the party, only 48 survived the winter. The Donner Party's tragedy served as a powerful warning to future emigrants: stay on the proven trail and never underestimate the mountains.",
+      "image_key": "mountain_pass",
+      "grade_level": "6_8",
+      "sources": [
+        "Rarick, Ethan. 'Desperate Passage: The Donner Party's Perilous Journey West.' Oxford University Press, 2008.",
+        "McGlashan, C.F. 'History of the Donner Party: A Tragedy of the Sierra.' 1880."
+      ]
+    },
+    {
+      "id": "sabbath_trail",
+      "trigger_events": ["sunday_rest"],
+      "trigger_landmarks": [],
+      "title": "Keeping the Sabbath on the Trail",
+      "body": "Observing the Sabbath was a deeply important question for Oregon Trail emigrants, most of whom were devout Christians. Many wagon trains had strict rules about resting on Sundays: no travel, no unnecessary work, and mandatory church services led by an elected chaplain or traveling minister. However, the pressure to reach Oregon before winter created intense debates within wagon companies. Some argued that God would understand the necessity of Sunday travel. Others insisted that keeping the Sabbath was essential and that God would protect those who honored His day. Historical records suggest that wagon trains which rested on Sundays often arrived in Oregon in better health because the regular rest benefited both people and livestock.",
+      "image_key": "sabbath_camp",
+      "grade_level": "6_8",
+      "sources": [
+        "Schlissel, Lillian. 'Women's Diaries of the Westward Journey.' Schocken Books, 1982.",
+        "National Park Service. 'Religion on the Overland Trails.'"
+      ]
+    },
+    {
+      "id": "whitman_mission_history",
+      "trigger_events": [],
+      "trigger_landmarks": ["whitman_mission"],
+      "title": "The Whitman Mission",
+      "body": "Marcus and Narcissa Whitman established their mission among the Cayuse people near present-day Walla Walla, Washington, in 1836. Narcissa Whitman and Eliza Spalding were the first European-American women to cross the Rocky Mountains overland, proving that families could make the journey. The Whitmans provided critical aid to exhausted emigrants arriving from the Snake River country. However, tensions between the missionaries and the Cayuse people grew over the years, fueled by cultural misunderstandings and a devastating measles epidemic in 1847. The Cayuse blamed the Whitmans for the epidemic, which killed many of their people while most of the white settlers survived. The resulting conflict led to the tragic deaths of Marcus, Narcissa, and eleven others.",
+      "image_key": "whitman_mission",
+      "grade_level": "6_8",
+      "sources": [
+        "Jeffrey, Julie Roy. 'Converting the West: A Biography of Narcissa Whitman.' University of Oklahoma Press, 1991.",
+        "National Park Service. 'Whitman Mission National Historic Site.'"
+      ]
+    },
+    {
+      "id": "hospitality_trail",
+      "trigger_events": ["cwm_feed_hungry", "cwm_give_drink", "cwm_shelter_homeless", "cwm_visit_sick"],
+      "trigger_landmarks": [],
+      "title": "Hospitality on the Trail",
+      "body": "Despite the hardships and competition for resources, the Oregon Trail was also a place of remarkable generosity. Emigrant diaries are filled with accounts of strangers sharing food, medicine, and labor with those in need. Wagon trains routinely stopped to help other companies repair broken wagons or nurse the sick. When a family lost their oxen, neighbors would lend their own teams. This spirit of mutual aid was rooted in both practical necessity — everyone might need help tomorrow — and deep religious conviction. Many emigrants saw acts of charity on the trail as sacred duties, citing Scripture and the teachings of their churches as their motivation for helping strangers.",
+      "image_key": "trail_campfire",
+      "grade_level": "6_8",
+      "sources": [
+        "Faragher, John Mack. 'Women and Men on the Overland Trail.' Yale University Press, 1979.",
+        "Holmes, Kenneth L. 'Covered Wagon Women: Diaries and Letters from the Western Trails.' University of Nebraska Press, 1983."
+      ]
+    },
+    {
+      "id": "oregon_country",
+      "trigger_events": [],
+      "trigger_landmarks": ["the_dalles", "willamette_valley"],
+      "title": "Oregon Country: The Promised Land",
+      "body": "Oregon Country — the vast territory stretching from the Rocky Mountains to the Pacific Ocean — was jointly occupied by the United States and Great Britain from 1818 to 1846. American emigrants were encouraged to settle in the Willamette Valley to strengthen the U.S. claim to the territory. The Donation Land Claim Act of 1850 offered 320 acres of free land to every white male settler (640 acres to married couples), a powerful incentive for families to make the dangerous journey. The mild climate, rich soil, and abundant rainfall of the Willamette Valley made it ideal for farming. By 1860, over 53,000 emigrants had traveled the Oregon Trail, and the territory became a state in 1859.",
+      "image_key": "willamette_valley",
+      "grade_level": "6_8",
+      "sources": [
+        "Meinig, D.W. 'The Great Columbia Plain: A Historical Geography.' University of Washington Press, 1968.",
+        "National Park Service. 'Oregon National Historic Trail: History and Culture.'"
+      ]
+    }
+  ]
+}

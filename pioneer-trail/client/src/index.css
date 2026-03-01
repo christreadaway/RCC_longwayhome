@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Lora', Georgia, serif;
+    color: #3a2e1e;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-trail-brown text-white px-6 py-2 rounded-lg font-semibold
+           hover:bg-trail-darkBrown transition-colors shadow-md;
+  }
+  .btn-secondary {
+    @apply bg-trail-blue text-white px-6 py-2 rounded-lg font-semibold
+           hover:bg-trail-darkBlue transition-colors shadow-md;
+  }
+  .btn-danger {
+    @apply bg-trail-red text-white px-6 py-2 rounded-lg font-semibold
+           hover:bg-red-800 transition-colors shadow-md;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-lg p-6 border border-trail-tan/30;
+  }
+  .card-parchment {
+    @apply bg-trail-parchment rounded-xl shadow-lg p-6 border border-trail-tan;
+  }
+  .input-field {
+    @apply w-full px-4 py-2 border border-trail-tan rounded-lg bg-white
+           focus:outline-none focus:ring-2 focus:ring-trail-blue/50;
+  }
+  .select-field {
+    @apply w-full px-4 py-2 border border-trail-tan rounded-lg bg-white
+           focus:outline-none focus:ring-2 focus:ring-trail-blue/50 appearance-none;
+  }
+
+  .trail-progress-bar {
+    @apply h-3 rounded-full overflow-hidden bg-gray-200;
+  }
+  .trail-progress-fill {
+    @apply h-full rounded-full transition-all duration-500;
+  }
+
+  .health-good { @apply text-green-600; }
+  .health-fair { @apply text-yellow-600; }
+  .health-poor { @apply text-orange-600; }
+  .health-critical { @apply text-red-600 font-bold; }
+  .health-dead { @apply text-gray-500 line-through; }
+
+  .grace-high { @apply text-yellow-500; }
+  .grace-moderate { @apply text-gray-500; }
+  .grace-low { @apply text-orange-500; }
+  .grace-depleted { @apply text-red-600; }
+
+  .scene-card {
+    @apply rounded-2xl overflow-hidden shadow-xl border-2 border-trail-tan;
+  }
+}
+
+/* Parallax background layers */
+.parallax-bg {
+  position: relative;
+  overflow: hidden;
+}
+.parallax-layer {
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+}
+
+/* Wagon animation */
+@keyframes wagon-rock {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+.wagon-animate {
+  animation: wagon-rock 2s ease-in-out infinite;
+}
+
+/* Weather effects */
+@keyframes rain-fall {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes snow-fall {
+  0% { transform: translateY(-10vh) translateX(0); }
+  100% { transform: translateY(100vh) translateX(20px); }
+}
+
+/* Moral label animations */
+@keyframes label-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes label-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.moral-label-enter {
+  animation: label-slide-in 0.4s ease-out;
+}
+.moral-label-exit {
+  animation: label-fade-out 0.8s ease-out forwards;
+}
+
+/* Pulsing knowledge panel icon */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(212, 160, 23, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(212, 160, 23, 0.7); }
+}
+.knowledge-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

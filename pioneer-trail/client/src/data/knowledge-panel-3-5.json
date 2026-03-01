@@ -1,0 +1,71 @@
+{
+  "grade_band": "3_5",
+  "description": "Simplified knowledge cards for 3-5 grade band with age-appropriate language and shorter content.",
+  "cards": [
+    {
+      "id": "prairie_schooner_35",
+      "trigger_events": ["hazard_wagon_breakdown_wheel", "hazard_wagon_breakdown_axle", "hazard_wagon_breakdown_tongue"],
+      "trigger_landmarks": [],
+      "title": "The Covered Wagon",
+      "body": "Pioneer families traveled in small wagons called 'prairie schooners.' These wagons were about the size of a large bed and were pulled by oxen. Most families walked beside the wagon because it was too full of supplies for people to ride in! The bumpy ride was so rough that only sick people or small children rode inside. Families brought spare parts because broken wheels and axles were very common on the rocky trail.",
+      "image_key": "prairie_schooner",
+      "grade_level": "3_5",
+      "sources": [
+        "National Historic Oregon Trail Interpretive Center. 'Wagon Facts.'",
+        "National Park Service. 'Oregon National Historic Trail.'"
+      ]
+    },
+    {
+      "id": "trail_life_35",
+      "trigger_events": ["illness_exhaustion"],
+      "trigger_landmarks": ["fort_kearney"],
+      "title": "A Day on the Trail",
+      "body": "Pioneer families woke up before sunrise every day. They ate breakfast, packed the wagon, and started walking by 7 in the morning. They walked 15 to 20 miles every day — that is like walking from one end of a city to the other! Children helped gather firewood, fetch water, and watch the younger kids. At night, families circled their wagons, cooked dinner over a campfire, and went to sleep under the stars. It was hard work, but families did it together.",
+      "image_key": "trail_campfire",
+      "grade_level": "3_5",
+      "sources": [
+        "Schlissel, Lillian. 'Women's Diaries of the Westward Journey.' Schocken Books, 1982.",
+        "National Park Service. 'Life on the Trail.'"
+      ]
+    },
+    {
+      "id": "river_crossings_35",
+      "trigger_events": ["hazard_river_crossing"],
+      "trigger_landmarks": ["green_river", "snake_river"],
+      "title": "Crossing the Rivers",
+      "body": "Rivers were some of the most dangerous parts of the Oregon Trail. There were no bridges, so families had to find a way to get their heavy wagons across deep, fast-moving water. Some families drove their wagons straight through the water (called 'fording'). Others sealed their wagons with tar to make them float like boats. If they were lucky, there might be a ferry — a flat boat that carried wagons across for a fee. Many supplies and even some people were lost during river crossings.",
+      "image_key": "river_crossing",
+      "grade_level": "3_5",
+      "sources": [
+        "National Park Service. 'River Crossings on the Oregon Trail.'",
+        "Unruh, John D. 'The Plains Across.' University of Illinois Press, 1979."
+      ]
+    },
+    {
+      "id": "helping_others_35",
+      "trigger_events": ["cwm_feed_hungry", "cwm_give_drink", "cwm_visit_sick", "cwm_shelter_homeless"],
+      "trigger_landmarks": [],
+      "title": "Helping Each Other on the Trail",
+      "body": "Even though the journey was hard and supplies were limited, pioneer families often helped each other. If a family ran out of food, their neighbors shared. If someone got sick, other families would take care of them. If a wagon broke down, men from other wagons would help fix it. Pioneers knew that they might need help tomorrow, so helping others was both kind and smart. Many pioneers said that their faith taught them to love their neighbors, even strangers on the trail.",
+      "image_key": "trail_campfire",
+      "grade_level": "3_5",
+      "sources": [
+        "Faragher, John Mack. 'Women and Men on the Overland Trail.' Yale University Press, 1979.",
+        "National Park Service. 'Community on the Trail.'"
+      ]
+    },
+    {
+      "id": "landmarks_35",
+      "trigger_events": [],
+      "trigger_landmarks": ["chimney_rock", "independence_rock"],
+      "title": "Famous Trail Landmarks",
+      "body": "Pioneer families used natural landmarks to know where they were on the trail. Chimney Rock, a tall tower of rock in Nebraska, was the most famous — almost every pioneer wrote about it in their diary! Independence Rock in Wyoming was called the 'Register of the Desert' because thousands of pioneers carved their names into it. Reaching Independence Rock by the Fourth of July meant you were on schedule to cross the mountains before winter snow blocked the passes.",
+      "image_key": "chimney_rock",
+      "grade_level": "3_5",
+      "sources": [
+        "National Park Service. 'Chimney Rock National Historic Site.'",
+        "National Park Service. 'Independence Rock.'"
+      ]
+    }
+  ]
+}
