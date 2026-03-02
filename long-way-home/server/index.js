@@ -102,15 +102,17 @@ app.use((err, _req, res, _next) => {
 });
 
 /* ------------------------------------------------------------------ */
-/*  Start server                                                        */
+/*  Start server (only when run directly, not when imported)            */
 /* ------------------------------------------------------------------ */
 
-app.listen(PORT, () => {
-  logger.info('SERVER_STARTED', {
-    port: PORT,
-    nodeEnv: process.env.NODE_ENV || 'development',
-    logLevel: process.env.LOG_LEVEL || 'info',
+if (require.main === module) {
+  app.listen(PORT, () => {
+    logger.info('SERVER_STARTED', {
+      port: PORT,
+      nodeEnv: process.env.NODE_ENV || 'development',
+      logLevel: process.env.LOG_LEVEL || 'info',
+    });
   });
-});
+}
 
 module.exports = app;
