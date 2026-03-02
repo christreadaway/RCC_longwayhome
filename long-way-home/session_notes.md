@@ -371,4 +371,75 @@ Chris requested comprehensive trip management features: daily weather affecting 
 
 ---
 
+## Session 6 — Bible, Item Loss, Profession Difficulty Tiers & Balance Playtest (2026-03-02)
+
+### Context
+Chris requested: Bible as purchasable/giftable item, items (books, tools, Bible) that can be lost/destroyed/stolen on the journey, profession difficulty labels (Easy/Medium/Hard), and cash rebalancing verified by Monte Carlo simulation.
+
+### What was built
+
+#### Bible System
+- **Holy Bible (Douay-Rheims), $25** — purchasable at the store or received as a gift at mission landmarks (40% chance if not owned)
+- Effects:
+  - `prayerGraceBonus: +2` — amplifies prayer grace (praying with Scripture)
+  - `moraleFloor: 5` — morale can't drop below 5 if you have a Bible
+  - `restMoraleBonus: +3` — extra morale on Sunday rest and regular rest
+  - `deathMoraleMitigation: 0.3` — reduces morale loss from party deaths by 30%
+  - `sundayRestGraceBonus: +3` — extra grace on Sunday rest (reading Scripture)
+- Wired into: `handleSundayChoice`, `handleRest`, prayer button, `UPDATE_MORALE` reducer
+- Can be received from missionaries at mission landmarks during travel
+
+#### Item Loss Mechanics
+- Items (Farmer's Almanac, Trail Guide, Tool Set, Bible) can be lost, destroyed, or stolen during dangerous events
+- Triggers: river crossings, theft, fire, storms, mechanical breakdowns — any danger in these categories
+- 12% chance per qualifying danger event (when items are owned)
+- Loss verbs are context-appropriate: "was stolen" (theft), "was lost in the crossing" (river), "was destroyed" (fire/storm)
+- `LOSE_ITEM` reducer action in GameContext for clean state management
+- Lost items lose all their gameplay benefits immediately
+
+#### Profession Difficulty Tiers (Balance-Tested)
+- Ran 500-run Monte Carlo simulation across multiple cash configurations
+- Final values validated by `balancePlaytest.mjs`:
+  - **Tradesman $1,200 (Easy)** — 78.2% arrival, 96-100% repair success, 0 days lost to repairs
+  - **Farmer $900 (Medium)** — 77.0% arrival, 88-91% repair success, ~1 day lost to repairs
+  - **Banker $650 (Hard)** — 68.8% arrival, 72-74% repair success, ~2 days lost to repairs
+- SetupScreen updated: professions displayed easiest-first with color-coded difficulty badges
+- Default selection changed to Tradesman (easiest, first in list)
+- Cash ordering is consistent with difficulty: more money = easier
+
+#### Supply Store Updates
+- Bible added as toggle item alongside books and tools
+- Available for 6-8 and 3-5 grade bands
+
+### Files created
+- `client/src/game/__tests__/balancePlaytest.mjs` — 500-run Monte Carlo balance simulation
+
+### Files modified
+- `client/src/shared/types.js` — Added `STORE_BIBLE`, updated `PROFESSION_CASH` to difficulty-tiered values
+- `shared/types.js` — Updated `PROFESSION_CASH` to match client
+- `client/src/store/GameContext.jsx` — Added `hasBible` state, `LOSE_ITEM` reducer, Bible morale floor/death mitigation in `UPDATE_MORALE`
+- `client/src/components/game/TravelScreen.jsx` — Bible wiring (Sunday rest, rest, prayer), item loss in danger events, Bible gift at missions
+- `client/src/components/game/SupplyStore.jsx` — Bible toggle item
+- `client/src/components/game/SetupScreen.jsx` — Difficulty labels, reordered professions (Easy/Medium/Hard), default to Tradesman
+
+### Key decisions
+- **Bible is cheap ($25)** — spiritual benefits are accessible to any profession, but the material cost is a real trade-off for the tradesman's tight budget
+- **Item loss at 12%** — high enough to create tension but not so frequent that buying items feels pointless
+- **Difficulty tiers, not equal balance** — professions intentionally represent Easy/Medium/Hard modes. The tradesman's repair mastery plus adequate funds makes the game comfortable; the banker's wealth can't buy trail skills.
+- **Cash ordering consistent with difficulty** — most money = easiest, smallest budget = hardest. The "paradox" (tradesman gets more than banker) is explained by the difficulty label.
+- **Monte Carlo validation** — profession balance claims backed by 500-run statistical simulation, not guesswork
+
+### Open items
+- [ ] Consider profession-specific scoring multipliers (banker gets bonus points for difficulty)
+- [ ] Test Bible gift at mission landmarks during full playthrough
+- [ ] Verify item loss messages display correctly in all danger categories
+- [ ] Test that Bible morale floor interacts correctly with chaplain morale floor
+- [ ] Test AI Historian with real API key
+- [ ] Test K-2 simplified trail flow
+- [ ] Test 3-5 intermediate variant
+- [ ] Performance test on Chromebook-equivalent specs
+- [ ] Add database for persistent classroom sessions (v2)
+
+---
+
 *Add new session entries below as the project evolves.*

@@ -412,6 +412,19 @@ All fixes verified via clean production build (66 modules, 107KB gzipped).
 - 24 passing tests (12 weather + 12 camp activities)
 - Production build verified: 76 modules, 455KB JS (140KB gzipped)
 
+### v1.0.5 — Bible, Item Loss, Profession Difficulty Tiers (2026-03-02)
+
+- Added Holy Bible (Douay-Rheims, $25) with prayer/morale/grace bonuses; can be gifted at mission landmarks
+- Items (books, tools, Bible) can now be lost, destroyed, or stolen during river crossings, theft, fire, and storms (12% chance per qualifying danger)
+- `LOSE_ITEM` reducer action for clean item state management
+- Profession cash rebalanced via 500-run Monte Carlo simulation for difficulty tiers:
+  - Tradesman $1,200 (Easy) — 78% arrival, 96%+ repair rate
+  - Farmer $900 (Medium) — 77% arrival, 89% repair rate
+  - Banker $650 (Hard) — 69% arrival, 72% repair rate
+- SetupScreen shows color-coded difficulty badges (Easy/Medium/Hard)
+- Balance playtest script (`balancePlaytest.mjs`) for ongoing tuning
+- Production build verified: 76 modules, 464KB JS (143KB gzipped)
+
 ---
 
 *This document should be updated as features are added, bugs are fixed, and architectural decisions are made.*
