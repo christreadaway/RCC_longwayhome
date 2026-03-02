@@ -32,6 +32,25 @@ Catholic design framework: `catholic.md`
 
 ---
 
+## Architecture — Engine vs. Game Content
+
+**Critical design principle:** The engine must never contain game-specific content. Oregon Trail, 1848, Jesuit missions, specific diseases — none of that lives in the engine. It lives in the game's `content/` folder. This keeps the engine extractable for future games (Journey of Paul, Mayflower, etc.) without refactoring.
+
+```
+Engine knows about:          Game content provides:
+─────────────────────        ──────────────────────────
+- Trail/journey progression  - Specific landmarks + distances
+- Grace meter                - Era-appropriate event text
+- Personality system         - NPC characters + dialogue
+- Event firing framework     - Moral label copy
+- Moral label system         - Knowledge panel cards
+- Teacher dashboard          - Catholic curriculum references
+- AI proxy                   - Route definitions
+- Grade band flags           - Illness/hazard tables
+```
+
+If you can't add a second game by just swapping the `content/` folder and `game.config.js`, the engine boundary has been violated. Claude Code should enforce this strictly.
+
 ## Project Structure
 
 ```
@@ -77,19 +96,36 @@ long-way-home/
 │   │   ├── npc.js
 │   │   ├── insights.js
 │   │   └── export.js
-│   ├── state/
-│   │   └── store.js
-│   ├── ai/
-│   │   ├── prompts.js         # Prompts for all 3 grade bands + all AI features
-│   │   └── proxy.js
+│   ├── state/store.js
 │   └── logger.js
+│
 ├── shared/
-│   └── types.js
+│   └── types.js               # Shared data structures
+│
 ├── .env.example
 ├── CLAUDE.md
 ├── the-long-way-home-requirements.md
 └── catholic.md
 ```
+
+## Future Games (same engine, different content/)
+
+When Journey of Paul is ready:
+```
+games/
+├── long-way-home/       ← Oregon Trail, 1848
+├── journey-of-paul/     ← Mediterranean, 50 AD, Acts of the Apostles
+│   ├── content/
+│   │   ├── events.json         # Shipwrecks, imprisonments, conversions
+│   │   ├── landmarks.json      # Damascus→Jerusalem→Antioch→Corinth→Rome
+│   │   ├── npcs.json           # Barnabas, Luke, Timothy, Silas, Lydia
+│   │   └── moral-labels.json   # Early Church framework
+│   └── game.config.js
+├── mayflower/           ← Atlantic crossing, 1620
+└── the-crusades/        ← Europe to Holy Land, 1095+ (complex moral terrain)
+```
+
+The engine extraction step happens naturally when game #2 is started. Don't extract prematurely — build Long Way Home first, then extract the engine when Journey of Paul begins. You'll know exactly what's shared by then.
 
 ---
 
