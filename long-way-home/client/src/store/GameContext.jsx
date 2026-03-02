@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS } from '@shared/types';
+import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE } from '@shared/types';
 
 const GameContext = createContext(null);
 const GameDispatchContext = createContext(null);
@@ -34,6 +34,7 @@ const initialState = {
   hasFarmersAlmanac: false,
   hasTrailGuide: false,
   hasToolSet: false,
+  hasBible: false,
 
   // Trail
   currentLandmarkIndex: 0,
@@ -152,7 +153,8 @@ function gameReducer(state, action) {
         waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons,
         hasFarmersAlmanac: action.hasFarmersAlmanac !== undefined ? action.hasFarmersAlmanac : state.hasFarmersAlmanac,
         hasTrailGuide: action.hasTrailGuide !== undefined ? action.hasTrailGuide : state.hasTrailGuide,
-        hasToolSet: action.hasToolSet !== undefined ? action.hasToolSet : state.hasToolSet
+        hasToolSet: action.hasToolSet !== undefined ? action.hasToolSet : state.hasToolSet,
+        hasBible: action.hasBible !== undefined ? action.hasBible : state.hasBible
       };
     }
 
@@ -254,12 +256,22 @@ function gameReducer(state, action) {
     }
 
     case 'UPDATE_MORALE': {
+      // Bible provides a small morale floor (Scripture brings comfort)
+      const bibleFloor = state.hasBible ? STORE_BIBLE.effects.moraleFloor : 0;
       const chaplainFloor = state.chaplainInParty ? GAME_CONSTANTS.MORALE_CHAPLAIN_FLOOR : 0;
-      let newMorale = Math.max(chaplainFloor, Math.min(100, state.morale + action.delta));
+      const effectiveFloor = Math.max(chaplainFloor, bibleFloor);
+
+      // Bible mitigates morale loss from deaths
+      let adjustedDelta = action.delta;
+      if (action.delta < 0 && state.hasBible && action.trigger === 'death') {
+        adjustedDelta = Math.round(action.delta * (1 - STORE_BIBLE.effects.deathMoraleMitigation));
+      }
+
+      let newMorale = Math.max(effectiveFloor, Math.min(100, state.morale + adjustedDelta));
 
       // DEPLETED grace enforces a morale ceiling
       if (state.grace < 15) {
-        const depletedCeiling = state.chaplainInParty ? GAME_CONSTANTS.MORALE_CHAPLAIN_FLOOR : 0;
+        const depletedCeiling = Math.max(chaplainFloor, bibleFloor);
         newMorale = Math.min(newMorale, depletedCeiling);
       }
 
@@ -286,6 +298,18 @@ function gameReducer(state, action) {
         ...state,
         waterGallons: Math.min(capacity, state.waterGallons + (action.amount || capacity))
       };
+    }
+
+    case 'LOSE_ITEM': {
+      // Items (books, tools, Bible) can be lost, destroyed, or stolen
+      const updates = {};
+      if (action.item === 'bible' && state.hasBible) updates.hasBible = false;
+      if (action.item === 'farmers_almanac' && state.hasFarmersAlmanac) updates.hasFarmersAlmanac = false;
+      if (action.item === 'trail_guide' && state.hasTrailGuide) updates.hasTrailGuide = false;
+      if (action.item === 'tool_set' && state.hasToolSet) updates.hasToolSet = false;
+      if (Object.keys(updates).length === 0) return state;
+      logger.warn('ITEM_LOST', { item: action.item, cause: action.cause, day: state.trailDay });
+      return { ...state, ...updates };
     }
 
     case 'SET_EVENT': {

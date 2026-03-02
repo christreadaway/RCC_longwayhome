@@ -13,7 +13,7 @@ export default function SetupScreen() {
   const [companions, setCompanions] = useState(
     isK2 ? ['', ''] : ['', '', '', '']
   );
-  const [profession, setProfession] = useState('farmer');
+  const [profession, setProfession] = useState('tradesman');
   const [includeChaplain, setIncludeChaplain] = useState(false);
   const [error, setError] = useState('');
 
@@ -114,9 +114,9 @@ export default function SetupScreen() {
             <label className="block text-sm font-semibold text-trail-darkBrown mb-1">Profession</label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: 'banker', label: 'Banker', cash: `$${PROFESSION_CASH.banker}`, trait: 'Most money, no trail skills', traitColor: 'text-orange-600' },
-                { id: 'farmer', label: 'Farmer', cash: `$${PROFESSION_CASH.farmer}`, trait: 'Balanced — can fix some things', traitColor: 'text-trail-brown' },
-                { id: 'tradesman', label: 'Tradesman', cash: `$${PROFESSION_CASH.tradesman}`, trait: 'Least money, master of repairs', traitColor: 'text-green-700' }
+                { id: 'tradesman', label: 'Tradesman', cash: `$${PROFESSION_CASH.tradesman}`, difficulty: 'Easy', diffColor: 'text-green-700 bg-green-50', trait: 'Master of repairs, never loses time' },
+                { id: 'farmer', label: 'Farmer', cash: `$${PROFESSION_CASH.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced — can fix some things' },
+                { id: 'banker', label: 'Banker', cash: `$${PROFESSION_CASH.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills — repairs cost time and parts' }
               ].map(p => (
                 <button
                   key={p.id}
@@ -129,8 +129,9 @@ export default function SetupScreen() {
                   }`}
                 >
                   <div className="font-semibold">{p.label}</div>
-                  <div className="text-sm font-bold text-trail-blue">{p.cash}</div>
-                  <div className={`text-[10px] mt-0.5 ${p.traitColor}`}>{p.trait}</div>
+                  <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-0.5 ${p.diffColor}`}>{p.difficulty}</div>
+                  <div className="text-sm font-bold text-trail-blue mt-1">{p.cash}</div>
+                  <div className="text-[10px] mt-0.5 text-trail-brown">{p.trait}</div>
                 </button>
               ))}
             </div>

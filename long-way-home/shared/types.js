@@ -12,11 +12,15 @@
  * @typedef {'positive' | 'negative'} LabelValence
  */
 
-/** @type {Object<Profession, number>} */
+/**
+ * Profession starting cash — inversely correlated with skill.
+ * Difficulty tiers: Tradesman (Easy) > Farmer (Medium) > Banker (Hard)
+ * @type {Object<Profession, number>}
+ */
 export const PROFESSION_CASH = {
-  banker: 1600,
-  farmer: 800,
-  tradesman: 400
+  tradesman: 1200,
+  farmer: 900,
+  banker: 650
 };
 
 export const HEALTH_ORDER = ['good', 'fair', 'poor', 'critical', 'dead'];

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { STORE_BOOKS, STORE_TOOLS } from '@shared/types';
+import { STORE_BOOKS, STORE_TOOLS, STORE_BIBLE } from '@shared/types';
 
 const STORE_ITEMS = {
   oxenYokes: { name: 'Oxen (yoke)', price: 40, min: 1, max: 9, unit: 'yoke', desc: 'You need at least 1 yoke to move.' },
@@ -13,8 +13,9 @@ const STORE_ITEMS = {
   tongues: { name: 'Spare Tongues', price: 10, min: 0, max: 3, unit: '', desc: '' }
 };
 
-/** Toggle items (books and tools) — one-time purchases, not quantities */
+/** Toggle items (books, tools, Bible) — one-time purchases, not quantities */
 const TOGGLE_ITEMS = {
+  bible: { ...STORE_BIBLE, stateKey: 'hasBible' },
   farmers_almanac: { ...STORE_BOOKS.farmers_almanac, stateKey: 'hasFarmersAlmanac' },
   trail_guide: { ...STORE_BOOKS.trail_guide, stateKey: 'hasTrailGuide' },
   tool_set: { ...STORE_TOOLS.tool_set, stateKey: 'hasToolSet' }
@@ -39,6 +40,7 @@ export default function SupplyStore() {
 
   // Toggle items only available for 6-8 (and 3-5 for some)
   const [toggles, setToggles] = useState({
+    bible: false,
     farmers_almanac: false,
     trail_guide: false,
     tool_set: false
@@ -89,6 +91,7 @@ export default function SupplyStore() {
         tongues: quantities.tongues
       },
       oxenYokes: quantities.oxenYokes,
+      hasBible: toggles.bible,
       hasFarmersAlmanac: toggles.farmers_almanac,
       hasTrailGuide: toggles.trail_guide,
       hasToolSet: toggles.tool_set

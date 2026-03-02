@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES, PROFESSION_REPAIR, CHAPLAIN_COSTS, STORE_BOOKS } from '@shared/types';
+import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES, PROFESSION_REPAIR, CHAPLAIN_COSTS, STORE_BOOKS, STORE_BIBLE } from '@shared/types';
 import { formatGameDate, isSunday, addDays, isAfter } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
 import { logCrash, trackAction } from '../../utils/crashLogger';
@@ -264,6 +264,26 @@ export default function TravelScreen() {
         if (danger.effects?.cash_loss) dispatch({ type: 'UPDATE_SUPPLIES', cash: Math.max(0, state.cash - danger.effects.cash_loss) });
         if (danger.effects?.oxen_lost) dispatch({ type: 'UPDATE_SUPPLIES', oxenYokes: Math.max(0, state.oxenYokes - danger.effects.oxen_lost) });
         if (danger.effects?.clothing_loss) dispatch({ type: 'UPDATE_SUPPLIES', clothingSets: Math.max(0, state.clothingSets - danger.effects.clothing_loss) });
+
+        // Items (books, tools, Bible) can be lost in river crossings, theft, fire, storms
+        const itemLossCategories = ['river_crossing', 'theft', 'fire', 'storm', 'mechanical'];
+        if (itemLossCategories.includes(danger.category) || danger.id?.includes('river') || danger.id?.includes('thief') || danger.id?.includes('fire') || danger.id?.includes('storm')) {
+          const ownedItems = [];
+          if (state.hasBible) ownedItems.push('bible');
+          if (state.hasFarmersAlmanac) ownedItems.push('farmers_almanac');
+          if (state.hasTrailGuide) ownedItems.push('trail_guide');
+          if (state.hasToolSet) ownedItems.push('tool_set');
+          if (ownedItems.length > 0 && Math.random() < 0.12) {
+            const lostItem = ownedItems[Math.floor(Math.random() * ownedItems.length)];
+            dispatch({ type: 'LOSE_ITEM', item: lostItem, cause: danger.category || danger.id });
+            const itemNames = { bible: 'your Bible', farmers_almanac: "the Farmer's Almanac", trail_guide: 'the trail guide', tool_set: 'your tool set' };
+            const lossVerbs = danger.id?.includes('thief') || danger.category === 'theft'
+              ? 'was stolen' : danger.id?.includes('river') || danger.category === 'river_crossing'
+              ? 'was lost in the crossing' : 'was destroyed';
+            dayMessage += ` ${itemNames[lostItem]} ${lossVerbs}.`;
+          }
+        }
+
         // If danger has choices, fire it as an event instead
         if (danger.choices) {
           dispatch({ type: 'SET_EVENT', event: { ...danger, type: danger.id, title: danger.name } });
@@ -283,6 +303,11 @@ export default function TravelScreen() {
       if (encounter) {
         if (encounter.effects?.morale) dispatch({ type: 'UPDATE_MORALE', delta: encounter.effects.morale });
         if (encounter.effects?.food_gain) dispatch({ type: 'UPDATE_SUPPLIES', foodLbs: state.foodLbs + encounter.effects.food_gain });
+        // Bible can be received as a gift from missionaries, chaplains, or kind strangers
+        if (encounter.effects?.bible_gift && !state.hasBible) {
+          dispatch({ type: 'LOAD_STATE', savedState: { hasBible: true } });
+          dayMessage = (encounter.description || '') + ' They also gave your family a Bible.';
+        }
         if (encounter.effects?.health_boost) {
           const healTarget = aliveAfterStarvation.find(m => m.health !== 'good');
           if (healTarget) {
@@ -436,6 +461,12 @@ export default function TravelScreen() {
       if (lType === 'fort' || lType === 'mission' || lType === 'town' || nextLandmark.terrain_type === 'river') {
         dispatch({ type: 'REFILL_WATER', capacity: 200 });
       }
+      // Missions may gift a Bible to travelers who don't have one
+      if (lType === 'mission' && !state.hasBible && Math.random() < 0.4) {
+        dispatch({ type: 'LOAD_STATE', savedState: { hasBible: true } });
+        setTravelMessage(`You have arrived at ${nextLandmark.name}! The missionaries there gifted your family a Bible.`);
+        return;
+      }
       setTravelMessage(`You have arrived at ${nextLandmark.name}!`);
       return;
     }
@@ -476,8 +507,12 @@ export default function TravelScreen() {
     setShowSundayPrompt(false);
     dispatch({ type: 'SUNDAY_REST', rested });
     if (rested) {
-      dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.SUNDAY_REST, trigger: 'sunday_rest' });
-      dispatch({ type: 'UPDATE_MORALE', delta: 5 });
+      // Bible provides extra grace on Sunday rest (reading Scripture)
+      const sundayGrace = GRACE_DELTAS.SUNDAY_REST + (state.hasBible ? STORE_BIBLE.effects.sundayRestGraceBonus : 0);
+      dispatch({ type: 'UPDATE_GRACE', delta: sundayGrace, trigger: 'sunday_rest' });
+      // Bible provides extra morale on rest (comfort from Scripture)
+      const sundayMorale = 5 + (state.hasBible ? STORE_BIBLE.effects.restMoraleBonus : 0);
+      dispatch({ type: 'UPDATE_MORALE', delta: sundayMorale });
 
       const healthUpdates = state.partyMembers
         .filter(m => m.alive && m.health !== 'good')
@@ -539,6 +574,10 @@ export default function TravelScreen() {
     if (updates.length > 0) {
       dispatch({ type: 'UPDATE_PARTY_HEALTH', updates });
     }
+    // Bible provides comfort during rest
+    if (state.hasBible) {
+      dispatch({ type: 'UPDATE_MORALE', delta: Math.round(STORE_BIBLE.effects.restMoraleBonus / 2) });
+    }
     dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
 
     // Lingering danger warning
@@ -546,7 +585,8 @@ export default function TravelScreen() {
     if (stationaryDays >= 3) {
       setTravelMessage('Your party rested, but you have been in one place too long. Idle camps draw unwanted attention, and winter draws closer with every day lost.');
     } else {
-      setTravelMessage('Your party rested for a day. The sick are feeling a little better.');
+      const bibleNote = state.hasBible ? ' Reading Scripture brings comfort to the weary.' : '';
+      setTravelMessage(`Your party rested for a day. The sick are feeling a little better.${bibleNote}`);
     }
     setIsResting(false);
   }
@@ -813,7 +853,9 @@ export default function TravelScreen() {
                 <button
                   onClick={() => {
                     const criticalMember = state.partyMembers.find(m => m.alive && m.health === 'critical');
-                    dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER, trigger: 'prayer_crisis' });
+                    // Bible amplifies prayer grace (praying with Scripture)
+                    const prayerGrace = GRACE_DELTAS.PRAYER + (state.hasBible ? STORE_BIBLE.effects.prayerGraceBonus : 0);
+                    dispatch({ type: 'UPDATE_GRACE', delta: prayerGrace, trigger: 'prayer_crisis' });
                     dispatch({ type: 'UPDATE_MORALE', delta: 3 });
                     dispatch({ type: 'PRAY', memberName: criticalMember?.name });
                     if (state.chaplainInParty) {

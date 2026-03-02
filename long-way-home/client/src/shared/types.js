@@ -12,11 +12,15 @@
  * @typedef {'positive' | 'negative'} LabelValence
  */
 
-/** @type {Object<Profession, number>} */
+/**
+ * Profession starting cash — inversely correlated with skill.
+ * Difficulty tiers: Tradesman (Easy) > Farmer (Medium) > Banker (Hard)
+ * @type {Object<Profession, number>}
+ */
 export const PROFESSION_CASH = {
-  banker: 1600,
-  farmer: 800,
-  tradesman: 400
+  tradesman: 1200,
+  farmer: 900,
+  banker: 650
 };
 
 /**
@@ -87,6 +91,24 @@ export const STORE_TOOLS = {
       repairTimeReduction: 0.5,   // Halves repair time cost
       wagonMaintenanceBonus: true  // Mend wagon activity is more effective
     }
+  }
+};
+
+/**
+ * Bible — purchasable at the store OR can be received as a gift
+ * during the journey (e.g., from a mission, chaplain, or kind stranger).
+ * Provides grace and morale benefits when used through prayer activities.
+ */
+export const STORE_BIBLE = {
+  name: "Holy Bible (Douay-Rheims)",
+  price: 25,
+  description: "The Word of God. Reading Scripture strengthens the spirit and brings comfort in hardship.",
+  effects: {
+    prayerGraceBonus: 2,          // Extra grace per prayer activity
+    moraleFloor: 5,               // Morale can't drop below 5 if you have a Bible
+    restMoraleBonus: 3,           // Extra morale when resting
+    deathMoraleMitigation: 0.3,   // Reduces morale loss from party deaths by 30%
+    sundayRestGraceBonus: 3       // Extra grace on Sunday rest (reading Scripture)
   }
 };
 
