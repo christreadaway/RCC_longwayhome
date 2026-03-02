@@ -1,19 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
-import { api } from '../../utils/api';
-import { logger } from '../../utils/logger';
+import { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import SessionSetup from './SessionSetup';
 import DashboardMain from './DashboardMain';
 
 export default function TeacherDashboard() {
   const [session, setSession] = useState(null);
-  const [authenticated, setAuthenticated] = useState(false);
 
   return (
     <Routes>
       <Route path="/" element={
         !session
-          ? <SessionSetup onSessionReady={(s) => { setSession(s); setAuthenticated(true); }} />
+          ? <SessionSetup onSessionReady={(s) => { setSession(s); }} />
           : <DashboardMain session={session} setSession={setSession} />
       } />
     </Routes>

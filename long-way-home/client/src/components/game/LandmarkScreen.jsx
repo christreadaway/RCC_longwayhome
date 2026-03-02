@@ -438,7 +438,7 @@ function NpcChatInline({ character, characterName, onClose, sessionCode, student
 
       dispatch({
         type: 'ADD_NPC_TRANSCRIPT',
-        transcript: { character, exchange: res.exchangeCount, question: userMsg, response: res.response }
+        transcript: { character: characterName, location: gameContext.current_landmark, question: userMsg, response: res.response }
       });
     } catch {
       setMessages(prev => [...prev, { role: 'npc', text: 'The traveler seems lost in thought and does not respond.' }]);

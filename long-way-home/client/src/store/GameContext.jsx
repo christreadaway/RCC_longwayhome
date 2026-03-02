@@ -333,9 +333,25 @@ function gameReducer(state, action) {
     }
 
     case 'ADD_NPC_TRANSCRIPT': {
+      const { character, location, question, response } = action.transcript;
+      const existingIdx = state.npcTranscripts.findIndex(
+        t => t.character === character && t.location === (location || '')
+      );
+      if (existingIdx >= 0) {
+        const updated = [...state.npcTranscripts];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          exchanges: [...updated[existingIdx].exchanges, { question, response }]
+        };
+        return { ...state, npcTranscripts: updated };
+      }
       return {
         ...state,
-        npcTranscripts: [...state.npcTranscripts, action.transcript]
+        npcTranscripts: [...state.npcTranscripts, {
+          character,
+          location: location || '',
+          exchanges: [{ question, response }]
+        }]
       };
     }
 

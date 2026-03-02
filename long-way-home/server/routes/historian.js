@@ -13,7 +13,7 @@
 const express = require('express');
 const { logger } = require('../logger');
 const store = require('../state/store');
-const { HISTORIAN_SYSTEM } = require('../ai/prompts');
+const { HISTORIAN_SYSTEM, EXAM_CONSCIENCE } = require('../ai/prompts');
 const { callAnthropic } = require('../ai/proxy');
 
 const router = express.Router();
@@ -34,23 +34,47 @@ router.post('/query', async (req, res) => {
       return res.status(404).json({ error: `Session "${sessionCode}" not found` });
     }
 
-    // --- Build the system prompt with context ---
     const ctx = gameContext || {};
-    const systemPrompt = HISTORIAN_SYSTEM
-      .replace('{student_name}', ctx.student_name || 'Pioneer')
-      .replace('{party_names}', ctx.party_names || 'your fellow travelers')
-      .replace('{current_landmark}', ctx.current_landmark || 'the trail')
-      .replace('{game_date}', ctx.game_date || '1848')
-      .replace('{last_event_description}', ctx.last_event_description || 'none');
+    let systemPrompt;
+    let userMessage = question;
+    let fallbackKey = 'historian';
+
+    // --- Detect Examination of Conscience request ---
+    if (question === '__exam_conscience__') {
+      const partyNames = Array.isArray(ctx.party_names) ? ctx.party_names.join(', ') : (ctx.party_names || '');
+      const deaths = Array.isArray(ctx.deaths)
+        ? ctx.deaths.map(d => `${d.name} (${d.cause || 'unknown'})`).join(', ') || 'none'
+        : 'none';
+      const eventLog = Array.isArray(ctx.event_log)
+        ? ctx.event_log.map(e => `[${e.date}] ${e.description || e.type}`).join('\n')
+        : '';
+
+      systemPrompt = EXAM_CONSCIENCE
+        .replace('{party_names}', partyNames)
+        .replace('{deaths}', deaths)
+        .replace('{grace_score}', String(ctx.grace_score || 0))
+        .replace('{event_log}', eventLog || 'No significant events recorded.');
+
+      userMessage = 'Please write the examination of conscience reflection for this student.';
+      fallbackKey = 'exam_conscience';
+    } else {
+      // --- Build the historian prompt with context ---
+      systemPrompt = HISTORIAN_SYSTEM
+        .replace('{student_name}', ctx.student_name || 'Pioneer')
+        .replace('{party_names}', ctx.party_names || 'your fellow travelers')
+        .replace('{current_landmark}', ctx.current_landmark || 'the trail')
+        .replace('{game_date}', ctx.game_date || '1848')
+        .replace('{last_event_description}', ctx.last_event_description || 'none');
+    }
 
     // --- Call Anthropic ---
     const { text, tokenCount, latencyMs } = await callAnthropic(
       session.apiKey,
       systemPrompt,
-      question,
+      userMessage,
       {
         model: session.settings.ai_model,
-        fallbackKey: 'historian',
+        fallbackKey,
         studentId,
       }
     );

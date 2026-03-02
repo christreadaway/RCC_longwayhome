@@ -68,7 +68,7 @@ function createSession(code, password, gradeBand, settings = {}) {
       ...settings,
     },
     status: 'active',
-    apiKey: settings.apiKey || process.env.ANTHROPIC_API_KEY_DEV || null,
+    apiKey: settings.apiKey || settings.api_key || process.env.ANTHROPIC_API_KEY_DEV || null,
     students: new Map(),
     createdAt: now,
     lastActivityAt: now,
@@ -76,6 +76,7 @@ function createSession(code, password, gradeBand, settings = {}) {
 
   // Remove apiKey from the settings copy so it only lives in session.apiKey
   delete session.settings.apiKey;
+  delete session.settings.api_key;
 
   sessions.set(code, session);
 
@@ -108,9 +109,10 @@ function updateSessionSettings(code, settings) {
   if (!session) throw new Error(`Session "${code}" not found`);
 
   // If a new apiKey is provided, update it but keep it out of settings
-  if (settings.apiKey !== undefined) {
-    session.apiKey = settings.apiKey;
+  if (settings.apiKey !== undefined || settings.api_key !== undefined) {
+    session.apiKey = settings.apiKey || settings.api_key;
     delete settings.apiKey;
+    delete settings.api_key;
   }
 
   session.settings = { ...session.settings, ...settings };
