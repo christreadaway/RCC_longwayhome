@@ -7,9 +7,10 @@
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "cd client && npx vite --host",
     "dev:server": "node server/index.js",
-    "build": "cd client && npx vite build",
+    "build": "cd client && npm install && npx vite build",
     "start": "node server/index.js",
-    "preview": "cd client && npx vite preview"
+    "preview": "cd client && npx vite preview",
+    "postinstall": "cd client && npm install"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -19,5 +20,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
