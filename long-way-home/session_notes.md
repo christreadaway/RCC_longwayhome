@@ -516,6 +516,17 @@ Chris playtested the game and provided extensive feedback on layout, gameplay de
 - **Firewood**: 1-2 bundles/night in cold months. Gather action yields 2-5 bundles. Manageable with occasional gather days.
 - **Difficulty curve**: Plains (early) → Hills → Mountains → River → Mountains (late). Natural escalation matches historical trail geography.
 
+### Playtest Bug Fixes (continuation — context recovered after compaction)
+- **Starvation pre-check cold weather mismatch**: `travelOneDay` calculated daily food consumption without the cold weather multiplier (1.2× below 50°F, 1.4× below 32°F), but `ADVANCE_DAY` reducer's `getFoodConsumption` applied it. This meant the starvation check could miss cold-weather starvation. Fixed by applying same multiplier in pre-check.
+- **Water rations `healthModifier` never applied**: `WATER_RATIONS.minimal` defined `healthModifier: 0.02` but no code ever read it. Added check in `travelOneDay` — on minimal water, already-weakened members have a 2% daily chance of health degradation.
+- **Unicode consistency**: Replaced remaining `\u00B0` in template literal (TravelScreen line 564) with literal `°` for consistency, though the template literal version worked correctly.
+
+### Git Activity
+- **Branch**: `claude/resize-map-layout-dKazx`
+- **Commit 1** (`b1e92ea`): Add resource management, per-member morale, terrain-adaptive difficulty, UI redesign (7 files, +869/-388)
+- **Commit 2** (`3dc67f4`): Fix starvation pre-check cold weather mismatch and water rations health penalty (1 file, +21/-2)
+- **Pushed**: Both commits pushed to `origin/claude/resize-map-layout-dKazx`
+
 ### Open items
 - [ ] Firewood purchasable at supply store (currently gather-only)
 - [ ] Supply purchase screen updates for water/firewood
@@ -524,6 +535,11 @@ Chris playtested the game and provided extensive feedback on layout, gameplay de
 - [ ] Test 3-5 intermediate variant
 - [ ] Performance test on Chromebook-equivalent specs
 - [ ] Add database for persistent classroom sessions (v2)
+
+### Notes for next session
+- This session spanned two context windows due to compaction. The first half (pre-compaction) implemented all the resource management, per-member morale, UI redesign, and terrain scene rewrite. The second half (post-compaction) implemented terrain-adaptive difficulty, ran the build, fixed playtest bugs, updated docs, and pushed.
+- The build is clean: 76 modules, 484KB JS (149KB gzipped).
+- product_spec.md was also updated with v1.0.6 release notes covering all Session 7 changes.
 
 ---
 
