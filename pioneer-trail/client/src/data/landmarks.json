@@ -1,0 +1,314 @@
+{
+  "trail_name": "Oregon Trail",
+  "total_distance_miles": 2040,
+  "grade_band": "6_8",
+  "landmarks": [
+    {
+      "id": "independence_mo",
+      "name": "Independence, Missouri",
+      "type": "town",
+      "distance_from_previous": 0,
+      "cumulative_miles": 0,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.5,
+      "description": "The jumping-off point for thousands of emigrants heading west. Independence is a bustling frontier town where wagon trains organize, families stock up on supplies, and the last letters home are posted before the long journey begins.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.10,
+        "clothing_set": 5.00,
+        "ammunition_box": 2.00,
+        "spare_parts": {
+          "wheel": 10.00,
+          "axle": 10.00,
+          "tongue": 10.00
+        },
+        "oxen_pair": 40.00,
+        "medicine": 1.50
+      },
+      "historical_note": "By the 1840s, Independence had replaced Franklin, Missouri as the primary outfitting point for westbound emigrants."
+    },
+    {
+      "id": "fort_kearney",
+      "name": "Fort Kearney",
+      "type": "fort",
+      "distance_from_previous": 310,
+      "cumulative_miles": 310,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.7,
+      "description": "A U.S. Army outpost along the Platte River, Fort Kearney offers weary travelers a chance to rest, trade, and send letters east. Soldiers here protect emigrants and keep the peace along the trail.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.15,
+        "clothing_set": 6.00,
+        "ammunition_box": 2.50,
+        "spare_parts": {
+          "wheel": 12.00,
+          "axle": 12.00,
+          "tongue": 12.00
+        },
+        "oxen_pair": 50.00,
+        "medicine": 2.00
+      },
+      "historical_note": "Established in 1848, Fort Kearney was the first military post built to protect Oregon Trail emigrants."
+    },
+    {
+      "id": "chimney_rock",
+      "name": "Chimney Rock",
+      "type": "natural",
+      "distance_from_previous": 140,
+      "cumulative_miles": 450,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.8,
+      "description": "A towering natural spire of rock and clay, Chimney Rock is the most famous landmark on the Oregon Trail. Emigrants recorded it in their diaries more than any other feature. Its appearance signals the transition from the Great Plains to the rugged terrain ahead.",
+      "can_resupply": false,
+      "prices": null,
+      "historical_note": "Chimney Rock was mentioned in more emigrant journals than any other landmark. It stands approximately 300 feet above the surrounding plain."
+    },
+    {
+      "id": "fort_laramie",
+      "name": "Fort Laramie",
+      "type": "fort",
+      "distance_from_previous": 85,
+      "cumulative_miles": 535,
+      "terrain_type": "hills",
+      "hazard_multiplier": 0.7,
+      "description": "Originally a fur trading post, Fort Laramie became a crucial resupply point for Oregon Trail emigrants. Here, travelers lighten their wagons by discarding heavy furniture and unnecessary goods before the mountain crossing ahead.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.20,
+        "clothing_set": 8.00,
+        "ammunition_box": 3.00,
+        "spare_parts": {
+          "wheel": 15.00,
+          "axle": 15.00,
+          "tongue": 15.00
+        },
+        "oxen_pair": 60.00,
+        "medicine": 2.50
+      },
+      "historical_note": "Fort Laramie was purchased by the U.S. Army in 1849 for $4,000. Emigrants often rested here for days to prepare for the mountains."
+    },
+    {
+      "id": "independence_rock",
+      "name": "Independence Rock",
+      "type": "natural",
+      "distance_from_previous": 175,
+      "cumulative_miles": 710,
+      "terrain_type": "hills",
+      "hazard_multiplier": 0.9,
+      "description": "A massive granite dome rising from the Sweetwater River valley, Independence Rock is covered with the carved and painted names of thousands of emigrants. Reaching here by the Fourth of July meant your wagon train was on schedule to cross the mountains before winter.",
+      "can_resupply": false,
+      "prices": null,
+      "historical_note": "Called the 'Register of the Desert,' Independence Rock still bears the names of emigrants carved over 150 years ago."
+    },
+    {
+      "id": "south_pass",
+      "name": "South Pass",
+      "type": "natural",
+      "distance_from_previous": 65,
+      "cumulative_miles": 775,
+      "terrain_type": "mountains",
+      "hazard_multiplier": 1.2,
+      "description": "The broad, gentle pass through the Rocky Mountains that made wagon travel possible. Despite its altitude of nearly 7,500 feet, South Pass is so gradual that many emigrants were surprised to learn they had crossed the Continental Divide.",
+      "can_resupply": false,
+      "prices": null,
+      "historical_note": "South Pass was the key to the entire Oregon Trail. Without this gentle crossing, wagon emigration to Oregon would have been nearly impossible."
+    },
+    {
+      "id": "st_marys_mission",
+      "name": "St. Mary's Mission",
+      "type": "mission",
+      "distance_from_previous": 95,
+      "cumulative_miles": 870,
+      "terrain_type": "mountains",
+      "hazard_multiplier": 0.8,
+      "description": "Founded by Jesuit Father Pierre-Jean De Smet, St. Mary's Mission served the Flathead people and offered hospitality to passing emigrants. The mission provided spiritual comfort, medical care, and a place of rest in the wilderness.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.15,
+        "clothing_set": 7.00,
+        "ammunition_box": 3.00,
+        "spare_parts": {
+          "wheel": 14.00,
+          "axle": 14.00,
+          "tongue": 14.00
+        },
+        "oxen_pair": 55.00,
+        "medicine": 1.50
+      },
+      "historical_note": "Father De Smet established St. Mary's Mission in 1841 among the Bitterroot Salish (Flathead) people, who had requested Catholic missionaries."
+    },
+    {
+      "id": "fort_bridger",
+      "name": "Fort Bridger",
+      "type": "fort",
+      "distance_from_previous": 105,
+      "cumulative_miles": 975,
+      "terrain_type": "mountains",
+      "hazard_multiplier": 0.9,
+      "description": "A trading post founded by mountain man Jim Bridger and his partner Louis Vasquez. Fort Bridger sits in a green valley and offers blacksmithing services, fresh supplies, and reliable information about the trail conditions ahead.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.25,
+        "clothing_set": 10.00,
+        "ammunition_box": 3.50,
+        "spare_parts": {
+          "wheel": 18.00,
+          "axle": 18.00,
+          "tongue": 18.00
+        },
+        "oxen_pair": 65.00,
+        "medicine": 3.00
+      },
+      "historical_note": "Jim Bridger built the fort in 1843 specifically to profit from the emigrant trade. He was one of the most famous mountain men of the era."
+    },
+    {
+      "id": "green_river",
+      "name": "Green River",
+      "type": "natural",
+      "distance_from_previous": 55,
+      "cumulative_miles": 1030,
+      "terrain_type": "river",
+      "hazard_multiplier": 1.3,
+      "description": "The Green River is one of the most dangerous crossings on the entire trail. Swift currents and deep water have claimed many wagons and lives. Emigrants must choose between fording, floating their wagons, or paying for a ferry if one is available.",
+      "can_resupply": false,
+      "prices": null,
+      "historical_note": "Several entrepreneurial mountain men operated ferries at Green River crossings, charging emigrants $3 to $8 per wagon."
+    },
+    {
+      "id": "fort_hall",
+      "name": "Fort Hall",
+      "type": "fort",
+      "distance_from_previous": 180,
+      "cumulative_miles": 1210,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.8,
+      "description": "A Hudson's Bay Company trading post in present-day Idaho, Fort Hall is the last major resupply point before the difficult Snake River country. British traders here sometimes discouraged emigrants from continuing to Oregon, hoping to preserve their fur trade.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.30,
+        "clothing_set": 12.00,
+        "ammunition_box": 4.00,
+        "spare_parts": {
+          "wheel": 20.00,
+          "axle": 20.00,
+          "tongue": 20.00
+        },
+        "oxen_pair": 70.00,
+        "medicine": 3.50
+      },
+      "historical_note": "Fort Hall was built in 1834 by American Nathaniel Wyeth and later sold to the British Hudson's Bay Company."
+    },
+    {
+      "id": "snake_river",
+      "name": "Snake River",
+      "type": "natural",
+      "distance_from_previous": 120,
+      "cumulative_miles": 1330,
+      "terrain_type": "river",
+      "hazard_multiplier": 1.4,
+      "description": "The Snake River canyon is among the most treacherous stretches of the trail. The river runs deep in a volcanic gorge, tantalizingly close but often unreachable. Water is visible far below but the cliffs make access nearly impossible in many places.",
+      "can_resupply": false,
+      "prices": null,
+      "historical_note": "The Snake River Plain was dreaded by emigrants. Despite following the river for hundreds of miles, access to water was often extremely difficult due to steep canyon walls."
+    },
+    {
+      "id": "fort_boise",
+      "name": "Fort Boise",
+      "type": "fort",
+      "distance_from_previous": 130,
+      "cumulative_miles": 1460,
+      "terrain_type": "river",
+      "hazard_multiplier": 0.9,
+      "description": "Another Hudson's Bay Company post, Fort Boise sits near the confluence of the Boise and Snake rivers. This small trading post offers limited supplies but welcome rest before the final push into the Blue Mountains and Oregon Country.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.35,
+        "clothing_set": 14.00,
+        "ammunition_box": 4.50,
+        "spare_parts": {
+          "wheel": 22.00,
+          "axle": 22.00,
+          "tongue": 22.00
+        },
+        "oxen_pair": 75.00,
+        "medicine": 4.00
+      },
+      "historical_note": "Fort Boise was established by the Hudson's Bay Company in 1834. It was abandoned and rebuilt several times due to flooding."
+    },
+    {
+      "id": "whitman_mission",
+      "name": "Whitman Mission",
+      "type": "mission",
+      "distance_from_previous": 180,
+      "cumulative_miles": 1640,
+      "terrain_type": "hills",
+      "hazard_multiplier": 0.8,
+      "description": "The mission established by Marcus and Narcissa Whitman among the Cayuse people. The Whitmans provided food, shelter, and medical care to exhausted emigrants arriving from the Snake River country. The mission became a critical aid station on the trail.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.20,
+        "clothing_set": 8.00,
+        "ammunition_box": 3.50,
+        "spare_parts": {
+          "wheel": 16.00,
+          "axle": 16.00,
+          "tongue": 16.00
+        },
+        "oxen_pair": 60.00,
+        "medicine": 2.00
+      },
+      "historical_note": "Marcus and Narcissa Whitman established their mission in 1836. Narcissa was one of the first white women to cross the Rocky Mountains overland."
+    },
+    {
+      "id": "blue_mountains",
+      "name": "Blue Mountains",
+      "type": "natural",
+      "distance_from_previous": 110,
+      "cumulative_miles": 1750,
+      "terrain_type": "mountains",
+      "hazard_multiplier": 1.5,
+      "description": "The Blue Mountains are the last great obstacle before the Columbia River. Dense forests, steep grades, and early snowfall make this crossing extremely dangerous, especially for late-season wagon trains. Many emigrants lost wagons and animals on these slopes.",
+      "can_resupply": false,
+      "prices": null,
+      "historical_note": "The Blue Mountains were so difficult that some emigrants disassembled their wagons and lowered them down cliffs with ropes."
+    },
+    {
+      "id": "the_dalles",
+      "name": "The Dalles",
+      "type": "town",
+      "distance_from_previous": 140,
+      "cumulative_miles": 1890,
+      "terrain_type": "river",
+      "hazard_multiplier": 1.1,
+      "description": "The Dalles marks the point where the overland trail meets the Columbia River. Here, emigrants face a final choice: risk the dangerous river rapids by raft or take the grueling Barlow Road over Mount Hood. Either way, the Willamette Valley is tantalizingly close.",
+      "can_resupply": true,
+      "prices": {
+        "food_per_lb": 0.25,
+        "clothing_set": 10.00,
+        "ammunition_box": 3.50,
+        "spare_parts": {
+          "wheel": 18.00,
+          "axle": 18.00,
+          "tongue": 18.00
+        },
+        "oxen_pair": 65.00,
+        "medicine": 3.00
+      },
+      "historical_note": "The Dalles was a major Native American trading center for thousands of years before emigrants arrived. The rapids here were among the most dangerous on the Columbia."
+    },
+    {
+      "id": "willamette_valley",
+      "name": "Willamette Valley",
+      "type": "destination",
+      "distance_from_previous": 150,
+      "cumulative_miles": 2040,
+      "terrain_type": "plains",
+      "hazard_multiplier": 0.3,
+      "description": "The promised land at last. The fertile Willamette Valley stretches green and welcoming before you, with rich soil, mild climate, and the promise of a new life. After months of hardship, your family has arrived in Oregon Country. The long way home has become a new home.",
+      "can_resupply": false,
+      "prices": null,
+      "historical_note": "The Willamette Valley's mild climate and rich soil attracted most Oregon Trail emigrants. By 1860, over 53,000 people had made the journey."
+    }
+  ]
+}

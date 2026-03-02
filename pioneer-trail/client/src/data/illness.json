@@ -1,0 +1,249 @@
+{
+  "illnesses": [
+    {
+      "id": "cholera",
+      "name": "Cholera",
+      "description": "A severe intestinal infection caused by contaminated water. Cholera was the single deadliest disease on the Oregon Trail, killing thousands of emigrants, sometimes within hours of the first symptoms.",
+      "symptoms": "Severe cramps, vomiting, and extreme thirst. The afflicted person grows very weak very quickly.",
+      "death_message": "{name} has died of cholera. The disease struck swiftly, and despite the family's best efforts, there was nothing more that could be done. May God grant {name} eternal rest.",
+      "severity": 4,
+      "base_mortality_rate": 0.35,
+      "recovery_days": 7,
+      "contagious": true,
+      "contagion_probability": 0.25,
+      "terrain_risk_multipliers": {
+        "plains": 1.0,
+        "hills": 0.8,
+        "mountains": 0.5,
+        "river": 1.5,
+        "desert": 0.3
+      },
+      "treatment_options": [
+        {
+          "id": "rest_and_water",
+          "text": "Rest and give clean water",
+          "medicine_required": false,
+          "recovery_modifier": 1.0
+        },
+        {
+          "id": "medicine",
+          "text": "Use medicine from supplies",
+          "medicine_required": true,
+          "recovery_modifier": 1.4
+        }
+      ],
+      "grade_band_available": ["3_5", "6_8"],
+      "historical_note": "Cholera epidemics swept along the trail in 1849-1852. One estimate suggests that up to 10,000 emigrants died of cholera during the peak years."
+    },
+    {
+      "id": "typhoid",
+      "name": "Typhoid Fever",
+      "description": "A bacterial infection spread through contaminated food and water. Typhoid fever brought high temperatures and delirium, keeping emigrants bedridden for weeks at a time.",
+      "symptoms": "High fever, headache, stomach pain, and confusion. The sick person may become delirious and unable to recognize family members.",
+      "death_message": "{name} has succumbed to typhoid fever after days of burning with fever. The wagon train pauses to lay {name} to rest beside the trail. Eternal rest grant unto {name}, O Lord.",
+      "severity": 3,
+      "base_mortality_rate": 0.20,
+      "recovery_days": 14,
+      "contagious": true,
+      "contagion_probability": 0.15,
+      "terrain_risk_multipliers": {
+        "plains": 1.0,
+        "hills": 0.9,
+        "mountains": 0.7,
+        "river": 1.3,
+        "desert": 0.5
+      },
+      "treatment_options": [
+        {
+          "id": "rest_and_water",
+          "text": "Rest, clean water, and cool cloths",
+          "medicine_required": false,
+          "recovery_modifier": 1.0
+        },
+        {
+          "id": "medicine",
+          "text": "Use medicine from supplies",
+          "medicine_required": true,
+          "recovery_modifier": 1.3
+        }
+      ],
+      "grade_band_available": ["3_5", "6_8"],
+      "historical_note": "Typhoid was common along the trail due to poor sanitation at camping grounds used by thousands of emigrants over the season."
+    },
+    {
+      "id": "dysentery",
+      "name": "Dysentery",
+      "description": "A painful intestinal illness caused by bacteria in unclean water or food. Dysentery weakened emigrants terribly and made travel extremely difficult.",
+      "symptoms": "Severe stomach cramps, fever, and weakness. The sick person can barely walk or ride in the wagon.",
+      "death_message": "{name} has died of dysentery. Weakened beyond recovery, {name} passed quietly during the night. The family prays for God's mercy and {name}'s eternal peace.",
+      "severity": 3,
+      "base_mortality_rate": 0.15,
+      "recovery_days": 10,
+      "contagious": true,
+      "contagion_probability": 0.20,
+      "terrain_risk_multipliers": {
+        "plains": 1.0,
+        "hills": 0.9,
+        "mountains": 0.6,
+        "river": 1.4,
+        "desert": 0.4
+      },
+      "treatment_options": [
+        {
+          "id": "rest_and_water",
+          "text": "Rest and boiled water",
+          "medicine_required": false,
+          "recovery_modifier": 1.0
+        },
+        {
+          "id": "medicine",
+          "text": "Use medicine from supplies",
+          "medicine_required": true,
+          "recovery_modifier": 1.3
+        }
+      ],
+      "grade_band_available": ["3_5", "6_8"],
+      "historical_note": "Dysentery was so common on the trail that it was sometimes called 'the bloody flux.' It was a leading cause of death among emigrants."
+    },
+    {
+      "id": "measles",
+      "name": "Measles",
+      "description": "A highly contagious disease that spread quickly through wagon trains. Measles was especially dangerous for children and could sweep through an entire company in days.",
+      "symptoms": "High fever, cough, and a spreading rash. The sick person's eyes become red and sensitive to light.",
+      "death_message": "{name} has died of measles. The fever was too strong, and despite constant care, {name} could not recover. Lord, welcome {name} into Your heavenly kingdom.",
+      "severity": 2,
+      "base_mortality_rate": 0.10,
+      "recovery_days": 12,
+      "contagious": true,
+      "contagion_probability": 0.35,
+      "terrain_risk_multipliers": {
+        "plains": 1.0,
+        "hills": 1.0,
+        "mountains": 1.0,
+        "river": 1.0,
+        "desert": 1.0
+      },
+      "treatment_options": [
+        {
+          "id": "rest",
+          "text": "Rest and keep comfortable",
+          "medicine_required": false,
+          "recovery_modifier": 1.0
+        },
+        {
+          "id": "medicine",
+          "text": "Use medicine from supplies",
+          "medicine_required": true,
+          "recovery_modifier": 1.2
+        }
+      ],
+      "grade_band_available": ["3_5", "6_8"],
+      "historical_note": "Measles outbreaks were particularly devastating among Native American communities along the trail, who had no previous exposure to the disease."
+    },
+    {
+      "id": "exhaustion",
+      "name": "Exhaustion",
+      "description": "The relentless physical demands of trail life — walking 15-20 miles a day, setting up camp, hauling water, and enduring harsh weather — sometimes pushed emigrants beyond their limits.",
+      "symptoms": "Extreme tiredness, difficulty walking, poor appetite, and trouble sleeping despite being worn out.",
+      "death_message": "{name} has collapsed from exhaustion and could not be revived. The long miles finally took their toll. May {name} now find the rest that the trail would not give. Requiescat in pace.",
+      "severity": 2,
+      "base_mortality_rate": 0.05,
+      "recovery_days": 5,
+      "contagious": false,
+      "contagion_probability": 0,
+      "terrain_risk_multipliers": {
+        "plains": 0.8,
+        "hills": 1.2,
+        "mountains": 1.6,
+        "river": 1.0,
+        "desert": 1.5
+      },
+      "treatment_options": [
+        {
+          "id": "rest_day",
+          "text": "Take a full day of rest",
+          "medicine_required": false,
+          "recovery_modifier": 1.5
+        },
+        {
+          "id": "light_duties",
+          "text": "Ride in the wagon and do light duties",
+          "medicine_required": false,
+          "recovery_modifier": 1.0
+        }
+      ],
+      "grade_band_available": ["k2", "3_5", "6_8"],
+      "historical_note": "Most emigrants walked the entire 2,000-mile journey. Only the sick, very young, and elderly rode in the wagons, which were too full of supplies for passengers."
+    },
+    {
+      "id": "broken_leg",
+      "name": "Broken Leg",
+      "description": "Accidents on the trail were common — a fall from a wagon, a kick from an ox, or a stumble on rocky terrain could result in a broken bone. With no doctors available, setting a broken leg was difficult and painful.",
+      "symptoms": "Intense pain, swelling, and inability to walk. The injured person must ride in the wagon, which is itself a painful experience on the rough trail.",
+      "death_message": "{name}'s broken leg became badly infected, and without proper medical care, the infection spread. {name} passed away despite the family's devoted care. God rest {name}'s soul.",
+      "severity": 2,
+      "base_mortality_rate": 0.08,
+      "recovery_days": 21,
+      "contagious": false,
+      "contagion_probability": 0,
+      "terrain_risk_multipliers": {
+        "plains": 0.6,
+        "hills": 1.2,
+        "mountains": 1.8,
+        "river": 1.3,
+        "desert": 0.7
+      },
+      "treatment_options": [
+        {
+          "id": "splint_rest",
+          "text": "Splint the leg and rest in the wagon",
+          "medicine_required": false,
+          "recovery_modifier": 1.0
+        },
+        {
+          "id": "splint_medicine",
+          "text": "Splint the leg and use pain medicine",
+          "medicine_required": true,
+          "recovery_modifier": 1.3
+        }
+      ],
+      "grade_band_available": ["3_5", "6_8"],
+      "historical_note": "Accidental injuries were among the leading causes of death on the trail, second only to disease. Gunshot wounds and being run over by wagon wheels were particularly common."
+    },
+    {
+      "id": "snakebite",
+      "name": "Snakebite",
+      "description": "Rattlesnakes were a constant danger on the plains and in rocky terrain. A venomous bite could be fatal without treatment, and even with care, the victim faced days of pain and swelling.",
+      "symptoms": "Sharp pain at the bite, rapid swelling, dizziness, and difficulty breathing. The bitten area turns dark and swollen.",
+      "death_message": "{name} was bitten by a rattlesnake and despite all efforts to draw out the venom, the poison proved too strong. {name} died peacefully with family nearby. Into Your hands, O Lord, we commend {name}'s spirit.",
+      "severity": 3,
+      "base_mortality_rate": 0.18,
+      "recovery_days": 8,
+      "contagious": false,
+      "contagion_probability": 0,
+      "terrain_risk_multipliers": {
+        "plains": 1.2,
+        "hills": 1.0,
+        "mountains": 0.6,
+        "river": 0.8,
+        "desert": 1.5
+      },
+      "treatment_options": [
+        {
+          "id": "rest_compress",
+          "text": "Apply a compress and rest",
+          "medicine_required": false,
+          "recovery_modifier": 1.0
+        },
+        {
+          "id": "medicine",
+          "text": "Use medicine from supplies",
+          "medicine_required": true,
+          "recovery_modifier": 1.4
+        }
+      ],
+      "grade_band_available": ["3_5", "6_8"],
+      "historical_note": "Rattlesnake bites were a real hazard on the Oregon Trail. Emigrants learned to check their boots and bedrolls carefully each morning."
+    }
+  ]
+}

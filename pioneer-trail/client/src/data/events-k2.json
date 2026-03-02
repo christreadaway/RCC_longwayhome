@@ -1,0 +1,254 @@
+{
+  "grade_band": "k2",
+  "description": "Simplified events for K-2 students with warm, encouraging language and simple two-choice decisions.",
+  "events": [
+    {
+      "id": "k2_sunny_day",
+      "category": "good",
+      "type": "good_weather",
+      "title": "What a Beautiful Day!",
+      "description": "The sun is shining and the birds are singing! Your family is so happy to be traveling together. The flowers along the trail are pretty and colorful.",
+      "choices": [
+        {
+          "id": "sing_song",
+          "text": "Sing a happy song while you walk!",
+          "effects": {
+            "morale_change": 10,
+            "health_change": 2
+          }
+        },
+        {
+          "id": "pick_flowers",
+          "text": "Stop to pick some pretty flowers!",
+          "effects": {
+            "morale_change": 8,
+            "health_change": 3,
+            "time_days": 0.5
+          }
+        }
+      ],
+      "probability_weight": 15,
+      "grade_bands": ["k2"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "k2_rainy_day",
+      "category": "weather",
+      "type": "rain",
+      "title": "Oh No, Rain!",
+      "description": "Dark clouds fill the sky and rain starts to fall. Drip, drip, drip! Everyone is getting wet. But rain helps the flowers and grass grow, so it is not all bad!",
+      "choices": [
+        {
+          "id": "keep_going",
+          "text": "Put on your coat and keep going! Splash in the puddles!",
+          "effects": {
+            "morale_change": -2,
+            "health_change": -2
+          }
+        },
+        {
+          "id": "wait_in_wagon",
+          "text": "Wait inside the wagon until the rain stops.",
+          "effects": {
+            "morale_change": 2,
+            "health_change": 0,
+            "time_days": 1
+          }
+        }
+      ],
+      "probability_weight": 10,
+      "grade_bands": ["k2"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "k2_hungry_friend",
+      "category": "cwm",
+      "type": "feed_hungry",
+      "title": "A Hungry Friend",
+      "description": "You meet a little boy on the trail. He looks sad and hungry. His tummy is rumbling! He asks if you have any food to share. You have some bread and apples in your wagon.",
+      "choices": [
+        {
+          "id": "share_food",
+          "text": "Share your food with the hungry boy! Jesus wants us to share!",
+          "effects": {
+            "morale_change": 10,
+            "grace_change": 8,
+            "food_lbs": -5,
+            "reciprocity_trigger": "feed_hungry"
+          }
+        },
+        {
+          "id": "keep_food",
+          "text": "Keep your food. You might need it later.",
+          "effects": {
+            "morale_change": -3,
+            "grace_change": -3
+          }
+        }
+      ],
+      "probability_weight": 10,
+      "grade_bands": ["k2"],
+      "is_cwm": true,
+      "cwm_type": "feed_hungry",
+      "terrain_types": null
+    },
+    {
+      "id": "k2_lost_puppy",
+      "category": "cwm",
+      "type": "visit_sick",
+      "title": "A Lost Puppy",
+      "description": "You find a little puppy sitting by the trail. It looks scared and has a hurt paw. The puppy whimpers and looks up at you with big, sad eyes. Maybe you can help!",
+      "choices": [
+        {
+          "id": "help_puppy",
+          "text": "Help the puppy! Wrap its paw and give it water.",
+          "effects": {
+            "morale_change": 12,
+            "grace_change": 6,
+            "time_days": 0.5
+          }
+        },
+        {
+          "id": "leave_puppy",
+          "text": "Leave the puppy. Someone else will find it.",
+          "effects": {
+            "morale_change": -5,
+            "grace_change": -3
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["k2"],
+      "is_cwm": true,
+      "cwm_type": "visit_sick",
+      "terrain_types": null
+    },
+    {
+      "id": "k2_cold_family",
+      "category": "cwm",
+      "type": "shelter_homeless",
+      "title": "A Cold Family",
+      "description": "It is getting cold and dark outside. A family with two small children is sitting by the trail. They lost their blankets when their wagon got wet crossing the river. They look very cold!",
+      "choices": [
+        {
+          "id": "share_blanket",
+          "text": "Share your extra blanket with the cold family!",
+          "effects": {
+            "morale_change": 10,
+            "grace_change": 8,
+            "clothing_change": -1,
+            "reciprocity_trigger": "shelter_homeless"
+          }
+        },
+        {
+          "id": "keep_blanket",
+          "text": "Keep your blankets. You need them too.",
+          "effects": {
+            "morale_change": -3,
+            "grace_change": -3
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["k2"],
+      "is_cwm": true,
+      "cwm_type": "shelter_homeless",
+      "terrain_types": null
+    },
+    {
+      "id": "k2_tired_traveler",
+      "category": "cwm",
+      "type": "give_drink",
+      "title": "A Thirsty Friend",
+      "description": "A girl your age walks up to your wagon. She looks very hot and thirsty. 'May I please have some water?' she asks. 'I have been walking all day and I am so thirsty!'",
+      "choices": [
+        {
+          "id": "share_water",
+          "text": "Give her a big cup of water! Sharing is caring!",
+          "effects": {
+            "morale_change": 10,
+            "grace_change": 8,
+            "water_change": -5,
+            "reciprocity_trigger": "give_drink"
+          }
+        },
+        {
+          "id": "say_no",
+          "text": "Say no. You do not have much water left.",
+          "effects": {
+            "morale_change": -3,
+            "grace_change": -3
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["k2"],
+      "is_cwm": true,
+      "cwm_type": "give_drink",
+      "terrain_types": null
+    },
+    {
+      "id": "k2_wild_berries",
+      "category": "good",
+      "type": "wild_fruit",
+      "title": "Yummy Berries!",
+      "description": "Look! There are bushes full of bright, juicy berries next to the trail! They look so yummy! Your mouth is watering just looking at them.",
+      "choices": [
+        {
+          "id": "pick_berries",
+          "text": "Pick lots of berries for everyone to eat!",
+          "effects": {
+            "morale_change": 8,
+            "health_change": 3,
+            "food_lbs": 10,
+            "time_days": 0.5
+          }
+        },
+        {
+          "id": "eat_some",
+          "text": "Eat a few berries and keep walking!",
+          "effects": {
+            "morale_change": 5,
+            "health_change": 2,
+            "food_lbs": 3
+          }
+        }
+      ],
+      "probability_weight": 10,
+      "grade_bands": ["k2"],
+      "is_cwm": false,
+      "terrain_types": null
+    },
+    {
+      "id": "k2_bedtime_prayer",
+      "category": "prayer",
+      "type": "prayer_offered",
+      "title": "Bedtime Prayer",
+      "description": "The stars are coming out and it is time for bed. Mom and Dad gather everyone around the campfire. 'Let us say our prayers before we go to sleep,' they say.",
+      "choices": [
+        {
+          "id": "pray_together",
+          "text": "Say your prayers and thank God for a good day!",
+          "effects": {
+            "morale_change": 5,
+            "grace_change": 3
+          }
+        },
+        {
+          "id": "too_sleepy",
+          "text": "You are too sleepy! Go right to bed.",
+          "effects": {
+            "morale_change": 0,
+            "health_change": 1
+          }
+        }
+      ],
+      "probability_weight": 8,
+      "grade_bands": ["k2"],
+      "is_cwm": false,
+      "terrain_types": null
+    }
+  ]
+}

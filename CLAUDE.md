@@ -32,64 +32,116 @@ Catholic design framework: `catholic.md`
 
 ---
 
+## Architecture — Engine vs. Game Content
+
+**Critical design principle:** The engine must never contain game-specific content. Oregon Trail, 1848, Jesuit missions, specific diseases — none of that lives in the engine. It lives in the game's `content/` folder. This keeps the engine extractable for future games (Journey of Paul, Mayflower, etc.) without refactoring.
+
+```
+Engine knows about:          Game content provides:
+─────────────────────        ──────────────────────────
+- Trail/journey progression  - Specific landmarks + distances
+- Grace meter                - Era-appropriate event text
+- Personality system         - NPC characters + dialogue
+- Event firing framework     - Moral label copy
+- Moral label system         - Knowledge panel cards
+- Teacher dashboard          - Catholic curriculum references
+- AI proxy                   - Route definitions
+- Grade band flags           - Illness/hazard tables
+```
+
+If you can't add a second game by just swapping the `content/` folder and `game.config.js`, the engine boundary has been violated. Claude Code should enforce this strictly.
+
 ## Project Structure
 
 ```
-pioneer-trail/
-├── client/                    # React frontend (Vite)
-│   ├── src/
-│   │   ├── game/              # Core game logic
-│   │   │   ├── engine.js      # Game state machine
-│   │   │   ├── events.js      # Event system (random + triggered)
-│   │   │   ├── grace.js       # Grace meter logic
-│   │   │   ├── cwm.js         # Corporal Works of Mercy + deceptive charity
-│   │   │   ├── reciprocity.js # Stranger Returns system
-│   │   │   ├── reconciliation.js  # Make It Right events (3-5 and 6-8)
-│   │   │   ├── morallabels.js # Label generation by grade band + mode
-│   │   │   ├── gradeband.js   # Grade band feature flags
-│   │   │   └── probability.js # All probability calculations
-│   │   ├── scenes/            # Pixi.js visual scenes
-│   │   ├── components/
-│   │   │   ├── game/          # Student-facing game UI
-│   │   │   │   ├── k2/        # K–2 variant components (simplified trail, guardian angel)
-│   │   │   │   ├── shared/    # Shared across grade bands
-│   │   │   │   └── MoralLabel.jsx   # Dismissible label card
-│   │   │   ├── dashboard/     # Teacher dashboard
-│   │   │   └── shared/
-│   │   ├── data/
-│   │   │   ├── knowledge-panel.json
-│   │   │   ├── knowledge-panel-3-5.json  # Simplified cards for 3-5
-│   │   │   ├── events.json
-│   │   │   ├── events-k2.json            # Simplified K-2 event set
-│   │   │   ├── moral-labels.json         # All label text by grade band + event type
-│   │   │   ├── landmarks.json
-│   │   │   ├── landmarks-k2.json         # 5-stop K-2 trail
-│   │   │   ├── catholic-curriculum.json  # CWM names, Commandments, Beatitudes for labels
-│   │   │   └── illness.json
-│   │   ├── hooks/
-│   │   ├── store/
-│   │   └── utils/
-│   │       └── logger.js
-├── server/
+long-way-home/                 # Monorepo — engine + first game
+│
+├── engine/                    # ⚙️ GAME ENGINE — no game-specific content, ever
+│   ├── core/
+│   │   ├── game-loop.js       # State machine (SETUP→TRAVELING→EVENT→LANDMARK→END)
+│   │   ├── probability.js     # All probability calculations
+│   │   └── gradeband.js       # Grade band feature flag system
+│   ├── systems/
+│   │   ├── grace.js           # Grace meter (generic — no Catholic-specific text)
+│   │   ├── personality.js     # Working Genius + MBTI system
+│   │   ├── events.js          # Event firing + cascade flag engine
+│   │   ├── reconciliation.js  # Make It Right system
+│   │   ├── reciprocity.js     # Stranger Returns system
+│   │   ├── morallabels.js     # Label rendering (text comes from content/)
+│   │   └── achievements.js    # Hidden achievement evaluation
+│   ├── ai/
+│   │   ├── proxy.js           # Anthropic API wrapper (generic)
+│   │   └── prompts.js         # Prompt templates with {placeholders}
+│   ├── dashboard/             # Teacher dashboard (generic — no game-specific UI)
+│   └── utils/
+│       └── logger.js
+│
+├── games/
+│   └── long-way-home/         # 🎮 FIRST GAME — content only
+│       ├── content/
+│       │   ├── events.json          # All Oregon Trail events
+│       │   ├── events-k2.json       # K–2 simplified event set
+│       │   ├── landmarks.json       # Trail landmarks + distances
+│       │   ├── landmarks-k2.json    # 5-stop K–2 trail
+│       │   ├── routes.json          # Main Trail, Southern Cutoff, Northern Mountain
+│       │   ├── npcs.json            # De Smet, Whitman, Bridger, etc.
+│       │   ├── moral-labels.json    # Label text by event + grade band
+│       │   ├── knowledge-panel.json # Historical knowledge cards
+│       │   ├── illness.json         # Disease progression tables
+│       │   └── catholic-curriculum.json  # CWM names, Commandments, Beatitudes
+│       ├── components/
+│       │   ├── scenes/              # Pixi.js visual scenes (Oregon Trail-specific)
+│       │   ├── k2/                  # K–2 UI variant components
+│       │   └── MoralLabel.jsx       # Game-specific label card styling
+│       └── game.config.js           # ← THE BOUNDARY
+│           /*
+│             era: '1848',
+│             setting: 'american_frontier',
+│             defaultRoute: 'main_trail',
+│             catholicAnchor: 'jesuit_frontier',
+│             gradeBands: ['k2', '3_5', '6_8'],
+│             aiPersona: 'trail_historian',
+│             ...
+│           */
+│
+├── server/                    # Node.js backend
 │   ├── routes/
 │   │   ├── session.js
 │   │   ├── historian.js
 │   │   ├── npc.js
 │   │   ├── insights.js
 │   │   └── export.js
-│   ├── state/
-│   │   └── store.js
-│   ├── ai/
-│   │   ├── prompts.js         # Prompts for all 3 grade bands + all AI features
-│   │   └── proxy.js
+│   ├── state/store.js
 │   └── logger.js
+│
 ├── shared/
-│   └── types.js
+│   └── types.js               # Shared data structures
+│
 ├── .env.example
-├── CLAUDE.md
-├── pioneer-trail-requirements.md
+├── CLAUDE.md                  # This file
+├── the-long-way-home-requirements.md
+├── lwyh-enhancements-requirements.md
 └── catholic.md
 ```
+
+## Future Games (same engine, different content/)
+
+When Journey of Paul is ready:
+```
+games/
+├── long-way-home/       ← Oregon Trail, 1848
+├── journey-of-paul/     ← Mediterranean, 50 AD, Acts of the Apostles
+│   ├── content/
+│   │   ├── events.json         # Shipwrecks, imprisonments, conversions
+│   │   ├── landmarks.json      # Damascus→Jerusalem→Antioch→Corinth→Rome
+│   │   ├── npcs.json           # Barnabas, Luke, Timothy, Silas, Lydia
+│   │   └── moral-labels.json   # Early Church framework
+│   └── game.config.js
+├── mayflower/           ← Atlantic crossing, 1620
+└── the-crusades/        ← Europe to Holy Land, 1095+ (complex moral terrain)
+```
+
+The engine extraction step happens naturally when game #2 is started. Don't extract prematurely — build Long Way Home first, then extract the engine when Journey of Paul begins. You'll know exactly what's shared by then.
 
 ---
 
