@@ -99,10 +99,15 @@ export default function TravelScreen() {
     // Track whether we set a message this tick
     let dayMessage = '';
 
-    // Calculate food after today's consumption (mirrors ADVANCE_DAY reducer)
+    // Calculate food after today's consumption (mirrors ADVANCE_DAY reducer, including cold weather)
     const aliveCount = aliveAtStart.length;
     const rateMap = { filling: 3, meager: 2, bare_bones: 1 };
-    const dailyConsumption = aliveCount * (rateMap[state.rations] || 2);
+    const preCheckTemp = state.currentWeather?.temperature?.current ?? 65;
+    let dailyConsumption = aliveCount * (rateMap[state.rations] || 2);
+    // Cold weather increases food consumption (matches getFoodConsumption in reducer)
+    if (preCheckTemp < 32) dailyConsumption *= 1.4;
+    else if (preCheckTemp < 50) dailyConsumption *= 1.2;
+    dailyConsumption = Math.round(dailyConsumption * 10) / 10;
     const foodAfterToday = Math.max(0, state.foodLbs - dailyConsumption);
 
     // Starvation check
@@ -183,6 +188,20 @@ export default function TravelScreen() {
         }
       }
       dispatch({ type: 'UPDATE_MORALE', delta: -5 });
+    }
+
+    // Minimal water rations health penalty (people are getting dehydrated even with some water)
+    const waterHealthMod = (WATER_RATIONS[state.waterRations] || WATER_RATIONS.full).healthModifier || 0;
+    if (waterHealthMod > 0 && state.waterGallons > 0 && Math.random() < waterHealthMod) {
+      const thirstyMember = aliveAfterStarvation.find(m => m.health !== 'critical' && m.health !== 'dead');
+      if (thirstyMember && thirstyMember.health !== 'good') {
+        const healthOrder = ['good', 'fair', 'poor', 'critical'];
+        const idx = healthOrder.indexOf(thirstyMember.health);
+        if (idx < 3) {
+          dispatch({ type: 'UPDATE_PARTY_HEALTH', updates: [{ name: thirstyMember.name, health: healthOrder[idx + 1] }] });
+          if (!dayMessage) dayMessage = `${thirstyMember.name} is weakened from insufficient water.`;
+        }
+      }
     }
 
     // Auto-refill water at river terrain (traveling along rivers was the norm)
