@@ -114,3 +114,18 @@
 .knowledge-pulse {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* Global no-scrollbar — user requirement: no scrollbars anywhere */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Walking figure animation */
+@keyframes walk-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}

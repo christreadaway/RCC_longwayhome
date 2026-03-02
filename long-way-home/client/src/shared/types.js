@@ -192,6 +192,39 @@ export const GRACE_DELTAS = {
   FORGIVE: 10
 };
 
+/**
+ * Clergy skill definitions — random skill assigned to chaplain at game start.
+ * Skills range from practical (Tradesman) to intellectual (Banker).
+ */
+export const CLERGY_SKILLS = {
+  banker:     { name: 'Banker',     description: 'Experienced with money and trade. Haggling at forts costs 15% less.', tradeBonus: 0.15 },
+  carpenter:  { name: 'Carpenter',  description: 'Skilled at repairs. Wagon breakdowns fixed faster with fewer parts.', repairBonus: 0.3 },
+  blacksmith: { name: 'Blacksmith', description: 'Knows metalwork. Reduces wagon breakdown chance by 20%.', breakdownReduction: 0.2 },
+  doctor:     { name: 'Doctor',     description: 'Has medical knowledge. Illness recovery faster for the party.', illnessReduction: 0.15 },
+  scout:      { name: 'Scout',      description: 'Wilderness experience. Better at finding water and avoiding dangers.', dangerReduction: 0.1, waterFindBonus: 0.15 },
+  teacher:    { name: 'Teacher',    description: 'Well-read and educated. Morale stays higher under hardship.', moraleFloor: 15 },
+  tradesman:  { name: 'Tradesman',  description: 'Practical trail skills. Repairs cost less time and fewer parts.', repairTimeReduction: 0.25 },
+};
+
+/** Pick a random clergy skill key */
+export function randomClergySkill() {
+  const keys = Object.keys(CLERGY_SKILLS);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+/** Generate a random clergy age (28–55) */
+export function randomClergyAge() {
+  return 28 + Math.floor(Math.random() * 28);
+}
+
+/** Medicine supply constants */
+export const MEDICINE_CONFIG = {
+  price: 5,
+  maxDoses: 20,
+  healChance: 0.6,
+  illnessCureChance: 0.4,
+};
+
 export const GAME_CONSTANTS = {
   MAX_PARTY_SIZE: 5,
   MAX_OXEN: 9,
