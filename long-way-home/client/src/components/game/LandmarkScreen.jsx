@@ -11,16 +11,21 @@ import moralLabelsData from '../../data/moral-labels.json';
 
 /**
  * Maps landmark IDs to available NPC characters.
- * These NPCs appear at specific locations per the spec.
+ * NPCs reflect historically accurate tribal presence by region:
+ * - Fort Kearney (Nebraska): Pawnee territory
+ * - Fort Laramie (Wyoming): Lakota Sioux territory — Bordeaux was married to a Lakota woman
+ * - Fort Bridger (SW Wyoming): Shoshone territory
+ * - Fort Hall (Idaho): Shoshone-Bannock territory
+ * - Fort Boise (Idaho): Nez Perce / Shoshone territory
  */
 const NPC_LOCATIONS = {
   st_marys_mission: { key: 'desmet', name: 'Fr. Pierre-Jean De Smet', description: 'A Jesuit missionary invites you to speak with him.' },
   whitman_mission: { key: 'whitman', name: 'Marcus Whitman', description: 'The mission doctor offers a moment of conversation.' },
   fort_laramie: { key: 'bordeaux', name: 'James Bordeaux', description: 'A grizzled fur trader leans against the wall, watching you.' },
-  fort_kearney: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'A quiet scout sits by the fire, willing to share what he knows.' },
-  fort_hall: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'A familiar scout nods to you from across the campfire.' },
-  fort_bridger: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'The Pawnee scout who guides wagon trains is here.' },
-  fort_boise: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'A scout is available to share trail knowledge.' },
+  fort_kearney: { key: 'scout_pawnee', name: 'Takoda (Pawnee Scout)', description: 'A Pawnee scout sits by the fire. His people know every river crossing and buffalo trail on these plains.' },
+  fort_bridger: { key: 'scout_shoshone', name: 'Washakie (Shoshone Guide)', description: 'A Shoshone guide who knows every pass through these mountains offers to share what he knows.' },
+  fort_hall: { key: 'scout_bannock', name: 'Taghee (Bannock Guide)', description: 'A Bannock guide familiar with the Snake River country sits nearby, mending a fishing net.' },
+  fort_boise: { key: 'scout_nez_perce', name: 'Hímiin Maqsmáqs (Nez Perce Scout)', description: 'A Nez Perce scout who has guided many wagon trains through the Blue Mountains rests here.' },
 };
 
 export default function LandmarkScreen() {
@@ -411,13 +416,121 @@ export default function LandmarkScreen() {
   );
 }
 
+/**
+ * Preloaded NPC dialogue with game-relevant tips and useful information.
+ * Each NPC has suggested questions and hardcoded responses that help
+ * the player learn about the trail and get gameplay tips.
+ */
+const NPC_DIALOGUE = {
+  scout_pawnee: {
+    greeting: "I am Takoda. My people, the Pawnee, have hunted these plains since before your grandfathers were born. I will tell you what I know of the land ahead.",
+    suggestedQuestions: [
+      { q: "What dangers lie ahead on the trail?", a: "The Platte River country is flat, but do not be fooled. Cholera lives in the stagnant water — drink only from moving streams. Beyond Fort Laramie, the hills begin. Keep your oxen rested before then, or they will fail you in the mountains." },
+      { q: "Where can I find good hunting?", a: "The buffalo herds are thick between here and Chimney Rock. Hunt what you need, but take only what your wagon can carry. Waste angers the spirits of the land. A good hunter takes one or two — a foolish one kills many and leaves them to rot." },
+      { q: "How should I manage my supplies?", a: "You will need at least 200 pounds of food to reach the next fort. Ration your food carefully — meager rations keep you moving. Save your money for Fort Laramie, where prices are fair. Further west, everything costs twice as much." },
+      { q: "What is the weather like ahead?", a: "Summer storms come fast on the plains — they bring lightning and floods that wash away camps. By autumn, watch the mountain passes. If you are not past South Pass before the first snow, you may not pass at all. The mountains do not forgive the slow." },
+      { q: "Tell me about your people, the Pawnee.", a: "The Pawnee are people of the earth and sky. We plant corn and squash in the river valleys, and hunt the buffalo on the open plains. We have lived here for many generations. Some of our young men scout for the wagon trains — the work is honest and we learn what the white settlers intend." }
+    ]
+  },
+  scout_shoshone: {
+    greeting: "I am Washakie. The Shoshone know these mountains as a mother knows her children. You are wise to ask before you travel further.",
+    suggestedQuestions: [
+      { q: "What is the best route through the mountains?", a: "South Pass is the only way for wagons. The pass is wide and gentle — many travelers are surprised when they cross the Continental Divide. But do not linger. After the pass, the Green River is dangerous. The current is strong and the water is cold. Pay the ferry if one is offered." },
+      { q: "My party is getting sick. What should I do?", a: "Rest is the best medicine on the trail. When sickness comes, stop for a day. Clean water and rest will save more lives than pushing on ever will. If someone is critical, slow your pace. A grueling pace with sick people is a death sentence." },
+      { q: "How do I keep my oxen healthy?", a: "Grass and water — that is all they ask. A steady pace preserves your oxen. Grueling pace breaks them down. If you lose your oxen, your journey ends. They are more valuable than gold out here." },
+      { q: "What dangers are in this area?", a: "Rattlesnakes in the rocks. Sudden storms that bring flash floods through the canyons. And the river crossings — the Green River has taken many wagons. If your wagon is heavy with supplies, lighten it before the crossing or risk losing everything." },
+      { q: "Tell me about the Shoshone people.", a: "We are the people of the high valleys and mountain streams. We follow the salmon, the elk, and the roots that grow in the meadows. Chief Washakie — my namesake — has kept peace with the travelers, for we see that cooperation serves everyone better than conflict." }
+    ]
+  },
+  scout_bannock: {
+    greeting: "I am Taghee. The Snake River country is my home. You look tired — the hardest part of your journey may still be ahead.",
+    suggestedQuestions: [
+      { q: "Tell me about the Snake River crossing.", a: "The Snake River is treacherous — deep, fast, cold. Many have drowned trying to ford it. Look for the wide, shallow places where the river spreads out. If you must cross deep water, unload your wagon and float it. Better to lose a day than lose your family." },
+      { q: "How much further to Oregon?", a: "From Fort Hall, you have perhaps 800 miles yet. The worst terrain is still ahead — the Snake River canyon, then the Blue Mountains. Many wagons break apart in the Blue Mountains. Check your spare parts now. If you need wheels or axles, buy them here." },
+      { q: "Is there good hunting ahead?", a: "Game is scarce along the Snake River — the canyon walls make hunting difficult. Stock up on food here at the fort. The salmon run in the river, but you need to know where to find them. Beyond the mountains, the game is plentiful again." },
+      { q: "What should I be worried about?", a: "Your food supply and your timing. If you are reading this past October, you must hurry. Snow comes early to the Blue Mountains and it does not leave until spring. Also watch your morale — a discouraged party makes mistakes. Rest on Sundays if you can afford the time." },
+      { q: "Tell me about the Bannock people.", a: "We are kin to the Shoshone, but the river and the salmon are our life. We fish these waters, hunt the high meadows, and trade with the Nez Perce to the west. The fort trades with us, and sometimes we guide the wagons through the difficult passes." }
+    ]
+  },
+  scout_nez_perce: {
+    greeting: "I am called Yellow Wolf by the traders. The Nez Perce have guided many travelers through the Blue Mountains. I can tell you what awaits.",
+    suggestedQuestions: [
+      { q: "How do we get through the Blue Mountains?", a: "The Blue Mountains are the last great barrier before the Columbia River. The forest is dense and the trails are steep. You will need to lower your wagons down some slopes with ropes. If you have spare parts, now is the time to use them — broken wheels on a mountain pass can end your journey." },
+      { q: "What happens at The Dalles?", a: "At The Dalles, the trail meets the Columbia River. You must choose: ride the river rapids on a raft — dangerous but fast — or take the Barlow Road over Mount Hood. The Barlow Road is safer but costs time and toll money. Either way, the Willamette Valley is close." },
+      { q: "How is my party holding up — any advice?", a: "If your people are sick, rest them now. The Blue Mountains will take everything your party has left. Filling rations and steady pace — that is how you survive the last stretch. Rushing through the mountains with hungry, exhausted people is how wagons are lost." },
+      { q: "Are we going to make it?", a: "That depends on your supplies and your people. If you have food, healthy oxen, and your party can still walk, yes — the Valley is only a few weeks away. But I have seen many wagons turn back from the Blue Mountains. Do not give up. The hardest part of the journey is the last part." },
+      { q: "Tell me about the Nez Perce.", a: "The Nez Perce — Nimíipuu, we call ourselves — have lived in this land since the beginning. We breed the finest horses on the continent, the Appaloosa. We fish for salmon in the rivers and hunt elk in the mountains. We helped Lewis and Clark when they came through, and we help the wagon trains now." }
+    ]
+  },
+  desmet: {
+    greeting: "Ah, welcome, my child. I am Father De Smet. Rest here a moment — God's creation is beautiful in this valley, non? Tell me, how goes your journey?",
+    suggestedQuestions: [
+      { q: "We've lost people on the trail. How do we go on?", a: "Loss is the heaviest burden of the trail, heavier than any wagon load. But you honor the departed by continuing — by carrying their memory to Oregon. Pray for them, grieve for them, but do not let grief stop your feet. They would want you to reach the Valley." },
+      { q: "What are the Works of Mercy?", a: "The Corporal Works of Mercy are the hands of Christ in the world: feed the hungry, give drink to the thirsty, clothe the naked, shelter the homeless, visit the sick, visit the imprisoned, and bury the dead. On this trail, you will have many chances to practice each one. Every act of mercy strengthens the soul." },
+      { q: "Tell me about the Native peoples here.", a: "I have lived among the Flathead people — the Bitterroot Salish — for many years. They are a noble and generous people who asked for missionaries to come teach them about the Catholic faith. I have also traveled among the Sioux, the Blackfeet, and the Crow. Each nation has its own wisdom and its own ways of knowing God." },
+      { q: "Should I help strangers on the trail even when it costs me?", a: "That is perhaps the most important question you will face. When you share food with the hungry, you feed Christ himself. When you help a stranger, you may never see the reward — or you may find that the stranger returns your kindness tenfold when you need it most. Trust in Providence, my child." }
+    ]
+  },
+  whitman: {
+    greeting: "I'm Dr. Whitman. You look like you've been on the trail a while. How is your party? I can offer medical advice if any of your people are ailing.",
+    suggestedQuestions: [
+      { q: "Someone in my party is very sick. What should I do?", a: "Rest is the most important medicine we have. Stop the wagon, boil your drinking water, and keep the sick person warm and hydrated. Cholera and dysentery are the biggest killers on this trail, and both come from bad water. A grueling pace with a critically ill person almost guarantees you will lose them." },
+      { q: "How do I prevent illness on the trail?", a: "Three rules: drink only clean, flowing water — never from pools or puddles. Keep your rations filling, not bare bones — starving people get sick faster. And do not push a grueling pace when your party is already weakened. Rest days save lives. Sunday rest is not just for the soul." },
+      { q: "What medical supplies should I carry?", a: "Sadly, there is little true medicine available on the frontier. Rest, clean water, and adequate food are your best remedies. If you can trade for medicine at the forts, do so. But the truth is, prevention matters more than cure out here." },
+      { q: "What is it like in Oregon?", a: "The Willamette Valley is everything the guidebooks promise — rich soil, mild winters, clean water, and timber for building. I came west to help people reach it, and I believe every hardship on this trail is worth the life that awaits you there. Keep going." }
+    ]
+  },
+  bordeaux: {
+    greeting: "Bordeaux's the name. I've been trading at this fort for twenty years. You need supplies, advice, or both? I deal fair — ask what you will.",
+    suggestedQuestions: [
+      { q: "What supplies do I need for the mountains ahead?", a: "Spare parts — wheels, axles, tongues. The mountain trails will break your wagon if it's not in good repair. Food, at least 300 pounds if you can manage it. And keep your oxen count up. Losing an ox team in the mountains means abandoning your wagon." },
+      { q: "Are the prices fair further west?", a: "Ha! Fair? Everything costs double at Fort Bridger, triple at Fort Hall. If you have cash, spend it here where prices are reasonable. West of here, a wheel that costs $15 today will cost $20 or more. Buy what you need now." },
+      { q: "What's the trail like beyond Fort Laramie?", a: "Rougher. The flat prairie is behind you. From here it's hills, then mountains, then rivers that want to kill you. Independence Rock by July Fourth — that's the rule. If you're behind schedule, push your pace now while the terrain allows it. Once you hit the mountains, grueling pace will cost you oxen." },
+      { q: "Tell me about the fur trade.", a: "The beaver trade is mostly played out — too many trappers took too many pelts. Now I trade with the emigrants and the Lakota. My wife is Lakota, and her people are good trading partners. Fair dealing is everything out here — cheat someone on the frontier and word travels fast." }
+    ]
+  }
+};
+
 function NpcChatInline({ character, characterName, onClose, sessionCode, studentId, gameContext }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [exchangeCount, setExchangeCount] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [usedQuestions, setUsedQuestions] = useState(new Set());
   const dispatch = useGameDispatch();
+
+  const dialogue = NPC_DIALOGUE[character];
+
+  // Show greeting on mount
+  useEffect(() => {
+    if (dialogue?.greeting) {
+      setMessages([{ role: 'npc', text: dialogue.greeting }]);
+    }
+  }, [character]);
+
+  function handleSuggestedQuestion(sq) {
+    if (isComplete || usedQuestions.has(sq.q)) return;
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', text: sq.q },
+      { role: 'npc', text: sq.a }
+    ]);
+    setUsedQuestions(prev => new Set([...prev, sq.q]));
+
+    const newCount = exchangeCount + 1;
+    setExchangeCount(newCount);
+
+    if (newCount >= 3) {
+      setIsComplete(true);
+    }
+
+    dispatch({
+      type: 'ADD_NPC_TRANSCRIPT',
+      transcript: { character: characterName, location: gameContext.current_landmark, question: sq.q, response: sq.a }
+    });
+  }
 
   async function handleSend(e) {
     e.preventDefault();
@@ -441,11 +554,18 @@ function NpcChatInline({ character, characterName, onClose, sessionCode, student
         transcript: { character: characterName, location: gameContext.current_landmark, question: userMsg, response: res.response }
       });
     } catch {
-      setMessages(prev => [...prev, { role: 'npc', text: 'The traveler seems lost in thought and does not respond.' }]);
+      // Fallback to a generic helpful response
+      const fallback = "I cannot speak to that right now, but let me say this — keep your supplies up, rest when your party is sick, and do not push a grueling pace through the mountains. That advice has saved many a wagon train.";
+      setMessages(prev => [...prev, { role: 'npc', text: fallback }]);
+      const newCount = exchangeCount + 1;
+      setExchangeCount(newCount);
+      if (newCount >= 3) setIsComplete(true);
     } finally {
       setLoading(false);
     }
   }
+
+  const availableQuestions = dialogue?.suggestedQuestions?.filter(sq => !usedQuestions.has(sq.q)) || [];
 
   return (
     <div className="card">
@@ -454,9 +574,6 @@ function NpcChatInline({ character, characterName, onClose, sessionCode, student
         <button onClick={onClose} className="text-trail-brown text-sm hover:text-trail-red">Close</button>
       </div>
       <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
-        {messages.length === 0 && (
-          <p className="text-trail-brown text-sm italic">Ask {characterName.split(' ')[0]} a question about the trail...</p>
-        )}
         {messages.map((msg, i) => (
           <div key={i} className={`text-sm p-2 rounded ${msg.role === 'user' ? 'bg-trail-blue/10 text-trail-darkBlue' : 'bg-trail-parchment text-trail-darkBrown italic'}`}>
             <strong>{msg.role === 'user' ? 'You' : characterName.split(' ')[0]}:</strong> {msg.text}
@@ -464,22 +581,40 @@ function NpcChatInline({ character, characterName, onClose, sessionCode, student
         ))}
         {loading && <p className="text-trail-brown text-sm italic">Thinking...</p>}
       </div>
+
       {!isComplete ? (
-        <form onSubmit={handleSend} className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Ask a question..."
-            className="input-field flex-1 text-sm"
-            maxLength={200}
-          />
-          <button type="submit" disabled={loading} className="btn-primary text-sm px-3">
-            {loading ? '...' : 'Ask'}
-          </button>
-        </form>
+        <div className="space-y-2">
+          {/* Suggested questions */}
+          {availableQuestions.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[10px] text-trail-brown uppercase tracking-wider">Ask about:</p>
+              {availableQuestions.map((sq, i) => (
+                <button key={i} onClick={() => handleSuggestedQuestion(sq)}
+                  className="w-full text-left text-sm p-2 rounded border border-trail-tan/50 hover:bg-trail-blue/5 hover:border-trail-blue transition-all text-trail-darkBrown">
+                  {sq.q}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Free-form input */}
+          <form onSubmit={handleSend} className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Or type your own question..."
+              className="input-field flex-1 text-sm"
+              maxLength={200}
+            />
+            <button type="submit" disabled={loading} className="btn-primary text-sm px-3">
+              {loading ? '...' : 'Ask'}
+            </button>
+          </form>
+          <p className="text-[10px] text-trail-brown/60 text-center">{3 - exchangeCount} question(s) remaining</p>
+        </div>
       ) : (
-        <p className="text-trail-brown text-sm italic">{characterName.split(' ')[0]} waves farewell and continues on their way.</p>
+        <p className="text-trail-brown text-sm italic">{characterName.split(' ')[0]} nods farewell. "Safe travels, friend. May the trail treat you well."</p>
       )}
     </div>
   );

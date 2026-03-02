@@ -1,22 +1,69 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
 import { GRACE_DELTAS, GAME_CONSTANTS } from '@shared/types';
 import { logger } from '../../utils/logger';
 import moralLabelsData from '../../data/moral-labels.json';
+
+/**
+ * Replace template placeholders like {member_name} with actual game state values.
+ */
+function resolveTemplate(text, state) {
+  if (!text) return text;
+  const alive = state.partyMembers.filter(m => m.alive);
+  const randomMember = alive.length > 0
+    ? alive[Math.floor(Math.random() * alive.length)]
+    : null;
+
+  return text
+    .replace(/\{member_name\}/g, randomMember?.name || 'a member of your party')
+    .replace(/\{student_name\}/g, state.studentName || 'Pioneer')
+    .replace(/\{party_size\}/g, String(alive.length));
+}
 
 export default function EventScreen() {
   const state = useGameState();
   const dispatch = useGameDispatch();
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [outcome, setOutcome] = useState(null);
-  const event = state.currentEvent;
+  const rawEvent = state.currentEvent;
 
-  // If no event, transition back to traveling (useEffect avoids dispatch during render)
+  // Resolve template placeholders in the event text once, on mount
+  const event = useMemo(() => {
+    if (!rawEvent) return null;
+    // Pick a consistent random member for this event
+    const alive = state.partyMembers.filter(m => m.alive);
+    const member = alive.length > 0
+      ? alive[Math.floor(Math.random() * alive.length)]
+      : null;
+    const memberName = member?.name || 'a member of your party';
+
+    const replace = (text) => {
+      if (!text) return text;
+      return text
+        .replace(/\{member_name\}/g, memberName)
+        .replace(/\{student_name\}/g, state.studentName || 'Pioneer')
+        .replace(/\{party_size\}/g, String(alive.length));
+    };
+
+    return {
+      ...rawEvent,
+      _resolvedMember: member,
+      description: replace(rawEvent.description),
+      choices: rawEvent.choices?.map(c => ({
+        ...c,
+        text: replace(c.text),
+        outcome_text: replace(c.outcome_text),
+        cost_text: replace(c.cost_text),
+      }))
+    };
+  }, [rawEvent?.id]); // Only re-resolve on new event
+
+  // If no event, transition back to traveling
   useEffect(() => {
-    if (!event) {
+    if (!rawEvent) {
       dispatch({ type: 'SET_PHASE', phase: 'TRAVELING' });
     }
-  }, [event, dispatch]);
+  }, [rawEvent, dispatch]);
 
   if (!event) {
     return null;
@@ -34,13 +81,38 @@ export default function EventScreen() {
     if (choice.effects) {
       const eff = choice.effects;
 
-      if (eff.food_lbs) dispatch({ type: 'UPDATE_SUPPLIES', foodLbs: Math.max(0, state.foodLbs + eff.food_lbs) });
-      if (eff.cash) dispatch({ type: 'UPDATE_SUPPLIES', cash: Math.max(0, state.cash + eff.cash) });
-      if (eff.ammo) dispatch({ type: 'UPDATE_SUPPLIES', ammoBoxes: Math.max(0, state.ammoBoxes + eff.ammo) });
-      if (eff.oxen) dispatch({ type: 'UPDATE_SUPPLIES', oxenYokes: Math.max(0, state.oxenYokes + eff.oxen) });
-      if (eff.clothing) dispatch({ type: 'UPDATE_SUPPLIES', clothingSets: Math.max(0, state.clothingSets + eff.clothing) });
-      if (eff.grace) dispatch({ type: 'UPDATE_GRACE', delta: eff.grace, trigger: event.id });
-      if (eff.morale) dispatch({ type: 'UPDATE_MORALE', delta: eff.morale });
+      // Food effects
+      if (eff.food_lbs) {
+        dispatch({ type: 'UPDATE_SUPPLIES', foodLbs: Math.max(0, state.foodLbs + eff.food_lbs) });
+      }
+      // Cash effects
+      if (eff.cash) {
+        dispatch({ type: 'UPDATE_SUPPLIES', cash: Math.max(0, state.cash + eff.cash) });
+      }
+      // Ammo effects
+      if (eff.ammo) {
+        dispatch({ type: 'UPDATE_SUPPLIES', ammoBoxes: Math.max(0, state.ammoBoxes + eff.ammo) });
+      }
+      // Oxen effects
+      if (eff.oxen) {
+        dispatch({ type: 'UPDATE_SUPPLIES', oxenYokes: Math.max(0, state.oxenYokes + eff.oxen) });
+      }
+      // Clothing effects
+      if (eff.clothing) {
+        dispatch({ type: 'UPDATE_SUPPLIES', clothingSets: Math.max(0, state.clothingSets + eff.clothing) });
+      }
+
+      // Grace effects (support both "grace" and "grace_change" keys)
+      const graceVal = eff.grace || eff.grace_change;
+      if (graceVal) {
+        dispatch({ type: 'UPDATE_GRACE', delta: graceVal, trigger: event.id });
+      }
+
+      // Morale effects (support both "morale" and "morale_change" keys)
+      const moraleVal = eff.morale || eff.morale_change;
+      if (moraleVal) {
+        dispatch({ type: 'UPDATE_MORALE', delta: moraleVal });
+      }
 
       // Spare parts
       if (eff.spare_part) {
@@ -58,7 +130,36 @@ export default function EventScreen() {
         }
       }
 
-      // Health effects
+      // Health effects — support both "health_change" (numeric) and "health_target" pattern
+      if (eff.health_change) {
+        // health_change is a numeric value. Negative means damage.
+        // Apply to a random alive member (or the event's resolved member)
+        const alive = state.partyMembers.filter(m => m.alive);
+        if (alive.length > 0) {
+          const victim = event._resolvedMember && event._resolvedMember.alive
+            ? event._resolvedMember
+            : alive[Math.floor(Math.random() * alive.length)];
+          const healthOrder = ['good', 'fair', 'poor', 'critical'];
+          const idx = healthOrder.indexOf(victim.health);
+          // Each -5 health_change = 1 tier down. Positive = heal up.
+          const tierShift = Math.round(eff.health_change / -5);
+          if (tierShift !== 0) {
+            const newIdx = Math.max(0, Math.min(3, idx + tierShift));
+            if (newIdx !== idx) {
+              dispatch({
+                type: 'UPDATE_PARTY_HEALTH',
+                updates: [{ name: victim.name, health: healthOrder[newIdx] }]
+              });
+              if (tierShift > 0) {
+                description += ` ${victim.name}'s condition worsened to ${healthOrder[newIdx]}.`;
+              } else {
+                description += ` ${victim.name} is recovering — now ${healthOrder[newIdx]}.`;
+              }
+            }
+          }
+        }
+      }
+
       if (eff.health_target === 'random_member') {
         const alive = state.partyMembers.filter(m => m.alive);
         if (alive.length > 0) {
@@ -84,11 +185,20 @@ export default function EventScreen() {
           }
         });
       }
+
+      // Oxen loss
+      if (eff.oxen_loss) {
+        const newOxen = Math.max(0, state.oxenYokes - eff.oxen_loss);
+        dispatch({ type: 'UPDATE_SUPPLIES', oxenYokes: newOxen });
+        description += ` You lost ${eff.oxen_loss} yoke of oxen.`;
+      }
     }
 
     // CWM event handling
     if (event.is_cwm) {
-      const helped = choice.id === 'help' || choice.id === 'helped';
+      // Determine if the player chose the charitable option — CWM help choices
+      // have positive grace_change, decline choices have negative grace_change
+      const helped = choice.effects?.grace_change > 0 || choice.effects?.grace > 0;
       const isDeceptive = Math.random() < GAME_CONSTANTS.CWM_DECEPTIVE_PROBABILITY;
 
       dispatch({
@@ -101,7 +211,6 @@ export default function EventScreen() {
       if (helped) {
         dispatch({ type: 'ADD_RECIPROCITY_PENDING', cwmType: event.type });
       } else {
-        // Set reconciliation pending for sinful choice
         if (state.gradeBand !== 'k2') {
           dispatch({
             type: 'SET_RECONCILIATION_PENDING',
@@ -112,6 +221,22 @@ export default function EventScreen() {
 
       // Moral label
       const labelKey = `cwm_${event.type}_${helped ? 'helped' : 'declined'}`;
+      const labels = moralLabelsData[labelKey];
+      if (labels) {
+        const bandLabel = labels[state.gradeBand];
+        if (bandLabel) {
+          moralLabelId = labelKey;
+          const mode = state.sessionSettings?.moral_label_mode || 'full';
+          if (mode === 'full') {
+            dispatch({ type: 'SHOW_LABEL', label: { id: labelKey, ...bandLabel } });
+          }
+        }
+      }
+    }
+
+    // Non-CWM moral label from events.json (if the event has a moral_label_key)
+    if (!event.is_cwm && event.moral_label_key) {
+      const labelKey = `${event.moral_label_key}_${choice.id}`;
       const labels = moralLabelsData[labelKey];
       if (labels) {
         const bandLabel = labels[state.gradeBand];
@@ -185,10 +310,32 @@ export default function EventScreen() {
               <div className="p-4 bg-trail-parchment rounded-lg">
                 <p className="text-trail-darkBrown">{outcome.text}</p>
                 {outcome.effects && (
-                  <div className="mt-2 text-sm text-trail-brown">
-                    {outcome.effects.food_lbs && <span className={outcome.effects.food_lbs > 0 ? 'text-trail-green' : 'text-trail-red'}>Food: {outcome.effects.food_lbs > 0 ? '+' : ''}{outcome.effects.food_lbs} lbs </span>}
-                    {outcome.effects.cash && <span className={outcome.effects.cash > 0 ? 'text-trail-green' : 'text-trail-red'}>Cash: {outcome.effects.cash > 0 ? '+' : ''}${outcome.effects.cash} </span>}
-                    {outcome.effects.time_days && <span className="text-trail-red">Time: {outcome.effects.time_days} day(s) lost </span>}
+                  <div className="mt-2 text-sm space-x-2">
+                    {outcome.effects.food_lbs !== undefined && outcome.effects.food_lbs !== 0 && (
+                      <span className={outcome.effects.food_lbs > 0 ? 'text-green-600' : 'text-red-600'}>
+                        Food: {outcome.effects.food_lbs > 0 ? '+' : ''}{outcome.effects.food_lbs} lbs
+                      </span>
+                    )}
+                    {outcome.effects.cash !== undefined && outcome.effects.cash !== 0 && (
+                      <span className={outcome.effects.cash > 0 ? 'text-green-600' : 'text-red-600'}>
+                        Cash: {outcome.effects.cash > 0 ? '+' : ''}${outcome.effects.cash}
+                      </span>
+                    )}
+                    {outcome.effects.morale_change !== undefined && outcome.effects.morale_change !== 0 && (
+                      <span className={outcome.effects.morale_change > 0 ? 'text-green-600' : 'text-red-600'}>
+                        Morale: {outcome.effects.morale_change > 0 ? '+' : ''}{outcome.effects.morale_change}
+                      </span>
+                    )}
+                    {outcome.effects.health_change !== undefined && outcome.effects.health_change !== 0 && (
+                      <span className={outcome.effects.health_change > 0 ? 'text-green-600' : 'text-red-600'}>
+                        Health: {outcome.effects.health_change > 0 ? '+' : ''}{outcome.effects.health_change}
+                      </span>
+                    )}
+                    {outcome.effects.time_days !== undefined && outcome.effects.time_days > 0 && (
+                      <span className="text-red-600">
+                        Time: {outcome.effects.time_days} day(s) lost
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -212,6 +359,7 @@ function getEventHeaderColor(category) {
     case 'good_event': return 'bg-green-600';
     case 'cwm': return 'bg-trail-blue';
     case 'feast_day': return 'bg-purple-600';
+    case 'moral_choice': return 'bg-trail-brown';
     default: return 'bg-trail-brown';
   }
 }

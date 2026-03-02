@@ -1,23 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const ANIMALS = [
-  { type: 'squirrel', food: 5, speed: 4, size: 20, y: 0.7 },
-  { type: 'rabbit', food: 8, speed: 3, size: 25, y: 0.65 },
-  { type: 'deer', food: 30, speed: 2.5, size: 40, y: 0.5 },
-  { type: 'bison', food: 100, speed: 1.5, size: 55, y: 0.55 }
+  { type: 'squirrel', food: 5, speed: 3.5, size: 35, y: 0.7 },
+  { type: 'rabbit', food: 8, speed: 3, size: 40, y: 0.65 },
+  { type: 'deer', food: 30, speed: 2.5, size: 55, y: 0.5 },
+  { type: 'bison', food: 100, speed: 1.5, size: 70, y: 0.55 }
 ];
 
 export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 100 }) {
-  const canvasRef = useRef(null);
-  const [ammoLeft, setAmmoLeft] = useState(Math.min(ammo * 20, 20)); // 20 shots max per hunt
+  const [ammoLeft, setAmmoLeft] = useState(Math.min(ammo * 20, 20));
   const [foodGained, setFoodGained] = useState(0);
   const [bisonKilled, setBisonKilled] = useState(0);
   const [animals, setAnimals] = useState([]);
   const [timeLeft, setTimeLeft] = useState(30);
   const [gameActive, setGameActive] = useState(true);
   const [overhuntWarning, setOverhuntWarning] = useState(false);
-  const animationRef = useRef(null);
-  const lastSpawnRef = useRef(0);
+  const [hitFlashes, setHitFlashes] = useState([]);
+  const containerRef = useRef(null);
 
   // Spawn animals
   useEffect(() => {
@@ -25,30 +24,29 @@ export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 10
 
     const interval = setInterval(() => {
       setAnimals(prev => {
-        // Bison appear less often if population is depleted
         let pool = ANIMALS;
         if (bisonPopulation < 30) {
           pool = ANIMALS.filter(a => a.type !== 'bison');
         } else if (bisonPopulation < 60) {
-          // Reduce bison frequency
           pool = [...ANIMALS.filter(a => a.type !== 'bison'), ...ANIMALS.filter(a => a.type !== 'bison')];
           pool.push(ANIMALS.find(a => a.type === 'bison'));
         }
         const animal = pool[Math.floor(Math.random() * pool.length)];
         const fromLeft = Math.random() > 0.5;
+        const containerWidth = containerRef.current?.offsetWidth || 600;
         return [...prev.filter(a => a.alive), {
           id: Date.now() + Math.random(),
           ...animal,
-          x: fromLeft ? -50 : 800,
+          x: fromLeft ? -50 : containerWidth + 50,
           direction: fromLeft ? 1 : -1,
-          yPos: animal.y * 300 + Math.random() * 40,
+          yPos: animal.y * 250 + Math.random() * 40,
           alive: true
         }];
       });
-    }, 2000);
+    }, 1800);
 
     return () => clearInterval(interval);
-  }, [gameActive]);
+  }, [gameActive, bisonPopulation]);
 
   // Timer
   useEffect(() => {
@@ -68,59 +66,78 @@ export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 10
   // Move animals
   useEffect(() => {
     if (!gameActive) return;
+    const containerWidth = containerRef.current?.offsetWidth || 600;
     const moveInterval = setInterval(() => {
       setAnimals(prev =>
         prev.map(a => ({
           ...a,
-          x: a.x + a.speed * a.direction * 3
-        })).filter(a => a.x > -100 && a.x < 900)
+          x: a.x + a.speed * a.direction * 2.5
+        })).filter(a => a.x > -80 && a.x < containerWidth + 80)
       );
     }, 50);
     return () => clearInterval(moveInterval);
   }, [gameActive]);
 
-  function handleShoot(e) {
-    if (!gameActive || ammoLeft <= 0) return;
+  const handleShoot = useCallback((e) => {
+    if (!gameActive) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    setAmmoLeft(prevAmmo => {
+      if (prevAmmo <= 0) return prevAmmo;
 
-    const newAmmo = ammoLeft - 1;
-    setAmmoLeft(newAmmo);
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return prevAmmo;
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
 
-    // Check hits — compute which animals are hit, then update state
-    let foodFromHit = 0;
-    let bisonHit = 0;
-    setAnimals(prev =>
-      prev.map(a => {
-        if (!a.alive) return a;
-        const dx = Math.abs(clickX - a.x);
-        const dy = Math.abs(clickY - a.yPos);
-        if (dx < a.size && dy < a.size) {
-          foodFromHit += a.food;
-          if (a.type === 'bison') bisonHit++;
-          return { ...a, alive: false };
-        }
-        return a;
-      })
-    );
+      const newAmmo = prevAmmo - 1;
 
-    if (foodFromHit > 0) {
-      setFoodGained(prev => prev + foodFromHit);
-    }
-    if (bisonHit > 0) {
-      setBisonKilled(prev => {
-        const newCount = prev + bisonHit;
-        if (newCount >= 3) setOverhuntWarning(true);
-        return newCount;
-      });
-    }
+      // Check hits against current animal positions
+      let anyHit = false;
+      setAnimals(prev =>
+        prev.map(a => {
+          if (!a.alive) return a;
+          // Use generous hit detection — hit radius proportional to animal size
+          const hitRadius = a.size * 0.9;
+          const dx = Math.abs(clickX - a.x);
+          const dy = Math.abs(clickY - a.yPos);
+          if (dx < hitRadius && dy < hitRadius) {
+            anyHit = true;
+            // Accumulate food via functional state update
+            setFoodGained(f => f + a.food);
+            if (a.type === 'bison') {
+              setBisonKilled(b => {
+                const newCount = b + 1;
+                if (newCount >= 3) setOverhuntWarning(true);
+                return newCount;
+              });
+            }
+            setHitFlashes(flashes => [...flashes, { id: Date.now() + Math.random(), x: a.x, y: a.yPos, food: a.food }]);
+            return { ...a, alive: false };
+          }
+          return a;
+        })
+      );
 
-    if (newAmmo <= 0) {
-      setGameActive(false);
-    }
-  }
+      if (!anyHit) {
+        setHitFlashes(flashes => [...flashes, { id: Date.now() + Math.random(), x: clickX, y: clickY, miss: true }]);
+      }
+
+      if (newAmmo <= 0) {
+        setTimeout(() => setGameActive(false), 100);
+      }
+
+      return newAmmo;
+    });
+  }, [gameActive]);
+
+  // Clean up hit flashes
+  useEffect(() => {
+    if (hitFlashes.length === 0) return;
+    const timer = setTimeout(() => {
+      setHitFlashes(prev => prev.slice(1));
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [hitFlashes]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-300 to-green-200 flex flex-col items-center justify-center p-4">
@@ -134,6 +151,7 @@ export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 10
 
         {/* Hunting area */}
         <div
+          ref={containerRef}
           className="relative w-full h-80 bg-gradient-to-b from-sky-200 to-green-300 rounded-xl overflow-hidden cursor-crosshair border-2 border-trail-brown"
           onClick={handleShoot}
         >
@@ -154,7 +172,7 @@ export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 10
           {animals.filter(a => a.alive).map(a => (
             <div
               key={a.id}
-              className="absolute transition-none"
+              className="absolute"
               style={{
                 left: `${a.x}px`,
                 top: `${a.yPos}px`,
@@ -165,14 +183,22 @@ export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 10
             </div>
           ))}
 
-          {/* Dead animals */}
+          {/* Hit flashes */}
+          {hitFlashes.map(f => (
+            <div key={f.id} className="absolute pointer-events-none animate-bounce"
+              style={{ left: `${f.x}px`, top: `${f.y - 15}px` }}>
+              {f.miss
+                ? <span className="text-xs text-white font-bold bg-black/30 px-1 rounded">Miss!</span>
+                : <span className="text-sm text-green-100 font-bold bg-green-800/70 px-1 rounded">+{f.food} lbs</span>
+              }
+            </div>
+          ))}
+
+          {/* Dead animals (faded) */}
           {animals.filter(a => !a.alive).map(a => (
-            <div
-              key={a.id}
-              className="absolute opacity-50"
-              style={{ left: `${a.x}px`, top: `${a.yPos + 10}px` }}
-            >
-              <div className="text-xs text-red-600 font-bold">+{a.food} lbs</div>
+            <div key={a.id} className="absolute opacity-30 pointer-events-none"
+              style={{ left: `${a.x}px`, top: `${a.yPos + 5}px`, transform: 'rotate(90deg)' }}>
+              <AnimalSprite type={a.type} size={a.size * 0.7} />
             </div>
           ))}
 
@@ -201,9 +227,7 @@ export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 10
 
         {gameActive && (
           <button
-            onClick={() => {
-              setGameActive(false);
-            }}
+            onClick={() => setGameActive(false)}
             className="mt-4 btn-secondary"
           >
             Finish Hunting

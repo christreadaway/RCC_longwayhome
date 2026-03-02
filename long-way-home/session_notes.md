@@ -148,4 +148,105 @@
 
 ---
 
+## Session 4 — Playtest Feedback & Major UI Overhaul (2026-03-02)
+
+### Context
+Live playtest by Chris revealed 13+ issues across UI, game logic, difficulty, NPC accuracy, and content variety. All addressed in this session.
+
+### What was done
+
+#### Layout Overhaul (no scrolling)
+- Rewrote TravelScreen from scrollable `min-h-screen` to viewport-fitting `h-screen flex flex-col overflow-hidden`
+- New 3-column layout: left sidebar (terrain scene, party status, supplies, settings), center (map, progress bar, travel actions), right (optional historian panel)
+- Grace score now visible in top bar with color-coded progress bar
+
+#### SVG Trail Map
+- Created `OregonTrailMap.jsx` — full SVG map with 1848 state/territory boundaries
+- Shows landmark dots, trail path, rivers, mountain ranges, wagon icon at current position
+- Zoom/pan controls, compass rose, landmark labels
+- Wagon interpolates position between landmarks based on distance traveled
+
+#### Terrain Visualization
+- Created `TerrainScene.jsx` — 4 scene types (plains, hills, mountains, river)
+- Each scene has unique geographic elements matching current trail segment
+- Includes animated wagon with oxen on trail
+
+#### Moral Labels Fix
+- Changed from slide-in-from-right to centered pop-in animation
+- Green (border + background) for positive valence, red for negative
+- **Critical fix:** CWM choice ID detection — code checked `choice.id === 'help'` but CWM events use IDs like `share_food`, `pay_fair_price`, `forgive`, `bury_deceased`, etc. Changed to check `choice.effects?.grace_change > 0` which reliably distinguishes charitable choices.
+- This was causing the user's reported bug: paying fair price for a wheel showed a NEGATIVE moral label
+
+#### Event Template Placeholders
+- Events.json used `{member_name}`, `{student_name}`, `{party_size}` but EventScreen rendered raw text
+- Added `useMemo` that resolves templates on event mount using a random alive party member
+- Fixed the "After drinking from a stagnant creek, {member_name} begins showing terrible symptoms..." bug
+
+#### Event Effects Fix
+- events.json used `morale_change` and `health_change` keys
+- EventScreen only checked for `morale` and `health_delta` — never matched
+- Fixed by checking both: `const moraleVal = eff.morale || eff.morale_change`
+- Added full `health_change` processing with tier conversion (each -5 = 1 tier down)
+- Added `oxen_loss` effect handling
+
+#### Hunting Minigame
+- Animal sizes increased: squirrel 20→35, rabbit 25→40, deer 40→55, bison 55→70
+- **Critical fix:** Food wasn't accumulating (user shot animals but got 0 food). Root cause: React state batching — `setFoodGained` was called outside `setAnimals` callback, reading stale state. Fixed by using functional state updates inside the callback.
+- Hit radius increased to `size * 0.9`
+- Added hit/miss flash feedback with floating text
+
+#### Historically Accurate NPC Scouts
+- Researched which tribes occupied each fort's region in 1848
+- Fort Kearney: Takoda (Pawnee Scout) — Great Plains
+- Fort Bridger: Washakie (Shoshone Guide) — Rocky Mountains
+- Fort Hall: Taghee (Bannock Guide) — Snake River region
+- Fort Boise: Hímiin Maqsmáqs (Nez Perce Scout) — Blue Mountains/Columbia Plateau
+- Each scout has preloaded dialogue with 4-5 suggested questions containing gameplay tips
+- Fr. De Smet, Whitman, Bordeaux also got preloaded dialogue
+- AI free-form questions still available as fallback
+
+#### Difficulty Increase
+- Base illness rate: 3% → 6% with terrain/seasonal modifiers
+- Added weekly trail wear (health degradation from journey hardship)
+- Added morale decay every 5 days without rest
+- Death chance increased: filling 15%→20%, meager 25%→30%, bare_bones 40%→50%
+- Event frequency: threshold 0.75 → 0.60 (40% more events)
+
+#### Trail Flavor Text (300+ messages)
+- Created `trail-flavor.js` with context-aware ambient messages across 14 categories:
+  terrain (4 types × 20 each), weather, wildlife, campLife, humanity (40 messages),
+  children, faith, hardship, wagonTrain, nightSky, food, water, seasonal, milestone
+- Humanity messages include: singing "Oh! Susanna", fiddle playing, reading Pilgrim's Progress,
+  harmonica "Amazing Grace", writing journals, reading James Fenimore Cooper, whittling,
+  card games, dancing, poetry recitation, accordion polka, reading Robinson Crusoe
+- Weighted random selection: hardship increases when food/morale low, seasonal matches game
+  date month, night sky every 4th day, milestone reflections every 12th day
+- Replaced old 20-message `getTerrainMessages()` in TravelScreen
+
+### Files created
+- `client/src/components/game/shared/OregonTrailMap.jsx` — SVG trail map
+- `client/src/components/game/shared/TerrainScene.jsx` — terrain visualization
+- `client/src/data/trail-flavor.js` — 300+ ambient messages
+
+### Files modified
+- `client/src/components/game/TravelScreen.jsx` — complete layout rewrite
+- `client/src/components/game/EventScreen.jsx` — template resolution, effect key fix, CWM label fix
+- `client/src/components/game/LandmarkScreen.jsx` — historically accurate NPCs, preloaded dialogue
+- `client/src/components/game/shared/MoralLabel.jsx` — centered, green/red coloring
+- `client/src/components/game/shared/HuntingMinigame.jsx` — hit detection fix, larger animals
+- `client/src/index.css` — moral label pop-in animation
+- `server/ai/prompts.js` — new scout character prompt keys
+
+### Open items
+- [ ] Verify moral-labels.json valence correctness for all event/choice combinations
+- [ ] Test difficulty balance across full playthrough (may need further tuning)
+- [ ] AI chat quality review (user reported "none of the chats seem to be working well")
+- [ ] Verify CWM event firing logic across multiple playthroughs
+- [ ] Test K-2 simplified trail flow
+- [ ] Test 3-5 intermediate variant
+- [ ] Performance test on Chromebook-equivalent specs
+- [ ] Add database for persistent classroom sessions (v2)
+
+---
+
 *Add new session entries below as the project evolves.*

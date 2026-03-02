@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS } from '@shared/types';
+import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES } from '@shared/types';
 import { formatGameDate, isSunday, addDays, isAfter } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
-import TrailMap from './shared/TrailMap';
+import OregonTrailMap from './shared/OregonTrailMap';
+import TerrainScene from './shared/TerrainScene';
 import PartyStatus from './shared/PartyStatus';
 import HistorianPanel from './shared/HistorianPanel';
 import KnowledgePanel from './shared/KnowledgePanel';
@@ -14,6 +15,23 @@ import HuntingMinigame from './shared/HuntingMinigame';
 import landmarksData from '../../data/landmarks.json';
 import landmarksK2 from '../../data/landmarks-k2.json';
 import eventsData from '../../data/events.json';
+import { getFlavorMessage } from '../../data/trail-flavor';
+
+/** Return grace range label */
+function getGraceRange(grace) {
+  if (grace >= GRACE_RANGES.HIGH.min) return 'High';
+  if (grace >= GRACE_RANGES.MODERATE.min) return 'Moderate';
+  if (grace >= GRACE_RANGES.LOW.min) return 'Low';
+  return 'Depleted';
+}
+
+/** Grace bar color */
+function getGraceColor(grace) {
+  if (grace >= 75) return 'bg-yellow-400';
+  if (grace >= 40) return 'bg-yellow-600/60';
+  if (grace >= 15) return 'bg-orange-500';
+  return 'bg-red-600';
+}
 
 export default function TravelScreen() {
   const state = useGameState();
@@ -79,7 +97,7 @@ export default function TravelScreen() {
     const dailyConsumption = aliveCount * (rateMap[state.rations] || 2);
     const foodAfterToday = Math.max(0, state.foodLbs - dailyConsumption);
 
-    // Starvation check — fire when food runs out this day or was already out
+    // Starvation check
     if (foodAfterToday <= 0) {
       const starvationUpdates = [];
       const deaths = [];
@@ -112,7 +130,7 @@ export default function TravelScreen() {
       aliveAtStart.forEach(m => {
         const healthOrder = ['good', 'fair', 'poor', 'critical', 'dead'];
         const idx = healthOrder.indexOf(m.health);
-        if (idx >= 3) starvationDeaths.add(m.name); // critical -> dead
+        if (idx >= 3) starvationDeaths.add(m.name);
       });
     }
     const aliveAfterStarvation = aliveAtStart.filter(m => !starvationDeaths.has(m.name));
@@ -129,12 +147,11 @@ export default function TravelScreen() {
     const paceMult = PACE_MULTIPLIER[state.pace] || 1.0;
     const dailyMiles = Math.round(baseMiles * paceMult);
 
-    // Random event check (simplified — roll chance per day)
+    // Random event check — events fire more frequently for a challenging game
     const eventRoll = Math.random();
-    const eventThreshold = state.gradeBand === 'k2' ? 0.85 : 0.75;
+    const eventThreshold = state.gradeBand === 'k2' ? 0.75 : 0.60;
 
     if (eventRoll > eventThreshold) {
-      // Fire a random event
       const event = selectRandomEvent(state, eventsData);
       if (event) {
         dispatch({ type: 'SET_EVENT', event });
@@ -142,12 +159,19 @@ export default function TravelScreen() {
       }
     }
 
-    // Illness check
+    // Illness check — higher base rate, terrain and conditions matter more
     const illnessRoll = Math.random();
-    let illnessChance = 0.03; // base 3% per day
-    if (state.pace === 'grueling') illnessChance += 0.05;
-    if (state.rations === 'bare_bones') illnessChance += 0.04;
+    let illnessChance = 0.06; // 6% base (was 3%)
+    if (state.pace === 'grueling') illnessChance += 0.08;
+    if (state.pace === 'strenuous') illnessChance += 0.03;
+    if (state.rations === 'bare_bones') illnessChance += 0.06;
+    if (state.rations === 'meager') illnessChance += 0.02;
     if (state.pace === 'grueling' && state.rations === 'bare_bones') illnessChance += 0.15;
+    // Mountain and river terrain increase illness risk
+    if (currentLandmark?.terrain_type === 'mountains') illnessChance += 0.04;
+    if (currentLandmark?.terrain_type === 'river') illnessChance += 0.03;
+    // Late season increases risk (after October)
+    if (state.gameDate > '1848-10-01') illnessChance += 0.05;
 
     if (illnessRoll < illnessChance && aliveAfterStarvation.length > 0) {
       const victim = aliveAfterStarvation[Math.floor(Math.random() * aliveAfterStarvation.length)];
@@ -172,18 +196,55 @@ export default function TravelScreen() {
       }
     }
 
-    // Death check for critical members (use aliveAfterStarvation to avoid stale data)
-    // If chaplain present, reduce morale impact of death by 40% (Last Rites)
+    // Trail wear — the journey itself wears people down
+    // Every 7 days there's a chance a healthy/fair member deteriorates
+    if (state.trailDay % 7 === 0) {
+      const healthyMembers = aliveAfterStarvation.filter(m => m.health === 'good' || m.health === 'fair');
+      if (healthyMembers.length > 0) {
+        let wearChance = 0.15; // 15% base weekly wear
+        if (state.pace === 'grueling') wearChance += 0.20;
+        if (state.pace === 'strenuous') wearChance += 0.08;
+        if (state.rations === 'bare_bones') wearChance += 0.12;
+        if (state.rations === 'meager') wearChance += 0.05;
+
+        healthyMembers.forEach(m => {
+          if (Math.random() < wearChance) {
+            const healthOrder = ['good', 'fair', 'poor', 'critical'];
+            const idx = healthOrder.indexOf(m.health);
+            const newHealth = idx < 3 ? healthOrder[idx + 1] : 'critical';
+            dispatch({
+              type: 'UPDATE_PARTY_HEALTH',
+              updates: [{ name: m.name, health: newHealth }]
+            });
+            if (!dayMessage) {
+              const wearMessages = [
+                `${m.name} is showing signs of exhaustion from the long journey.`,
+                `${m.name} has been weakened by the relentless travel.`,
+                `The trail is taking its toll on ${m.name}.`,
+                `${m.name} is not looking well after weeks on the trail.`,
+              ];
+              dayMessage = wearMessages[Math.floor(Math.random() * wearMessages.length)];
+            }
+          }
+        });
+      }
+    }
+
+    // Morale decay — morale naturally drops over time without rest
+    if (state.trailDay % 5 === 0) {
+      const moraleDecay = state.pace === 'grueling' ? -5 : state.pace === 'strenuous' ? -3 : -1;
+      dispatch({ type: 'UPDATE_MORALE', delta: moraleDecay });
+    }
+
+    // Death check for critical members — higher death rates
     const chaplainAlive = state.chaplainInParty && aliveAfterStarvation.some(m => m.isChaplain);
     aliveAfterStarvation.filter(m => m.health === 'critical' && !m.isChaplain).forEach(m => {
       const deathRoll = Math.random();
-      const deathChance = state.rations === 'filling' ? 0.15 : state.rations === 'meager' ? 0.25 : 0.4;
+      const deathChance = state.rations === 'filling' ? 0.20 : state.rations === 'meager' ? 0.30 : 0.50;
       if (deathRoll < deathChance) {
-        // Fire Last Rites if chaplain is alive
         if (chaplainAlive && !state.lastRitesFired) {
           dispatch({ type: 'LAST_RITES' });
           dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.LAST_RITES, trigger: 'last_rites' });
-          // Morale hit is reduced by LAST_RITES_MORALE_REDUCTION factor
           dispatch({ type: 'UPDATE_MORALE', delta: Math.round(-15 * GAME_CONSTANTS.LAST_RITES_MORALE_REDUCTION) });
           dayMessage = `Fr. Joseph administered Last Rites to ${m.name} before they passed. ${m.name} died of ${m.illness || 'exhaustion'}, but the party found peace in the sacrament.`;
         } else {
@@ -223,7 +284,7 @@ export default function TravelScreen() {
       return;
     }
 
-    // Feast day check — use the post-advance date
+    // Feast day check
     const nextDate = addDays(state.gameDate, 1);
     const feastDays = {
       '1848-08-15': { id: 'assumption', name: 'Feast of the Assumption', text: 'Today is the Feast of the Assumption of the Blessed Virgin Mary. Many in the wagon train pause to pray.' },
@@ -237,14 +298,11 @@ export default function TravelScreen() {
     }
 
     if (!dayMessage) {
-      const messages = [
-        'The trail stretches ahead.',
-        'Your wagon creaks along the trail.',
-        'Another day on the trail.',
-        'The landscape slowly changes as you travel west.',
-        'Dust rises behind your wagon.'
-      ];
-      dayMessage = messages[Math.floor(Math.random() * messages.length)];
+      dayMessage = getFlavorMessage(
+        currentLandmark?.terrain_type || 'plains',
+        state,
+        state.trailDay
+      );
     }
     setTravelMessage(dayMessage);
   }, [state, dispatch, nextLandmark, landmarks]);
@@ -256,7 +314,6 @@ export default function TravelScreen() {
       dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.SUNDAY_REST, trigger: 'sunday_rest' });
       dispatch({ type: 'UPDATE_MORALE', delta: 5 });
 
-      // Sunday rest heals party: all members recover 1 health tier
       const healthUpdates = state.partyMembers
         .filter(m => m.alive && m.health !== 'good')
         .map(m => {
@@ -271,10 +328,8 @@ export default function TravelScreen() {
         setTravelMessage('Your party rested on the Sabbath. Everyone feels refreshed.');
       }
 
-      // Advance date but not distance
       dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
     } else {
-      // Player chose to travel on Sunday — skip the Sunday check and travel normally
       skipSundayCheckRef.current = true;
       travelOneDay();
     }
@@ -286,13 +341,11 @@ export default function TravelScreen() {
   }
 
   function handleRest() {
-    // Guard: check end date
     if (isAfter(state.gameDate, GAME_CONSTANTS.END_DATE)) {
       dispatch({ type: 'SET_STATUS', status: 'failed' });
       dispatch({ type: 'SET_PHASE', phase: 'GAME_OVER' });
       return;
     }
-    // Guard: check all dead
     const alive = state.partyMembers.filter(m => m.alive);
     if (alive.length === 0) {
       dispatch({ type: 'SET_STATUS', status: 'failed' });
@@ -301,7 +354,6 @@ export default function TravelScreen() {
     }
 
     setIsResting(true);
-    // Rest restores party health slightly
     const updates = state.partyMembers
       .filter(m => m.alive && m.health !== 'good')
       .map(m => {
@@ -323,7 +375,6 @@ export default function TravelScreen() {
       dispatch({ type: 'UPDATE_SUPPLIES', foodLbs: state.foodLbs + foodGained });
 
       if (bisonKilled >= 3) {
-        // Overhunting — grace penalty
         dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.OVERHUNT, trigger: 'overhunt_bison' });
         dispatch({ type: 'DEPLETE_BISON', amount: bisonKilled * 15 });
         setTravelMessage(`You brought back ${foodGained} lbs of food, but you took more bison than your party needs. The herd suffers.`);
@@ -346,165 +397,227 @@ export default function TravelScreen() {
     return <HuntingMinigame onComplete={handleHuntingComplete} ammo={state.ammoBoxes} bisonPopulation={state.bisonPopulation} />;
   }
 
+  const graceRange = getGraceRange(state.grace);
+  const terrainType = currentLandmark?.terrain_type || 'plains';
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-trail-cream">
-      {/* Trail Scene Header */}
-      <div className="relative h-48 bg-gradient-to-b from-sky-300 to-sky-100 overflow-hidden">
-        {/* Sky */}
-        <div className="absolute inset-0 bg-gradient-to-b from-sky-400 to-sky-200" />
-        {/* Mountains */}
-        <svg className="absolute bottom-8 w-full" viewBox="0 0 1200 200" preserveAspectRatio="none">
-          <polygon fill="#6b8e6b" points="0,200 100,80 200,150 350,60 500,120 650,40 800,100 950,50 1100,90 1200,200" opacity="0.5"/>
-          <polygon fill="#4a7c4a" points="0,200 150,100 300,160 450,90 600,140 750,70 900,130 1050,80 1200,200" opacity="0.6"/>
-        </svg>
-        {/* Ground */}
-        <div className="absolute bottom-0 w-full h-8 bg-gradient-to-b from-green-700 to-green-800" />
-        {/* Wagon */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 wagon-animate">
-          <svg width="80" height="50" viewBox="0 0 80 50">
-            <rect x="10" y="10" width="50" height="25" rx="3" fill="#8B6914" stroke="#5C4033" strokeWidth="2"/>
-            <path d="M10,10 Q35,0 60,10" fill="white" stroke="#5C4033" strokeWidth="1.5"/>
-            <circle cx="15" cy="38" r="8" fill="none" stroke="#5C4033" strokeWidth="2.5"/>
-            <circle cx="55" cy="38" r="8" fill="none" stroke="#5C4033" strokeWidth="2.5"/>
-            <line x1="15" y1="30" x2="15" y2="46" stroke="#5C4033" strokeWidth="1"/>
-            <line x1="7" y1="38" x2="23" y2="38" stroke="#5C4033" strokeWidth="1"/>
-            <line x1="55" y1="30" x2="55" y2="46" stroke="#5C4033" strokeWidth="1"/>
-            <line x1="47" y1="38" x2="63" y2="38" stroke="#5C4033" strokeWidth="1"/>
-          </svg>
+    <div className="h-screen flex flex-col overflow-hidden bg-trail-cream">
+      {/* ═══ TOP BAR: date, location, grace ═══ */}
+      <div className="flex-none flex items-center justify-between px-3 py-1.5 bg-trail-darkBrown text-trail-cream border-b-2 border-trail-brown"
+        style={{ fontFamily: "'Lora', Georgia, serif" }}>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="font-semibold">{formatGameDate(state.gameDate)}</span>
+          <span className="text-trail-tan/70">|</span>
+          <span>Day {state.trailDay}</span>
         </div>
-        {/* Date and Location */}
-        <div className="absolute top-4 left-4 bg-black/30 text-white px-3 py-1 rounded-lg text-sm">
-          {formatGameDate(state.gameDate)} — Day {state.trailDay}
-        </div>
-        <div className="absolute top-4 right-4 bg-black/30 text-white px-3 py-1 rounded-lg text-sm">
+        <div className="text-sm font-semibold tracking-wide">
           Near {currentLandmark?.name || 'Independence'}
         </div>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-trail-tan/70">Grace:</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-20 h-2.5 bg-trail-brown/50 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-500 ${getGraceColor(state.grace)}`}
+                style={{ width: `${state.grace}%` }} />
+            </div>
+            <span className={`text-xs font-semibold ${
+              state.grace >= 75 ? 'text-yellow-300' : state.grace >= 40 ? 'text-trail-tan' : state.grace >= 15 ? 'text-orange-400' : 'text-red-400'
+            }`}>{state.grace} ({graceRange})</span>
+          </div>
+        </div>
       </div>
 
-      {/* Trail Progress Bar */}
-      <div className="px-4 py-2">
-        <TrailMap landmarks={landmarks} currentIndex={state.currentLandmarkIndex} progress={progressPercent} />
-      </div>
+      {/* ═══ MAIN CONTENT: 3-column layout ═══ */}
+      <div className="flex-1 flex min-h-0">
 
-      {/* Main Content Area */}
-      <div className="px-4 py-4 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-        {/* Left: Party & Supplies */}
-        <div className="space-y-4">
-          <PartyStatus
-            members={state.partyMembers}
-            morale={state.morale}
-            food={state.foodLbs}
-            cash={state.cash}
-          />
+        {/* ──── LEFT COLUMN: terrain scene + party + supplies ──── */}
+        <div className="w-64 flex-none flex flex-col border-r-2 border-trail-tan/40 bg-trail-parchment/30">
+          {/* Terrain Scene */}
+          <div className="flex-none h-28 border-b border-trail-tan/30">
+            <TerrainScene terrainType={terrainType} landmarkName={currentLandmark?.name} />
+          </div>
 
-          <div className="card">
-            <h3 className="font-semibold text-trail-darkBrown mb-2">Supplies</h3>
-            <div className="grid grid-cols-2 gap-1 text-sm">
-              <span>Food:</span><span className={state.foodLbs < 50 ? 'text-trail-red font-bold' : ''}>{Math.round(state.foodLbs)} lbs</span>
-              <span>Oxen:</span><span>{state.oxenYokes} yoke</span>
-              <span>Ammo:</span><span>{state.ammoBoxes} boxes</span>
-              <span>Clothing:</span><span>{state.clothingSets} sets</span>
-              <span>Cash:</span><span>${state.cash.toFixed(2)}</span>
-              <span>Spare Parts:</span><span>{state.spareParts.wheels}W {state.spareParts.axles}A {state.spareParts.tongues}T</span>
+          {/* Party Members */}
+          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
+            <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1"
+              style={{ fontVariant: 'small-caps' }}>Party</h3>
+            <div className="space-y-0.5">
+              {state.partyMembers.map(m => (
+                <div key={m.name} className="flex justify-between items-center text-xs">
+                  <span className={`${!m.alive ? 'line-through text-gray-400' : 'text-trail-darkBrown'}`}>
+                    {m.name}
+                    {m.isChaplain && <span className="text-trail-gold ml-0.5">&dagger;</span>}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    m.health === 'good' ? 'bg-green-100 text-green-700' :
+                    m.health === 'fair' ? 'bg-yellow-100 text-yellow-700' :
+                    m.health === 'poor' ? 'bg-orange-100 text-orange-700' :
+                    m.health === 'critical' ? 'bg-red-100 text-red-700 font-bold' :
+                    'bg-gray-100 text-gray-500'
+                  }`}>{m.alive ? m.health : 'dead'}</span>
+                </div>
+              ))}
+            </div>
+            {/* Morale bar */}
+            <div className="mt-1.5">
+              <div className="flex justify-between text-[10px] text-trail-brown mb-0.5">
+                <span>Morale</span>
+                <span>{state.morale}%</span>
+              </div>
+              <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-300 ${
+                  state.morale >= 60 ? 'bg-green-500' : state.morale >= 30 ? 'bg-yellow-500' : 'bg-red-500'
+                }`} style={{ width: `${state.morale}%` }} />
+              </div>
             </div>
           </div>
 
-          {/* Pace & Rations Controls */}
-          <div className="card">
-            <h3 className="font-semibold text-trail-darkBrown mb-2">Travel Settings</h3>
-            <div className="space-y-2">
-              <div>
-                <label className="text-sm text-trail-brown">Pace:</label>
-                <select
-                  value={state.pace}
+          {/* Supplies */}
+          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
+            <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1"
+              style={{ fontVariant: 'small-caps' }}>Supplies</h3>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-trail-darkBrown">
+              <span className="text-trail-brown">Food:</span>
+              <span className={state.foodLbs < 50 ? 'text-red-600 font-bold' : ''}>{Math.round(state.foodLbs)} lbs</span>
+              <span className="text-trail-brown">Oxen:</span>
+              <span>{state.oxenYokes} yoke</span>
+              <span className="text-trail-brown">Ammo:</span>
+              <span>{state.ammoBoxes} boxes</span>
+              <span className="text-trail-brown">Clothing:</span>
+              <span>{state.clothingSets} sets</span>
+              <span className="text-trail-brown">Cash:</span>
+              <span>${state.cash.toFixed(2)}</span>
+              <span className="text-trail-brown">Parts:</span>
+              <span>{state.spareParts.wheels}W {state.spareParts.axles}A {state.spareParts.tongues}T</span>
+            </div>
+          </div>
+
+          {/* Travel Settings */}
+          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
+            <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1"
+              style={{ fontVariant: 'small-caps' }}>Settings</h3>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <label className="text-[10px] text-trail-brown w-10">Pace:</label>
+                <select value={state.pace}
                   onChange={e => dispatch({ type: 'SET_PACE', pace: e.target.value })}
-                  className="select-field text-sm ml-2"
-                >
-                  <option value="steady">Steady (safe)</option>
-                  <option value="strenuous">Strenuous (faster)</option>
-                  <option value="grueling">Grueling (fastest)</option>
+                  className="flex-1 text-[11px] px-1 py-0.5 border border-trail-tan rounded bg-white">
+                  <option value="steady">Steady</option>
+                  <option value="strenuous">Strenuous</option>
+                  <option value="grueling">Grueling</option>
                 </select>
               </div>
-              <div>
-                <label className="text-sm text-trail-brown">Rations:</label>
-                <select
-                  value={state.rations}
+              <div className="flex items-center gap-1">
+                <label className="text-[10px] text-trail-brown w-10">Food:</label>
+                <select value={state.rations}
                   onChange={e => dispatch({ type: 'SET_RATIONS', rations: e.target.value })}
-                  className="select-field text-sm ml-2"
-                >
-                  <option value="filling">Filling (3 lbs/person/day)</option>
-                  <option value="meager">Meager (2 lbs/person/day)</option>
-                  <option value="bare_bones">Bare Bones (1 lb/person/day)</option>
+                  className="flex-1 text-[11px] px-1 py-0.5 border border-trail-tan rounded bg-white">
+                  <option value="filling">Filling</option>
+                  <option value="meager">Meager</option>
+                  <option value="bare_bones">Bare Bones</option>
                 </select>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Center: Travel Message & Actions */}
-        <div className="space-y-4">
-          {travelMessage && (
-            <div className="card-parchment text-center">
-              <p className="text-trail-darkBrown">{travelMessage}</p>
-            </div>
-          )}
-
-          {nextLandmark && (
-            <div className="text-center text-sm text-trail-brown">
-              {Math.max(0, Math.round(state.distanceToNextLandmark))} miles to {nextLandmark.name}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <button onClick={handleContinueTravel} className="btn-primary w-full py-3 text-lg">
-              Continue on the Trail
-            </button>
-            <button onClick={handleRest} className="btn-secondary w-full">
-              Rest for a Day
-            </button>
-            {state.gradeBand !== 'k2' && state.ammoBoxes > 0 && (
-              <button onClick={() => setShowHunting(true)} className="btn-secondary w-full">
-                Go Hunting
-              </button>
+          {/* Warnings */}
+          <div className="flex-1 px-3 py-2 overflow-y-auto">
+            {state.foodLbs < 50 && state.foodLbs > 0 && (
+              <div className="text-[10px] text-orange-600 font-semibold mb-1">Low food!</div>
             )}
-            {state.partyMembers.some(m => m.alive && m.health === 'critical') && state.prayerCooldownDay < state.trailDay && (
-              <button
-                onClick={() => {
-                  const criticalMember = state.partyMembers.find(m => m.alive && m.health === 'critical');
-                  dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER, trigger: 'prayer_crisis' });
-                  dispatch({ type: 'UPDATE_MORALE', delta: 3 });
-                  dispatch({ type: 'PRAY', memberName: criticalMember?.name });
-                  if (state.chaplainInParty) {
-                    setTravelMessage(`Fr. Joseph leads the party in prayer for ${criticalMember?.name}. A sense of calm settles over the group.`);
-                  } else {
-                    setTravelMessage(`The party prays together for ${criticalMember?.name}. It doesn't change the illness, but it steadies the heart.`);
-                  }
-                }}
-                className="w-full py-2 px-4 bg-trail-gold/20 border border-trail-gold text-trail-darkBrown rounded-lg hover:bg-trail-gold/30 transition-colors"
-              >
-                Pray for {state.partyMembers.find(m => m.alive && m.health === 'critical')?.name || 'the Sick'}
+            {state.foodLbs <= 0 && (
+              <div className="text-[10px] text-red-600 font-bold mb-1">No food! Starving!</div>
+            )}
+            {state.sessionSettings?.historian_enabled && (
+              <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })}
+                className="w-full text-[10px] py-1 px-2 bg-trail-tan/30 border border-trail-tan rounded text-trail-darkBrown hover:bg-trail-tan/50 transition-colors mt-1">
+                Trail Journal
               </button>
             )}
           </div>
         </div>
 
-        {/* Right: Knowledge Panel / Historian */}
-        <div className="space-y-4">
-          {state.sessionSettings?.historian_enabled && (
-            <button
-              onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })}
-              className="w-full py-2 px-4 bg-trail-tan/50 border border-trail-tan rounded-lg text-trail-darkBrown hover:bg-trail-tan/70 transition-colors text-sm"
-            >
-              Open Trail Journal
-            </button>
-          )}
-          {state.showHistorian && <HistorianPanel />}
-          <KnowledgePanel
-            currentLandmark={currentLandmark}
-            lastEvent={state.eventLog[state.eventLog.length - 1]}
-            gradeBand={state.gradeBand}
-          />
+        {/* ──── CENTER COLUMN: map + message + actions ──── */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Trail Map */}
+          <div className="flex-1 min-h-0">
+            <OregonTrailMap
+              landmarks={landmarks}
+              currentIndex={state.currentLandmarkIndex}
+              distanceToNext={state.distanceToNextLandmark}
+            />
+          </div>
+
+          {/* Progress bar */}
+          <div className="flex-none px-3 py-1 bg-trail-parchment/50 border-t border-trail-tan/30">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-trail-brown whitespace-nowrap">
+                {Math.round(state.distanceTraveled)} mi
+              </span>
+              <div className="flex-1 h-2 bg-trail-tan/30 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-trail-brown to-trail-gold rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }} />
+              </div>
+              <span className="text-[10px] text-trail-brown whitespace-nowrap">
+                {totalDistance} mi
+              </span>
+            </div>
+            {nextLandmark && (
+              <div className="text-center text-[10px] text-trail-brown mt-0.5">
+                {Math.max(0, Math.round(state.distanceToNextLandmark))} miles to {nextLandmark.name}
+              </div>
+            )}
+          </div>
+
+          {/* Message & Actions */}
+          <div className="flex-none px-4 py-2 bg-trail-parchment/60 border-t-2 border-trail-tan/50">
+            {travelMessage && (
+              <div className="text-center text-sm text-trail-darkBrown mb-2 italic font-serif leading-snug">
+                &ldquo;{travelMessage}&rdquo;
+              </div>
+            )}
+            <div className="flex gap-2 justify-center flex-wrap">
+              <button onClick={handleContinueTravel}
+                className="btn-primary py-1.5 px-5 text-sm">
+                Continue on the Trail
+              </button>
+              <button onClick={handleRest}
+                className="btn-secondary py-1.5 px-4 text-sm">
+                Rest
+              </button>
+              {state.gradeBand !== 'k2' && state.ammoBoxes > 0 && (
+                <button onClick={() => setShowHunting(true)}
+                  className="btn-secondary py-1.5 px-4 text-sm">
+                  Hunt
+                </button>
+              )}
+              {state.partyMembers.some(m => m.alive && m.health === 'critical') && state.prayerCooldownDay < state.trailDay && (
+                <button
+                  onClick={() => {
+                    const criticalMember = state.partyMembers.find(m => m.alive && m.health === 'critical');
+                    dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER, trigger: 'prayer_crisis' });
+                    dispatch({ type: 'UPDATE_MORALE', delta: 3 });
+                    dispatch({ type: 'PRAY', memberName: criticalMember?.name });
+                    if (state.chaplainInParty) {
+                      setTravelMessage(`Fr. Joseph leads the party in prayer for ${criticalMember?.name}. A sense of calm settles over the group.`);
+                    } else {
+                      setTravelMessage(`The party prays together for ${criticalMember?.name}. It doesn't change the illness, but it steadies the heart.`);
+                    }
+                  }}
+                  className="py-1.5 px-4 text-sm bg-trail-gold/20 border border-trail-gold text-trail-darkBrown rounded-lg hover:bg-trail-gold/30 transition-colors">
+                  Pray
+                </button>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* ──── RIGHT COLUMN: Knowledge Panel / Historian (if open) ──── */}
+        {state.showHistorian && (
+          <div className="w-72 flex-none border-l-2 border-trail-tan/40 bg-trail-parchment/20 overflow-y-auto">
+            <HistorianPanel />
+          </div>
+        )}
       </div>
 
       {/* Sunday Rest Prompt */}
@@ -522,14 +635,13 @@ export default function TravelScreen() {
 function selectRandomEvent(state, eventsData) {
   const validEvents = eventsData.events.filter(e => {
     if (!e.grade_bands.includes(state.gradeBand)) return false;
-    if (e.is_cwm) return false; // CWM handled separately
-    if (e.category === 'feast_day') return false; // Handled in travel
+    if (e.is_cwm) return false;
+    if (e.category === 'feast_day') return false;
     return true;
   });
 
   if (validEvents.length === 0) return null;
 
-  // Weighted random selection
   const totalWeight = validEvents.reduce((sum, e) => sum + (e.probability_weight || 1), 0);
   let roll = Math.random() * totalWeight;
   for (const event of validEvents) {
