@@ -15,6 +15,7 @@ import HuntingMinigame from './shared/HuntingMinigame';
 import landmarksData from '../../data/landmarks.json';
 import landmarksK2 from '../../data/landmarks-k2.json';
 import eventsData from '../../data/events.json';
+import { getFlavorMessage } from '../../data/trail-flavor';
 
 /** Return grace range label */
 function getGraceRange(grace) {
@@ -297,8 +298,11 @@ export default function TravelScreen() {
     }
 
     if (!dayMessage) {
-      const messages = getTerrainMessages(currentLandmark?.terrain_type);
-      dayMessage = messages[Math.floor(Math.random() * messages.length)];
+      dayMessage = getFlavorMessage(
+        currentLandmark?.terrain_type || 'plains',
+        state,
+        state.trailDay
+      );
     }
     setTravelMessage(dayMessage);
   }, [state, dispatch, nextLandmark, landmarks]);
@@ -626,41 +630,6 @@ export default function TravelScreen() {
       )}
     </div>
   );
-}
-
-/** Terrain-specific ambient messages */
-function getTerrainMessages(terrainType) {
-  const messages = {
-    plains: [
-      'The prairie grass stretches to the horizon in every direction.',
-      'A gentle wind ripples through the tall grass as your wagon rolls west.',
-      'The flat expanse of the Great Plains unfolds before you.',
-      'Dust rises behind your wagon wheels. The trail stretches ahead.',
-      'Prairie dogs watch your wagon from their burrows as you pass.',
-    ],
-    hills: [
-      'The rolling hills slow the oxen, but the views are breathtaking.',
-      'Your wagon crests another hill. The trail dips and rises ahead.',
-      'Rocky outcroppings dot the hillside. The terrain is getting rougher.',
-      'Scattered trees provide welcome shade as you climb the gentle slopes.',
-      'The landscape changes as foothills give way to steeper ground.',
-    ],
-    mountains: [
-      'Towering peaks rise ahead, their summits lost in clouds.',
-      'The mountain pass is narrow. Your wagon barely fits between the rocks.',
-      'Pine trees line the steep trail. The air is thin and cold.',
-      'Snow gleams on distant peaks. The mountain crossing tests your resolve.',
-      'Eagles circle above the ridgeline as your wagon climbs higher.',
-    ],
-    river: [
-      'The sound of rushing water grows louder as you approach the crossing.',
-      'The river churns with spring runoff. The crossing will be dangerous.',
-      'Cottonwood trees line the riverbanks, their leaves whispering in the breeze.',
-      'Other wagons are camped at the crossing, waiting for the water to drop.',
-      'The river glitters in the sunlight. It looks peaceful, but the current runs deep.',
-    ]
-  };
-  return messages[terrainType] || messages.plains;
 }
 
 function selectRandomEvent(state, eventsData) {
