@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES, PROFESSION_REPAIR, CHAPLAIN_COSTS, STORE_BOOKS, STORE_BIBLE, SLEEP_SCHEDULE, WATER_CONSUMPTION } from '@shared/types';
+import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES, PROFESSION_REPAIR, CHAPLAIN_COSTS, STORE_BOOKS, STORE_BIBLE, SLEEP_SCHEDULE, WATER_RATIONS, WATER_OXEN_MULTIPLIER, getHeatWaterMultiplier } from '@shared/types';
 import { formatGameDate, isSunday, addDays, isAfter } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
 import { logCrash, trackAction } from '../../utils/crashLogger';
@@ -99,10 +99,15 @@ export default function TravelScreen() {
     // Track whether we set a message this tick
     let dayMessage = '';
 
-    // Calculate food after today's consumption (mirrors ADVANCE_DAY reducer)
+    // Calculate food after today's consumption (mirrors ADVANCE_DAY reducer, including cold weather)
     const aliveCount = aliveAtStart.length;
     const rateMap = { filling: 3, meager: 2, bare_bones: 1 };
-    const dailyConsumption = aliveCount * (rateMap[state.rations] || 2);
+    const preCheckTemp = state.currentWeather?.temperature?.current ?? 65;
+    let dailyConsumption = aliveCount * (rateMap[state.rations] || 2);
+    // Cold weather increases food consumption (matches getFoodConsumption in reducer)
+    if (preCheckTemp < 32) dailyConsumption *= 1.4;
+    else if (preCheckTemp < 50) dailyConsumption *= 1.2;
+    dailyConsumption = Math.round(dailyConsumption * 10) / 10;
     const foodAfterToday = Math.max(0, state.foodLbs - dailyConsumption);
 
     // Starvation check
@@ -164,7 +169,9 @@ export default function TravelScreen() {
     }
 
     // --- Water dehydration check ---
-    const waterAfterToday = Math.max(0, state.waterGallons - (aliveCount * WATER_CONSUMPTION.perPersonPerDay + state.oxenYokes * WATER_CONSUMPTION.perOxenYokePerDay));
+    const waterRate = (WATER_RATIONS[state.waterRations] || WATER_RATIONS.full).perPerson;
+    const heatMult = getHeatWaterMultiplier(todayWeather.temperature?.current ?? 65);
+    const waterAfterToday = Math.max(0, state.waterGallons - ((aliveCount * waterRate + state.oxenYokes * waterRate * WATER_OXEN_MULTIPLIER) * heatMult));
     if (waterAfterToday <= 0 && state.waterGallons > 0) {
       // Just ran out of water
       dayMessage = 'Your water barrels are empty! The party and oxen suffer from thirst.';
@@ -181,6 +188,20 @@ export default function TravelScreen() {
         }
       }
       dispatch({ type: 'UPDATE_MORALE', delta: -5 });
+    }
+
+    // Minimal water rations health penalty (people are getting dehydrated even with some water)
+    const waterHealthMod = (WATER_RATIONS[state.waterRations] || WATER_RATIONS.full).healthModifier || 0;
+    if (waterHealthMod > 0 && state.waterGallons > 0 && Math.random() < waterHealthMod) {
+      const thirstyMember = aliveAfterStarvation.find(m => m.health !== 'critical' && m.health !== 'dead');
+      if (thirstyMember && thirstyMember.health !== 'good') {
+        const healthOrder = ['good', 'fair', 'poor', 'critical'];
+        const idx = healthOrder.indexOf(thirstyMember.health);
+        if (idx < 3) {
+          dispatch({ type: 'UPDATE_PARTY_HEALTH', updates: [{ name: thirstyMember.name, health: healthOrder[idx + 1] }] });
+          if (!dayMessage) dayMessage = `${thirstyMember.name} is weakened from insufficient water.`;
+        }
+      }
     }
 
     // Auto-refill water at river terrain (traveling along rivers was the norm)
@@ -240,9 +261,29 @@ export default function TravelScreen() {
     // Reset stationary counter since we're traveling
     dispatch({ type: 'RESET_STATIONARY' });
 
-    // Random event check — balanced frequency for realistic gameplay
+    // --- Terrain-adaptive difficulty ---
+    // Prairie/plains = easier (fewer events, less danger)
+    // Hills = moderate
+    // Mountains = hardest (more events, more danger, more illness)
+    // River = moderate-hard (crossing dangers, but also resources)
+    const hazardMult = currentLandmark?.hazard_multiplier ?? 1.0;
+    const terrainDifficulty = {
+      plains:    { eventMod: 0.06, dangerMod: -0.03, illnessMod: 0,     encounterMod: 0.04 },
+      hills:     { eventMod: 0,    dangerMod: 0,     illnessMod: 0.02,  encounterMod: 0 },
+      mountains: { eventMod: -0.06, dangerMod: 0.06,  illnessMod: 0.04,  encounterMod: -0.02 },
+      river:     { eventMod: -0.03, dangerMod: 0.04,  illnessMod: 0.03,  encounterMod: 0.01 },
+    }[terrainType] || { eventMod: 0, dangerMod: 0, illnessMod: 0, encounterMod: 0 };
+
+    // Weather compounds difficulty
+    const weatherDifficultyMod = todayWeather.difficultyScore >= 5 ? 0.05
+      : todayWeather.difficultyScore >= 3 ? 0.02 : 0;
+
+    // Random event check — frequency adapts to terrain
+    // Higher threshold = fewer events (plains are quieter; mountains are eventful)
     const eventRoll = Math.random();
-    const eventThreshold = state.gradeBand === 'k2' ? 0.80 : 0.72;
+    const baseEventThreshold = state.gradeBand === 'k2' ? 0.80 : 0.72;
+    const eventThreshold = Math.min(0.92, Math.max(0.55,
+      baseEventThreshold + terrainDifficulty.eventMod - weatherDifficultyMod));
 
     if (eventRoll > eventThreshold) {
       const event = selectRandomEvent(state, eventsData);
@@ -252,18 +293,19 @@ export default function TravelScreen() {
       }
     }
 
-    // --- Trail danger check (from comprehensive dangers list) ---
+    // --- Trail danger check (scales with terrain + weather + hazard multiplier) ---
     const dangerRoll = Math.random();
-    let dangerChance = 0.08; // 8% base chance per day
+    let dangerChance = (0.08 + terrainDifficulty.dangerMod + weatherDifficultyMod) * hazardMult;
     // Lingering increases danger (bandits, theft)
     if (state.daysStationary >= 2) dangerChance += 0.05 * state.daysStationary;
-    // Bad weather increases certain dangers
-    if (todayWeather.difficultyScore >= 5) dangerChance += 0.05;
     // Low grace draws more hardship
     if (state.grace < 15) dangerChance += 0.05;
     else if (state.grace >= 75) dangerChance -= 0.03;
     // Chaplain adds wagon fragility (extra weight)
     if (state.chaplainInParty) dangerChance += CHAPLAIN_COSTS.wagonFragilityBonus;
+    // Late season increases danger (winter storms, exhaustion)
+    if (state.gameDate > '1848-09-15') dangerChance += 0.03;
+    if (state.gameDate > '1848-11-01') dangerChance += 0.05;
     // Trail guide helps avoid dangers (education pays off)
     if (state.hasTrailGuide && Math.random() < STORE_BOOKS.trail_guide.effects.dangerAvoidance) {
       dangerChance = 0; // Guide helped identify and avoid the danger
@@ -308,11 +350,14 @@ export default function TravelScreen() {
       }
     }
 
-    // --- Positive encounter check (grace-influenced fortune) ---
+    // --- Positive encounter check (grace + terrain influenced) ---
+    // More encounters on plains (friendly travelers, native trade early in journey)
     const goodRoll = Math.random();
-    let goodChance = 0.05;
+    let goodChance = 0.05 + terrainDifficulty.encounterMod;
     if (state.grace >= 75) goodChance += 0.08; // High grace = more good fortune
     else if (state.grace >= 40) goodChance += 0.02;
+    // Early journey has more fellow travelers and native interactions
+    if (state.distanceTraveled < 500) goodChance += 0.03;
 
     if (goodRoll < goodChance && !dayMessage) {
       const encounter = selectPositiveEncounter(state, currentLandmark);
@@ -341,17 +386,14 @@ export default function TravelScreen() {
       }
     }
 
-    // Illness check — weather now affects illness rates
+    // Illness check — terrain + weather + conditions affect illness rates
     const illnessRoll = Math.random();
-    let illnessChance = 0.06;
+    let illnessChance = 0.06 + terrainDifficulty.illnessMod;
     if (state.pace === 'grueling') illnessChance += 0.08;
     if (state.pace === 'strenuous') illnessChance += 0.03;
     if (state.rations === 'bare_bones') illnessChance += 0.06;
     if (state.rations === 'meager') illnessChance += 0.02;
     if (state.pace === 'grueling' && state.rations === 'bare_bones') illnessChance += 0.15;
-    // Terrain
-    if (currentLandmark?.terrain_type === 'mountains') illnessChance += 0.04;
-    if (currentLandmark?.terrain_type === 'river') illnessChance += 0.03;
     // Late season
     if (state.gameDate > '1848-10-01') illnessChance += 0.05;
     // Weather effects on illness: wet/cold weather increases risk
@@ -390,10 +432,13 @@ export default function TravelScreen() {
 
     // Trail wear — the journey itself wears people down
     // Every 7 days there's a chance a healthy/fair member deteriorates
+    // Mountain terrain is much harder on the body than flatland
     if (state.trailDay % 7 === 0) {
       const healthyMembers = aliveAfterStarvation.filter(m => m.health === 'good' || m.health === 'fair');
       if (healthyMembers.length > 0) {
-        let wearChance = 0.15; // 15% base weekly wear
+        let wearChance = 0.15 * hazardMult; // Base weekly wear scaled by terrain hazard
+        if (terrainType === 'mountains') wearChance += 0.08;
+        else if (terrainType === 'plains') wearChance -= 0.05;
         if (state.pace === 'grueling') wearChance += 0.20;
         if (state.pace === 'strenuous') wearChance += 0.08;
         if (state.rations === 'bare_bones') wearChance += 0.12;
@@ -512,7 +557,7 @@ export default function TravelScreen() {
         );
         // Append weather note for informational color
         if (todayWeather.conditionLabel && todayWeather.conditionLabel !== 'Fair' && todayWeather.conditionLabel !== 'Sunny') {
-          dayMessage += ` The weather: ${todayWeather.conditionLabel.toLowerCase()}, ${todayWeather.temperature?.current || '--'}\u00B0F.`;
+          dayMessage += ` The weather: ${todayWeather.conditionLabel.toLowerCase()}, ${todayWeather.temperature?.current || '--'}°F.`;
         }
       }
     }
@@ -647,6 +692,73 @@ export default function TravelScreen() {
     dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
   }
 
+  function handleTalkToMember(member) {
+    dispatch({ type: 'TALK_TO_MEMBER', name: member.name });
+    trackAction('talk_to_member');
+
+    // Generate contextual dialogue based on what's bothering them
+    const morale = member.morale ?? 70;
+    const health = member.health;
+    let dialogue;
+
+    if (health === 'critical') {
+      dialogue = `${member.name} looks up weakly. "I'm scared... I don't know if I can go on. Please pray for me."`;
+    } else if (health === 'poor') {
+      dialogue = `${member.name} winces. "I'm not feeling well. Maybe we should rest a day."`;
+    } else if (morale < 25) {
+      const lowReasons = [
+        `${member.name} stares at the horizon. "I want to go home. Why did we leave?"`,
+        `${member.name} is barely holding back tears. "We've lost so much on this trail."`,
+        `${member.name} speaks quietly. "I'm afraid of what comes next."`,
+      ];
+      dialogue = lowReasons[Math.floor(Math.random() * lowReasons.length)];
+    } else if (morale < 50) {
+      const midReasons = [
+        `${member.name} sighs. "The road is long. Will we ever get there?"`,
+        `${member.name} looks tired. "I miss home. But we have to keep going, don't we?"`,
+        `${member.name} kicks a stone. "I'm hungry and my feet hurt."`,
+      ];
+      dialogue = midReasons[Math.floor(Math.random() * midReasons.length)];
+    } else if (morale < 75) {
+      const okReasons = [
+        `${member.name} smiles a little. "It's hard, but we'll make it together."`,
+        `${member.name} nods. "I'm alright. Just tired from the walk."`,
+      ];
+      dialogue = okReasons[Math.floor(Math.random() * okReasons.length)];
+    } else {
+      const goodReasons = [
+        `${member.name} grins. "What an adventure! I can't wait to see Oregon!"`,
+        `${member.name} laughs. "Did you see that eagle? This land is beautiful."`,
+      ];
+      dialogue = goodReasons[Math.floor(Math.random() * goodReasons.length)];
+    }
+
+    setTravelMessage(dialogue);
+  }
+
+  function handleGatherFirewood() {
+    trackAction('gather_firewood');
+    dispatch({ type: 'INCREMENT_STATIONARY' });
+
+    const terrainType = currentLandmark?.terrain_type || 'plains';
+    const gatherWeather = generateWeather(state.gameDate, terrainType, state.recentWeather || []);
+    dispatch({ type: 'SET_WEATHER', weather: gatherWeather });
+
+    // Yield depends on terrain — forests and rivers have wood, plains less so
+    let yield_ = 3;
+    if (terrainType === 'mountains') yield_ = 5;
+    else if (terrainType === 'river') yield_ = 4;
+    else if (terrainType === 'hills') yield_ = 4;
+    else if (terrainType === 'plains') yield_ = 2;
+
+    // Randomize a bit
+    yield_ = Math.max(1, yield_ + Math.floor(Math.random() * 3) - 1);
+
+    dispatch({ type: 'UPDATE_SUPPLIES', firewoodBundles: (state.firewoodBundles || 0) + yield_ });
+    dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
+    setTravelMessage(`Your party spent the day gathering firewood. You collected ${yield_} bundles.`);
+  }
+
   function handleHuntingComplete(foodGained, bisonKilled = 0) {
     setShowHunting(false);
     if (foodGained > 0) {
@@ -678,306 +790,139 @@ export default function TravelScreen() {
   const graceRange = getGraceRange(state.grace);
   const terrainType = currentLandmark?.terrain_type || 'plains';
 
-  // Compute next two landmarks for mini-map display
+  // Upcoming landmarks for mini-map
   const upcomingLandmarks = [];
   if (currentLandmark) upcomingLandmarks.push({ ...currentLandmark, index: state.currentLandmarkIndex });
   if (nextLandmark) upcomingLandmarks.push({ ...nextLandmark, index: state.currentLandmarkIndex + 1 });
   const thirdLandmark = landmarks[state.currentLandmarkIndex + 2];
   if (thirdLandmark) upcomingLandmarks.push({ ...thirdLandmark, index: state.currentLandmarkIndex + 2 });
 
+  const currentTemp = state.currentWeather?.temperature?.current ?? 65;
+  const needsFirewood = currentTemp < 50;
+  const noFire = state.noFireLastNight;
+
+  // Helper to get morale emoji
+  const getMoraleIcon = (morale) => {
+    if (morale >= 75) return '😊';
+    if (morale >= 50) return '😐';
+    if (morale >= 25) return '😟';
+    return '😢';
+  };
+
+  const getMoraleColor = (morale) => {
+    if (morale >= 75) return 'text-green-600';
+    if (morale >= 50) return 'text-yellow-600';
+    if (morale >= 25) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-trail-cream">
-      {/* ═══ TOP BAR: date, location, grace ═══ */}
-      <div className="flex-none flex items-center justify-between px-3 py-1 bg-trail-darkBrown text-trail-cream border-b-2 border-trail-brown"
-        style={{ fontFamily: "'Lora', Georgia, serif" }}>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="font-semibold">{formatGameDate(state.gameDate)}</span>
-          <span className="text-trail-tan/70">|</span>
+    <div className="h-screen flex flex-col overflow-hidden bg-trail-cream" style={{ fontFamily: "'Lora', Georgia, serif" }}>
+
+      {/* ═══ TOP BAR ═══ */}
+      <div className="flex-none flex items-center justify-between px-4 py-1 bg-trail-darkBrown text-trail-cream">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="font-bold text-sm tracking-wide">The Long Way Home</span>
+          <span className="text-trail-tan/50">|</span>
+          <span>{formatGameDate(state.gameDate)}</span>
+          <span className="text-trail-tan/50">|</span>
           <span>Day {state.trailDay}</span>
         </div>
-        <div className="text-sm font-semibold tracking-wide">
-          Near {currentLandmark?.name || 'Independence'}
-        </div>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-trail-tan/70">Grace:</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-trail-tan/70">Grace:</span>
           <div className="flex items-center gap-1.5">
-            <div className="w-20 h-2.5 bg-trail-brown/50 rounded-full overflow-hidden">
+            <div className="w-24 h-2 bg-trail-brown/50 rounded-full overflow-hidden">
               <div className={`h-full rounded-full transition-all duration-500 ${getGraceColor(state.grace)}`}
                 style={{ width: `${state.grace}%` }} />
             </div>
             <span className={`text-xs font-semibold ${
               state.grace >= 75 ? 'text-yellow-300' : state.grace >= 40 ? 'text-trail-tan' : state.grace >= 15 ? 'text-orange-400' : 'text-red-400'
-            }`}>{state.grace} ({graceRange})</span>
+            }`}>{state.grace}</span>
           </div>
         </div>
       </div>
 
-      {/* ═══ MAIN CONTENT: 2-column layout ═══ */}
-      <div className="flex-1 flex min-h-0">
-
-        {/* ──── LEFT COLUMN: party + supplies + travel plan ──── */}
-        <div className="w-56 flex-none flex flex-col border-r-2 border-trail-tan/40 bg-trail-parchment/30 overflow-y-auto">
-
-          {/* Party Members */}
-          <div className="flex-none px-2.5 py-1.5 border-b border-trail-tan/30">
-            <h3 className="text-[10px] font-bold text-trail-darkBrown uppercase tracking-wider mb-0.5"
-              style={{ fontVariant: 'small-caps' }}>Party</h3>
-            <div className="space-y-0.5">
-              {state.partyMembers.map(m => (
-                <div key={m.name} className="flex justify-between items-center text-[11px]">
-                  <span className={`${!m.alive ? 'line-through text-gray-400' : 'text-trail-darkBrown'}`}>
-                    {m.name}
-                    {m.isChaplain && <span className="text-trail-gold ml-0.5">&dagger;</span>}
-                  </span>
-                  <span className={`text-[9px] px-1 py-0.5 rounded-full ${
-                    m.health === 'good' ? 'bg-green-100 text-green-700' :
-                    m.health === 'fair' ? 'bg-yellow-100 text-yellow-700' :
-                    m.health === 'poor' ? 'bg-orange-100 text-orange-700' :
-                    m.health === 'critical' ? 'bg-red-100 text-red-700 font-bold' :
-                    'bg-gray-100 text-gray-500'
-                  }`}>{m.alive ? m.health : 'dead'}</span>
-                </div>
-              ))}
-            </div>
-            {/* Morale bar */}
-            <div className="mt-1">
-              <div className="flex justify-between text-[9px] text-trail-brown mb-0.5">
-                <span>Morale</span>
-                <span>{state.morale}%</span>
-              </div>
-              <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-300 ${
-                  state.morale >= 60 ? 'bg-green-500' : state.morale >= 30 ? 'bg-yellow-500' : 'bg-red-500'
-                }`} style={{ width: `${state.morale}%` }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Supplies */}
-          <div className="flex-none px-2.5 py-1.5 border-b border-trail-tan/30">
-            <h3 className="text-[10px] font-bold text-trail-darkBrown uppercase tracking-wider mb-0.5"
-              style={{ fontVariant: 'small-caps' }}>Supplies</h3>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0 text-[10px] text-trail-darkBrown">
-              <span className="text-trail-brown">Food:</span>
-              <span className={state.foodLbs < 50 ? 'text-red-600 font-bold' : ''}>{Math.round(state.foodLbs)} lbs</span>
-              <span className="text-trail-brown">Water:</span>
-              <span className={state.waterGallons < 20 ? 'text-red-600 font-bold' : state.waterGallons < 50 ? 'text-orange-600' : ''}>{Math.round(state.waterGallons)} gal</span>
-              <span className="text-trail-brown">Oxen:</span>
-              <span>{state.oxenYokes} yoke</span>
-              <span className="text-trail-brown">Ammo:</span>
-              <span>{state.ammoBoxes} boxes</span>
-              <span className="text-trail-brown">Clothing:</span>
-              <span>{state.clothingSets} sets</span>
-              <span className="text-trail-brown">Cash:</span>
-              <span>${state.cash.toFixed(2)}</span>
-              <span className="text-trail-brown">Parts:</span>
-              <span>{state.spareParts.wheels}W {state.spareParts.axles}A {state.spareParts.tongues}T</span>
-            </div>
-          </div>
-
-          {/* Travel Plan (was "Settings") */}
-          <div className="flex-none px-2.5 py-1.5 border-b border-trail-tan/30">
-            <h3 className="text-[10px] font-bold text-trail-darkBrown uppercase tracking-wider mb-0.5"
-              style={{ fontVariant: 'small-caps' }}>Travel Plan</h3>
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-1">
-                <label className="text-[9px] text-trail-brown w-10">Pace:</label>
-                <select value={state.pace}
-                  onChange={e => dispatch({ type: 'SET_PACE', pace: e.target.value })}
-                  className="flex-1 text-[10px] px-1 py-0.5 border border-trail-tan rounded bg-white">
-                  <option value="steady">Steady</option>
-                  <option value="strenuous">Strenuous</option>
-                  <option value="grueling">Grueling</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-1">
-                <label className="text-[9px] text-trail-brown w-10">Rations:</label>
-                <select value={state.rations}
-                  onChange={e => dispatch({ type: 'SET_RATIONS', rations: e.target.value })}
-                  className="flex-1 text-[10px] px-1 py-0.5 border border-trail-tan rounded bg-white">
-                  <option value="filling">Filling</option>
-                  <option value="meager">Meager</option>
-                  <option value="bare_bones">Bare Bones</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-1">
-                <label className="text-[9px] text-trail-brown w-10">Sleep:</label>
-                <select value={state.sleepSchedule}
-                  onChange={e => dispatch({ type: 'SET_SLEEP_SCHEDULE', sleepSchedule: e.target.value })}
-                  className="flex-1 text-[10px] px-1 py-0.5 border border-trail-tan rounded bg-white">
-                  <option value="short">Short (5 hrs)</option>
-                  <option value="normal">Normal (7 hrs)</option>
-                  <option value="long">Long (9 hrs)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Camp Activities (for older grade bands) */}
-          {state.gradeBand !== 'k2' && (
-            <div className="flex-none px-2 py-1 border-b border-trail-tan/30">
-              <CampActivitiesPanel
-                onActivityComplete={(result) => {
-                  if (result.timeCost > 0) {
-                    dispatch({ type: 'INCREMENT_STATIONARY' });
-                    dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
-                  }
-                  setTravelMessage(result.message);
-                }}
-              />
-            </div>
-          )}
-
-          {/* Warnings */}
-          <div className="flex-none px-2.5 py-1">
-            {state.foodLbs < 50 && state.foodLbs > 0 && (
-              <div className="text-[9px] text-orange-600 font-semibold">Low provisions!</div>
-            )}
-            {state.foodLbs <= 0 && (
-              <div className="text-[9px] text-red-600 font-bold">No food! Starving!</div>
-            )}
-            {state.waterGallons > 0 && state.waterGallons < 20 && (
-              <div className="text-[9px] text-orange-600 font-semibold">Water running low!</div>
-            )}
-            {state.waterGallons <= 0 && (
-              <div className="text-[9px] text-red-600 font-bold">No water!</div>
-            )}
-            {(state.daysStationary || 0) >= 3 && (
-              <div className="text-[9px] text-red-600 font-semibold">
-                Lingering! ({state.daysStationary}d idle)
-              </div>
-            )}
-          </div>
-
-          {state.sessionSettings?.historian_enabled && (
-            <div className="flex-none px-2.5 py-1">
-              <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })}
-                className="w-full text-[9px] py-1 px-2 bg-trail-tan/30 border border-trail-tan rounded text-trail-darkBrown hover:bg-trail-tan/50 transition-colors">
-                Trail Journal
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ──── CENTER COLUMN: weather/daily log + map + actions ──── */}
-        <div className="flex-1 flex flex-col min-w-0">
-
-          {/* Daily Log & Weather — prominent section */}
-          <div className="flex-none border-b border-trail-tan/30 bg-trail-parchment/40">
-            <div className="flex gap-3 px-3 py-2">
-              {/* Weather report — larger */}
-              <div className="flex-1">
-                <WeatherBox weather={state.currentWeather} />
-              </div>
-
-              {/* Daily travel log */}
-              <div className="flex-1 border border-trail-tan/50 rounded bg-trail-parchment/40 px-3 py-2">
-                <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1.5"
-                  style={{ fontVariant: 'small-caps' }}>Daily Log</h3>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-trail-brown">Miles today:</span>
-                    <span className="font-semibold text-trail-darkBrown">{state.lastDayMiles || 0} mi</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-trail-brown">Total traveled:</span>
-                    <span className="text-trail-darkBrown">{Math.round(state.distanceTraveled)} mi</span>
-                  </div>
-                  {nextLandmark && (
-                    <div className="flex justify-between">
-                      <span className="text-trail-brown">To {nextLandmark.name.split(' ').slice(0,2).join(' ')}:</span>
-                      <span className={`font-semibold ${state.distanceToNextLandmark < 30 ? 'text-green-700' : 'text-trail-darkBrown'}`}>
-                        {Math.max(0, Math.round(state.distanceToNextLandmark))} mi
+      {/* ═══ HERO: Trail Scene ═══ */}
+      <div className="flex-none h-[35vh] min-h-[180px] max-h-[280px] relative">
+        <TerrainScene
+          terrainType={terrainType}
+          landmarkName={currentLandmark?.name}
+          weather={state.currentWeather}
+        />
+        {/* Mini-map overlay at bottom of scene */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/40 to-transparent px-4 py-2">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowFullMap(true)}>
+            <div className="flex-1 flex items-center gap-1">
+              {upcomingLandmarks.map((lm, i) => {
+                const isCurrent = lm.index === state.currentLandmarkIndex;
+                return (
+                  <div key={lm.id || i} className="flex items-center">
+                    {i > 0 && <div className="w-10 h-0.5 bg-white/30 mx-0.5" />}
+                    <div className="flex flex-col items-center">
+                      <div className={`rounded-full ${
+                        isCurrent ? 'w-3 h-3 bg-trail-gold border-2 border-white' : 'w-2 h-2 bg-white/50 border border-white/60'
+                      }`} />
+                      <span className={`text-[9px] mt-0.5 ${isCurrent ? 'text-white font-bold' : 'text-white/60'}`}>
+                        {lm.name?.split(' ').slice(0, 2).join(' ')}
                       </span>
                     </div>
-                  )}
-                  {state.currentWeather && state.currentWeather.travelModifier < -0.1 && (
-                    <div className="text-[10px] text-orange-600 italic">Weather slowing travel</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Terrain scene */}
-              <div className="w-36 flex-none rounded overflow-hidden border border-trail-tan/40">
-                <TerrainScene terrainType={terrainType} landmarkName={currentLandmark?.name} />
-              </div>
+                  </div>
+                );
+              })}
+              <div className="w-10 h-0.5 bg-white/20 mx-0.5" />
+              <span className="text-[9px] text-white/40">...</span>
             </div>
+            <div className="flex items-center gap-1">
+              <div className="w-20 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-trail-gold/80 rounded-full" style={{ width: `${progressPercent}%` }} />
+              </div>
+              <span className="text-[9px] text-white/60">{Math.round(progressPercent)}%</span>
+            </div>
+            <span className="text-[9px] text-white/50 hover:text-white/80 transition-colors">View Map →</span>
           </div>
+        </div>
+      </div>
 
-          {/* Trail message — travel narrative */}
-          {travelMessage && (
-            <div className="flex-none px-4 py-1.5 bg-trail-parchment/60 border-b border-trail-tan/30">
-              <div className="text-center text-sm text-trail-darkBrown italic font-serif leading-snug">
-                &ldquo;{travelMessage}&rdquo;
-              </div>
-            </div>
-          )}
+      {/* ═══ NARRATIVE ═══ */}
+      {travelMessage && (
+        <div className="flex-none px-6 py-2 bg-trail-parchment/80 border-y border-trail-tan/40">
+          <p className="text-center text-sm text-trail-darkBrown italic leading-snug">
+            &ldquo;{travelMessage}&rdquo;
+          </p>
+        </div>
+      )}
 
-          {/* Compact mini-map — shows next 2-3 stops, click for full map */}
-          <div className="flex-none px-3 py-2 border-b border-trail-tan/30 bg-trail-parchment/20 cursor-pointer hover:bg-trail-parchment/40 transition-colors"
-            onClick={() => setShowFullMap(true)}
-            title="Click to view full trail map">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] text-trail-brown/60 uppercase tracking-wider">Trail Map</span>
-              <div className="flex-1 flex items-center gap-1">
-                {upcomingLandmarks.map((lm, i) => {
-                  const isCurrent = lm.index === state.currentLandmarkIndex;
-                  return (
-                    <div key={lm.id || i} className="flex items-center">
-                      {i > 0 && (
-                        <div className="w-8 h-0.5 bg-trail-brown/30 mx-0.5" />
-                      )}
-                      <div className="flex flex-col items-center">
-                        <div className={`rounded-full ${
-                          isCurrent
-                            ? 'w-3 h-3 bg-trail-gold border-2 border-trail-brown'
-                            : 'w-2 h-2 bg-gray-300 border border-gray-400'
-                        }`} />
-                        <span className={`text-[8px] mt-0.5 leading-tight ${
-                          isCurrent ? 'text-trail-darkBrown font-bold' : 'text-trail-brown/70'
-                        }`}>
-                          {lm.name?.split(' ').slice(0, 2).join(' ')}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="w-8 h-0.5 bg-trail-brown/20 mx-0.5" />
-                <span className="text-[8px] text-trail-brown/50">...</span>
-              </div>
-              {/* Progress */}
-              <div className="flex items-center gap-1.5">
-                <div className="w-16 h-1.5 bg-trail-tan/30 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-trail-brown to-trail-gold rounded-full transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }} />
-                </div>
-                <span className="text-[8px] text-trail-brown/60">{Math.round(progressPercent)}%</span>
-              </div>
-              <span className="text-[9px] text-trail-brown/50 ml-1">View map &rarr;</span>
-            </div>
-          </div>
+      {/* ═══ DASHBOARD: Actions/Supplies LEFT, Status RIGHT ═══ */}
+      <div className="flex-1 flex min-h-0 border-t border-trail-tan/30">
 
-          {/* Action Buttons — central and prominent */}
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-3 bg-trail-parchment/30">
-            <div className="flex gap-2 flex-wrap justify-center">
+        {/* ──── LEFT: Actions + Travel Plan + Supplies ──── */}
+        <div className="flex-1 flex flex-col min-w-0 px-4 py-2 overflow-y-auto">
+
+          {/* Action buttons */}
+          <div className="flex-none mb-3">
+            <div className="flex gap-2 flex-wrap">
               <button onClick={handleContinueTravel}
-                className="btn-primary py-2 px-6 text-sm font-semibold">
+                className="btn-primary py-1.5 px-5 text-sm">
                 Continue on the Trail
               </button>
               <button onClick={handleRest}
-                className="btn-secondary py-2 px-4 text-sm">
+                className="bg-trail-parchment border border-trail-tan text-trail-darkBrown px-4 py-1.5 rounded-lg text-sm hover:bg-trail-tan/30 transition-colors">
                 Rest
               </button>
               <button onClick={handleFindWater}
-                className="btn-secondary py-2 px-4 text-sm">
+                className="bg-trail-parchment border border-trail-tan text-trail-darkBrown px-4 py-1.5 rounded-lg text-sm hover:bg-trail-tan/30 transition-colors">
                 Find Water
               </button>
               {state.gradeBand !== 'k2' && state.ammoBoxes > 0 && (
                 <button onClick={() => setShowHunting(true)}
-                  className="btn-secondary py-2 px-4 text-sm">
+                  className="bg-trail-parchment border border-trail-tan text-trail-darkBrown px-4 py-1.5 rounded-lg text-sm hover:bg-trail-tan/30 transition-colors">
                   Hunt
                 </button>
               )}
+              <button onClick={handleGatherFirewood}
+                className="bg-trail-parchment border border-trail-tan text-trail-darkBrown px-4 py-1.5 rounded-lg text-sm hover:bg-trail-tan/30 transition-colors">
+                Gather Firewood
+              </button>
               {state.partyMembers.some(m => m.alive && m.health === 'critical') && state.prayerCooldownDay < state.trailDay && (
                 <button
                   onClick={() => {
@@ -992,15 +937,224 @@ export default function TravelScreen() {
                       setTravelMessage(`The party prays together for ${criticalMember?.name}. It doesn't change the illness, but it steadies the heart.`);
                     }
                   }}
-                  className="py-2 px-4 text-sm bg-trail-gold/20 border border-trail-gold text-trail-darkBrown rounded-lg hover:bg-trail-gold/30 transition-colors">
+                  className="bg-trail-gold/20 border border-trail-gold text-trail-darkBrown px-4 py-1.5 rounded-lg text-sm hover:bg-trail-gold/30 transition-colors">
                   Pray
                 </button>
               )}
             </div>
           </div>
+
+          {/* Travel Plan + Supplies side by side */}
+          <div className="flex gap-4">
+            {/* Travel Plan */}
+            <div className="flex-1">
+              <h3 className="text-[11px] font-bold text-trail-darkBrown uppercase tracking-wider mb-1.5"
+                style={{ fontVariant: 'small-caps' }}>Travel Plan</h3>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] text-trail-brown w-12">Pace:</label>
+                  <select value={state.pace}
+                    onChange={e => dispatch({ type: 'SET_PACE', pace: e.target.value })}
+                    className="flex-1 text-[11px] px-1.5 py-1 border border-trail-tan rounded bg-white max-w-[140px]">
+                    <option value="steady">Steady</option>
+                    <option value="strenuous">Strenuous</option>
+                    <option value="grueling">Grueling</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] text-trail-brown w-12">Rations:</label>
+                  <select value={state.rations}
+                    onChange={e => dispatch({ type: 'SET_RATIONS', rations: e.target.value })}
+                    className="flex-1 text-[11px] px-1.5 py-1 border border-trail-tan rounded bg-white max-w-[140px]">
+                    <option value="filling">Filling</option>
+                    <option value="meager">Meager</option>
+                    <option value="bare_bones">Bare Bones</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] text-trail-brown w-12">Water:</label>
+                  <select value={state.waterRations}
+                    onChange={e => dispatch({ type: 'SET_WATER_RATIONS', waterRations: e.target.value })}
+                    className="flex-1 text-[11px] px-1.5 py-1 border border-trail-tan rounded bg-white max-w-[140px]">
+                    <option value="full">Full</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] text-trail-brown w-12">Sleep:</label>
+                  <select value={state.sleepSchedule}
+                    onChange={e => dispatch({ type: 'SET_SLEEP_SCHEDULE', sleepSchedule: e.target.value })}
+                    className="flex-1 text-[11px] px-1.5 py-1 border border-trail-tan rounded bg-white max-w-[140px]">
+                    <option value="short">Short (5 hrs)</option>
+                    <option value="normal">Normal (7 hrs)</option>
+                    <option value="long">Long (9 hrs)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Supplies */}
+            <div className="flex-1">
+              <h3 className="text-[11px] font-bold text-trail-darkBrown uppercase tracking-wider mb-1.5"
+                style={{ fontVariant: 'small-caps' }}>Supplies</h3>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-trail-darkBrown">
+                <span className="text-trail-brown">Food:</span>
+                <span className={state.foodLbs < 50 ? 'text-red-600 font-bold' : ''}>{Math.round(state.foodLbs)} lbs</span>
+                <span className="text-trail-brown">Water:</span>
+                <span className={state.waterGallons < 20 ? 'text-red-600 font-bold' : state.waterGallons < 50 ? 'text-orange-600' : ''}>{Math.round(state.waterGallons)} gal</span>
+                <span className="text-trail-brown">Firewood:</span>
+                <span className={needsFirewood && (state.firewoodBundles || 0) < 2 ? 'text-orange-600 font-semibold' : ''}>{state.firewoodBundles || 0} bundles</span>
+                <span className="text-trail-brown">Oxen:</span>
+                <span>{state.oxenYokes} yoke</span>
+                <span className="text-trail-brown">Ammo:</span>
+                <span>{state.ammoBoxes} boxes</span>
+                <span className="text-trail-brown">Clothing:</span>
+                <span>{state.clothingSets} sets</span>
+                <span className="text-trail-brown">Cash:</span>
+                <span>${state.cash.toFixed(2)}</span>
+                <span className="text-trail-brown">Parts:</span>
+                <span>{state.spareParts.wheels}W {state.spareParts.axles}A {state.spareParts.tongues}T</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Warnings */}
+          <div className="flex-none mt-2 space-y-0.5">
+            {state.foodLbs < 50 && state.foodLbs > 0 && (
+              <div className="text-[11px] text-orange-600 font-semibold">⚠ Low on food provisions</div>
+            )}
+            {state.foodLbs <= 0 && (
+              <div className="text-[11px] text-red-600 font-bold">⚠ No food! Your party is starving!</div>
+            )}
+            {state.waterGallons > 0 && state.waterGallons < 20 && (
+              <div className="text-[11px] text-orange-600 font-semibold">⚠ Water supply is low</div>
+            )}
+            {state.waterGallons <= 0 && (
+              <div className="text-[11px] text-red-600 font-bold">⚠ Out of water!</div>
+            )}
+            {needsFirewood && (state.firewoodBundles || 0) < 2 && (
+              <div className="text-[11px] text-orange-600 font-semibold">⚠ Low firewood — cold nights ahead</div>
+            )}
+            {noFire && (
+              <div className="text-[11px] text-red-600 font-bold">⚠ No fire last night — the party suffered from the cold</div>
+            )}
+            {(state.daysStationary || 0) >= 3 && (
+              <div className="text-[11px] text-red-600 font-semibold">⚠ Lingering too long ({state.daysStationary} days idle)</div>
+            )}
+          </div>
+
+          {state.sessionSettings?.historian_enabled && (
+            <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })}
+              className="mt-2 text-[11px] py-1 px-3 bg-trail-tan/20 border border-trail-tan rounded text-trail-darkBrown hover:bg-trail-tan/40 transition-colors">
+              Trail Journal
+            </button>
+          )}
         </div>
 
-        {/* ──── RIGHT COLUMN: Historian (if open) ──── */}
+        {/* ──── RIGHT: Weather + Family + Daily Log ──── */}
+        <div className="w-64 flex-none flex flex-col border-l border-trail-tan/30 bg-trail-parchment/20 overflow-y-auto">
+
+          {/* Weather */}
+          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
+            <WeatherBox weather={state.currentWeather} compact={true} />
+          </div>
+
+          {/* Your Family — per-member health + morale */}
+          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
+            <h3 className="text-[11px] font-bold text-trail-darkBrown uppercase tracking-wider mb-1.5"
+              style={{ fontVariant: 'small-caps' }}>Your Family</h3>
+            <div className="space-y-1.5">
+              {state.partyMembers.map(m => {
+                const morale = m.morale ?? 70;
+                const canTalk = m.alive && (m.lastTalkedDay || 0) < state.trailDay;
+                const needsTalk = m.alive && (morale < 50 || m.health === 'poor' || m.health === 'critical');
+                return (
+                  <div key={m.name} className={`flex items-center gap-1.5 ${!m.alive ? 'opacity-40' : ''}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className={`text-[11px] font-medium truncate ${!m.alive ? 'line-through text-gray-400' : 'text-trail-darkBrown'}`}>
+                          {m.name}
+                          {m.isChaplain && <span className="text-trail-gold ml-0.5">†</span>}
+                        </span>
+                      </div>
+                      {m.alive && (
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {/* Health */}
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                            m.health === 'good' ? 'bg-green-100 text-green-700' :
+                            m.health === 'fair' ? 'bg-yellow-100 text-yellow-700' :
+                            m.health === 'poor' ? 'bg-orange-100 text-orange-700' :
+                            m.health === 'critical' ? 'bg-red-100 text-red-700 font-bold animate-pulse' :
+                            'bg-gray-100 text-gray-400'
+                          }`}>{m.health}</span>
+                          {/* Morale */}
+                          <span className={`text-[9px] ${getMoraleColor(morale)}`}>
+                            {getMoraleIcon(morale)} {morale}%
+                          </span>
+                        </div>
+                      )}
+                      {!m.alive && (
+                        <span className="text-[9px] text-gray-400">deceased</span>
+                      )}
+                    </div>
+                    {/* Talk button */}
+                    {needsTalk && canTalk && (
+                      <button
+                        onClick={() => handleTalkToMember(m)}
+                        className="text-[9px] px-2 py-0.5 bg-trail-tan/30 border border-trail-tan/50 rounded text-trail-brown hover:bg-trail-tan/50 transition-colors whitespace-nowrap"
+                        title={`Talk to ${m.name}`}
+                      >
+                        Talk
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Daily Log */}
+          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
+            <h3 className="text-[11px] font-bold text-trail-darkBrown uppercase tracking-wider mb-1"
+              style={{ fontVariant: 'small-caps' }}>Daily Log</h3>
+            <div className="space-y-0.5 text-[11px]">
+              <div className="flex justify-between">
+                <span className="text-trail-brown">Miles yesterday:</span>
+                <span className="font-semibold text-trail-darkBrown">{state.lastDayMiles || 0} mi</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-trail-brown">Total traveled:</span>
+                <span className="text-trail-darkBrown">{Math.round(state.distanceTraveled)} / {totalDistance} mi</span>
+              </div>
+              {nextLandmark && (
+                <div className="flex justify-between">
+                  <span className="text-trail-brown">To {nextLandmark.name.split(' ').slice(0, 2).join(' ')}:</span>
+                  <span className={`font-semibold ${state.distanceToNextLandmark < 30 ? 'text-green-700' : 'text-trail-darkBrown'}`}>
+                    {Math.max(0, Math.round(state.distanceToNextLandmark))} mi
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Camp Activities */}
+          {state.gradeBand !== 'k2' && (
+            <div className="flex-none px-3 py-2">
+              <CampActivitiesPanel
+                onActivityComplete={(result) => {
+                  if (result.timeCost > 0) {
+                    dispatch({ type: 'INCREMENT_STATIONARY' });
+                    dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
+                  }
+                  setTravelMessage(result.message);
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Historian panel (overlays right side when open) */}
         {state.showHistorian && (
           <div className="w-72 flex-none border-l-2 border-trail-tan/40 bg-trail-parchment/20 overflow-y-auto">
             <HistorianPanel />
@@ -1008,16 +1162,16 @@ export default function TravelScreen() {
         )}
       </div>
 
-      {/* ═══ FULL MAP MODAL (click to expand) ═══ */}
+      {/* ═══ FULL MAP MODAL ═══ */}
       {showFullMap && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setShowFullMap(false)}>
           <div className="w-[90vw] h-[80vh] bg-trail-cream rounded-lg shadow-2xl border-2 border-trail-brown overflow-hidden"
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-3 py-1.5 bg-trail-darkBrown text-trail-cream">
-              <span className="text-sm font-serif">Oregon Trail — Full Map</span>
+            <div className="flex items-center justify-between px-4 py-2 bg-trail-darkBrown text-trail-cream">
+              <span className="text-sm font-serif tracking-wide">Oregon Trail — 1848</span>
               <button onClick={() => setShowFullMap(false)}
-                className="text-trail-cream/80 hover:text-white text-lg leading-none px-2">&times;</button>
+                className="text-trail-cream/80 hover:text-white text-lg px-2">×</button>
             </div>
             <div className="h-[calc(100%-2.5rem)]">
               <OregonTrailMap

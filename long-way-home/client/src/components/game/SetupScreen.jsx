@@ -37,12 +37,12 @@ export default function SetupScreen() {
     }
 
     const partyMembers = [
-      { name: playerName.trim(), health: 'good', alive: true, isPlayer: true },
-      ...validCompanions.map(name => ({ name: name.trim(), health: 'good', alive: true, isPlayer: false }))
+      { name: playerName.trim(), health: 'good', alive: true, isPlayer: true, morale: GAME_CONSTANTS.INITIAL_MORALE },
+      ...validCompanions.map(name => ({ name: name.trim(), health: 'good', alive: true, isPlayer: false, morale: GAME_CONSTANTS.INITIAL_MORALE }))
     ];
 
     if (includeChaplain) {
-      partyMembers.push({ name: 'Fr. Joseph', health: 'good', alive: true, isPlayer: false, isChaplain: true });
+      partyMembers.push({ name: 'Fr. Joseph', health: 'good', alive: true, isPlayer: false, isChaplain: true, morale: GAME_CONSTANTS.INITIAL_MORALE });
     }
 
     const startingCash = isK2 ? 0 : (PROFESSION_CASH[profession] || 400);

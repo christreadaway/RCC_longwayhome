@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE, WATER_CONSUMPTION } from '@shared/types';
+import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE, WATER_RATIONS, WATER_OXEN_MULTIPLIER, getHeatWaterMultiplier, FIREWOOD_CONSUMPTION } from '@shared/types';
 
 const GameContext = createContext(null);
 const GameDispatchContext = createContext(null);
@@ -29,6 +29,8 @@ const initialState = {
   spareParts: { wheels: 0, axles: 0, tongues: 0 },
   oxenYokes: 0,
   waterGallons: 0,
+  waterRations: 'full',
+  firewoodBundles: 0,
 
   // Purchasable items (books & tools)
   hasFarmersAlmanac: false,
@@ -172,9 +174,14 @@ function gameReducer(state, action) {
       return { ...state, sleepSchedule: action.sleepSchedule };
     }
 
+    case 'SET_WATER_RATIONS': {
+      return { ...state, waterRations: action.waterRations };
+    }
+
     case 'ADVANCE_DAY': {
       const newDate = addDaysToDate(state.gameDate, 1);
-      let foodConsumed = getFoodConsumption(state.rations, state.partyMembers);
+      const currentTemp = state.currentWeather?.temperature?.current ?? 65;
+      let foodConsumed = getFoodConsumption(state.rations, state.partyMembers, currentTemp);
 
       // Chaplain costs extra food (a non-working mouth to feed)
       if (state.chaplainInParty) {
@@ -183,10 +190,17 @@ function gameReducer(state, action) {
 
       const newFood = Math.max(0, state.foodLbs - foodConsumed);
 
-      // Water consumption: ~0.5 gal per person/day + ~2 gal per yoke of oxen
+      // Water consumption based on ration level + heat multiplier
       const aliveCount = state.partyMembers.filter(m => m.alive).length;
-      const waterConsumed = (aliveCount * WATER_CONSUMPTION.perPersonPerDay) + (state.oxenYokes * WATER_CONSUMPTION.perOxenYokePerDay);
+      const waterRate = (WATER_RATIONS[state.waterRations] || WATER_RATIONS.full).perPerson;
+      const heatMult = getHeatWaterMultiplier(currentTemp);
+      const waterConsumed = ((aliveCount * waterRate) + (state.oxenYokes * waterRate * WATER_OXEN_MULTIPLIER)) * heatMult;
       const newWater = Math.max(0, state.waterGallons - waterConsumed);
+
+      // Firewood consumption based on temperature
+      const firewoodUsed = FIREWOOD_CONSUMPTION.getDaily(currentTemp);
+      const newFirewood = Math.max(0, (state.firewoodBundles || 0) - firewoodUsed);
+      const needsFireNoHave = firewoodUsed > 0 && (state.firewoodBundles || 0) < firewoodUsed;
 
       // Chaplain clothing wear: every N days, uses 1 extra clothing set
       let newClothing = state.clothingSets;
@@ -195,16 +209,30 @@ function gameReducer(state, action) {
         newClothing -= 1;
       }
 
+      // Cold-without-fire penalty: health recovery from sleep is negated, morale drops
+      let updatedParty = state.partyMembers;
+      if (needsFireNoHave) {
+        updatedParty = state.partyMembers.map(m => {
+          if (!m.alive) return m;
+          // Morale drops from cold nights
+          const moralePenalty = currentTemp < 32 ? -5 : -2;
+          return { ...m, morale: Math.max(0, (m.morale ?? 70) + moralePenalty) };
+        });
+      }
+
       return {
         ...state,
         gameDate: newDate,
         trailDay: newTrailDay,
         foodLbs: newFood,
         waterGallons: newWater,
+        firewoodBundles: newFirewood,
         clothingSets: newClothing,
+        partyMembers: updatedParty,
         distanceTraveled: state.distanceTraveled + (action.distanceTraveled || 0),
         distanceToNextLandmark: Math.max(0, state.distanceToNextLandmark - (action.distanceTraveled || 0)),
-        lastDayMiles: action.distanceTraveled || 0
+        lastDayMiles: action.distanceTraveled || 0,
+        noFireLastNight: needsFireNoHave
       };
     }
 
@@ -263,26 +291,60 @@ function gameReducer(state, action) {
     }
 
     case 'UPDATE_MORALE': {
-      // Bible provides a small morale floor (Scripture brings comfort)
+      // Apply morale change to ALL alive party members
       const bibleFloor = state.hasBible ? STORE_BIBLE.effects.moraleFloor : 0;
       const chaplainFloor = state.chaplainInParty ? GAME_CONSTANTS.MORALE_CHAPLAIN_FLOOR : 0;
       const effectiveFloor = Math.max(chaplainFloor, bibleFloor);
 
-      // Bible mitigates morale loss from deaths
       let adjustedDelta = action.delta;
       if (action.delta < 0 && state.hasBible && action.trigger === 'death') {
         adjustedDelta = Math.round(action.delta * (1 - STORE_BIBLE.effects.deathMoraleMitigation));
       }
 
-      let newMorale = Math.max(effectiveFloor, Math.min(100, state.morale + adjustedDelta));
+      const updatedMembers = state.partyMembers.map(m => {
+        if (!m.alive) return m;
+        let newMorale = Math.max(effectiveFloor, Math.min(100, (m.morale ?? 70) + adjustedDelta));
+        if (state.grace < 15) {
+          newMorale = Math.min(newMorale, Math.max(chaplainFloor, bibleFloor));
+        }
+        return { ...m, morale: newMorale };
+      });
 
-      // DEPLETED grace enforces a morale ceiling
-      if (state.grace < 15) {
-        const depletedCeiling = Math.max(chaplainFloor, bibleFloor);
-        newMorale = Math.min(newMorale, depletedCeiling);
-      }
+      // Keep legacy party-wide morale as average (for backward compat)
+      const aliveMembers = updatedMembers.filter(m => m.alive);
+      const avgMorale = aliveMembers.length > 0
+        ? Math.round(aliveMembers.reduce((sum, m) => sum + (m.morale ?? 70), 0) / aliveMembers.length)
+        : 0;
 
-      return { ...state, morale: newMorale };
+      return { ...state, partyMembers: updatedMembers, morale: avgMorale };
+    }
+
+    case 'UPDATE_MEMBER_MORALE': {
+      // Apply morale change to a SPECIFIC party member
+      const updatedMembers2 = state.partyMembers.map(m => {
+        if (m.name !== action.name || !m.alive) return m;
+        const newMorale = Math.max(0, Math.min(100, (m.morale ?? 70) + action.delta));
+        return { ...m, morale: newMorale };
+      });
+      const alive2 = updatedMembers2.filter(m => m.alive);
+      const avg2 = alive2.length > 0
+        ? Math.round(alive2.reduce((sum, m) => sum + (m.morale ?? 70), 0) / alive2.length)
+        : 0;
+      return { ...state, partyMembers: updatedMembers2, morale: avg2 };
+    }
+
+    case 'TALK_TO_MEMBER': {
+      // Talking to a family member boosts their morale and logs the conversation
+      const talkMembers = state.partyMembers.map(m => {
+        if (m.name !== action.name || !m.alive) return m;
+        const boost = (m.morale ?? 70) < 40 ? 12 : (m.morale ?? 70) < 60 ? 8 : 5;
+        return { ...m, morale: Math.min(100, (m.morale ?? 70) + boost), lastTalkedDay: state.trailDay };
+      });
+      const aliveT = talkMembers.filter(m => m.alive);
+      const avgT = aliveT.length > 0
+        ? Math.round(aliveT.reduce((sum, m) => sum + (m.morale ?? 70), 0) / aliveT.length)
+        : 0;
+      return { ...state, partyMembers: talkMembers, morale: avgT };
     }
 
     case 'UPDATE_SUPPLIES': {
@@ -294,7 +356,8 @@ function gameReducer(state, action) {
         ammoBoxes: action.ammoBoxes !== undefined ? action.ammoBoxes : state.ammoBoxes,
         spareParts: action.spareParts || state.spareParts,
         oxenYokes: action.oxenYokes !== undefined ? action.oxenYokes : state.oxenYokes,
-        waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons
+        waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons,
+        firewoodBundles: action.firewoodBundles !== undefined ? action.firewoodBundles : state.firewoodBundles
       };
     }
 
@@ -597,10 +660,14 @@ function addDaysToDate(dateStr, days) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function getFoodConsumption(rations, partyMembers) {
+function getFoodConsumption(rations, partyMembers, tempF = 65) {
   const alive = partyMembers.filter(m => m.alive).length;
   const rates = { filling: 3, meager: 2, bare_bones: 1 };
-  return alive * (rates[rations] || 2);
+  let base = alive * (rates[rations] || 2);
+  // Cold weather increases food consumption (bodies burn more calories to stay warm)
+  if (tempF < 32) base *= 1.4;
+  else if (tempF < 50) base *= 1.2;
+  return Math.round(base * 10) / 10;
 }
 
 function improveHealth(health) {
