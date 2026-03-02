@@ -126,6 +126,18 @@ export const RATIONS_CONSUMPTION = {
   bare_bones: 1
 };
 
+export const SLEEP_SCHEDULE = {
+  short:  { label: 'Short (5 hrs)',  healthRecovery: -0.02, moraleModifier: -2, travelBonus: 1.10 },
+  normal: { label: 'Normal (7 hrs)', healthRecovery: 0,     moraleModifier: 0,  travelBonus: 1.0 },
+  long:   { label: 'Long (9 hrs)',   healthRecovery: 0.05,  moraleModifier: 1,  travelBonus: 0.90 }
+};
+
+/** Water consumption: ~0.5 gal per person per day, ~2 gal per yoke of oxen */
+export const WATER_CONSUMPTION = {
+  perPersonPerDay: 0.5,
+  perOxenYokePerDay: 2
+};
+
 export const GRACE_RANGES = {
   HIGH: { min: 75, max: 100, label: 'High' },
   MODERATE: { min: 40, max: 74, label: 'Moderate' },
