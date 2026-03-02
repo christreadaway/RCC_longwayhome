@@ -173,16 +173,28 @@ export default function TravelScreen() {
     }
 
     // Death check for critical members (use aliveAfterStarvation to avoid stale data)
-    aliveAfterStarvation.filter(m => m.health === 'critical').forEach(m => {
+    // If chaplain present, reduce morale impact of death by 40% (Last Rites)
+    const chaplainAlive = state.chaplainInParty && aliveAfterStarvation.some(m => m.isChaplain);
+    aliveAfterStarvation.filter(m => m.health === 'critical' && !m.isChaplain).forEach(m => {
       const deathRoll = Math.random();
       const deathChance = state.rations === 'filling' ? 0.15 : state.rations === 'meager' ? 0.25 : 0.4;
       if (deathRoll < deathChance) {
+        // Fire Last Rites if chaplain is alive
+        if (chaplainAlive && !state.lastRitesFired) {
+          dispatch({ type: 'LAST_RITES' });
+          dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.LAST_RITES, trigger: 'last_rites' });
+          // Morale hit is reduced by LAST_RITES_MORALE_REDUCTION factor
+          dispatch({ type: 'UPDATE_MORALE', delta: Math.round(-15 * GAME_CONSTANTS.LAST_RITES_MORALE_REDUCTION) });
+          dayMessage = `Fr. Joseph administered Last Rites to ${m.name} before they passed. ${m.name} died of ${m.illness || 'exhaustion'}, but the party found peace in the sacrament.`;
+        } else {
+          dispatch({ type: 'UPDATE_MORALE', delta: -15 });
+          dayMessage = `${m.name} has died of ${m.illness || 'exhaustion'}.`;
+        }
         dispatch({
           type: 'PARTY_MEMBER_DIES',
           name: m.name,
           cause: m.illness || 'exhaustion'
         });
-        dayMessage = `${m.name} has died of ${m.illness || 'exhaustion'}.`;
       }
     });
 
@@ -243,7 +255,22 @@ export default function TravelScreen() {
     if (rested) {
       dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.SUNDAY_REST, trigger: 'sunday_rest' });
       dispatch({ type: 'UPDATE_MORALE', delta: 5 });
-      setTravelMessage('Your party rested on the Sabbath. Everyone feels refreshed.');
+
+      // Sunday rest heals party: all members recover 1 health tier
+      const healthUpdates = state.partyMembers
+        .filter(m => m.alive && m.health !== 'good')
+        .map(m => {
+          const order = ['dead', 'critical', 'poor', 'fair', 'good'];
+          const idx = order.indexOf(m.health);
+          return { name: m.name, health: idx < 4 ? order[idx + 1] : m.health };
+        });
+      if (healthUpdates.length > 0) {
+        dispatch({ type: 'UPDATE_PARTY_HEALTH', updates: healthUpdates });
+        setTravelMessage('Your party rested on the Sabbath. Everyone feels refreshed. The sick are improving.');
+      } else {
+        setTravelMessage('Your party rested on the Sabbath. Everyone feels refreshed.');
+      }
+
       // Advance date but not distance
       dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
     } else {
@@ -290,11 +317,22 @@ export default function TravelScreen() {
     setIsResting(false);
   }
 
-  function handleHuntingComplete(foodGained) {
+  function handleHuntingComplete(foodGained, bisonKilled = 0) {
     setShowHunting(false);
     if (foodGained > 0) {
       dispatch({ type: 'UPDATE_SUPPLIES', foodLbs: state.foodLbs + foodGained });
-      setTravelMessage(`You hunted and brought back ${foodGained} lbs of food!`);
+
+      if (bisonKilled >= 3) {
+        // Overhunting — grace penalty
+        dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.OVERHUNT, trigger: 'overhunt_bison' });
+        dispatch({ type: 'DEPLETE_BISON', amount: bisonKilled * 15 });
+        setTravelMessage(`You brought back ${foodGained} lbs of food, but you took more bison than your party needs. The herd suffers.`);
+      } else {
+        if (bisonKilled > 0) {
+          dispatch({ type: 'DEPLETE_BISON', amount: bisonKilled * 10 });
+        }
+        setTravelMessage(`You hunted and brought back ${foodGained} lbs of food!`);
+      }
     } else {
       setTravelMessage('The hunt was unsuccessful.');
     }
@@ -305,7 +343,7 @@ export default function TravelScreen() {
   const progressPercent = Math.min(100, (state.distanceTraveled / totalDistance) * 100);
 
   if (showHunting) {
-    return <HuntingMinigame onComplete={handleHuntingComplete} ammo={state.ammoBoxes} />;
+    return <HuntingMinigame onComplete={handleHuntingComplete} ammo={state.ammoBoxes} bisonPopulation={state.bisonPopulation} />;
   }
 
   return (
@@ -429,16 +467,22 @@ export default function TravelScreen() {
                 Go Hunting
               </button>
             )}
-            {state.chaplainInParty && state.partyMembers.some(m => m.alive && m.health === 'critical') && (
+            {state.partyMembers.some(m => m.alive && m.health === 'critical') && state.prayerCooldownDay < state.trailDay && (
               <button
                 onClick={() => {
+                  const criticalMember = state.partyMembers.find(m => m.alive && m.health === 'critical');
                   dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER, trigger: 'prayer_crisis' });
                   dispatch({ type: 'UPDATE_MORALE', delta: 3 });
-                  setTravelMessage('Fr. Joseph leads the party in prayer. A sense of calm settles over the group.');
+                  dispatch({ type: 'PRAY', memberName: criticalMember?.name });
+                  if (state.chaplainInParty) {
+                    setTravelMessage(`Fr. Joseph leads the party in prayer for ${criticalMember?.name}. A sense of calm settles over the group.`);
+                  } else {
+                    setTravelMessage(`The party prays together for ${criticalMember?.name}. It doesn't change the illness, but it steadies the heart.`);
+                  }
                 }}
                 className="w-full py-2 px-4 bg-trail-gold/20 border border-trail-gold text-trail-darkBrown rounded-lg hover:bg-trail-gold/30 transition-colors"
               >
-                Pray for the Sick
+                Pray for {state.partyMembers.find(m => m.alive && m.health === 'critical')?.name || 'the Sick'}
               </button>
             )}
           </div>

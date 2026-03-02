@@ -1,7 +1,7 @@
 /**
  * Game Engine — State Machine
  *
- * The core state machine for Pioneer Trail. All game state mutations
+ * The core state machine for The Long Way Home. All game state mutations
  * must flow through this module. The engine:
  *
  * - Manages the game state lifecycle (SETUP through GAME_OVER)
@@ -61,7 +61,7 @@ const STATE_TRANSITIONS = {
 };
 
 /** localStorage key prefix for game state */
-const STORAGE_KEY_PREFIX = 'pioneer_trail_state_';
+const STORAGE_KEY_PREFIX = 'lwh_state_';
 
 // ---------------------------------------------------------------------------
 // Narrative templates

@@ -1,6 +1,6 @@
 import landmarksData from '../../data/landmarks.json';
 
-export default function StudentCard({ student, onViewTranscript, showDebug }) {
+export default function StudentCard({ student, onViewTranscript, showDebug, isHighlighted, onHighlight }) {
   const gs = student.gameState || {};
   const landmarks = landmarksData.landmarks;
   const currentLandmark = landmarks[gs.currentLandmarkIndex || 0];
@@ -13,7 +13,7 @@ export default function StudentCard({ student, onViewTranscript, showDebug }) {
   const cwmDeceptive = (gs.cwmEvents || []).filter(e => !e.recipientGenuine).length;
 
   return (
-    <div className={`card hover:shadow-xl transition-shadow ${gs.status === 'completed' ? 'ring-2 ring-green-400' : gs.status === 'failed' ? 'ring-2 ring-red-400' : ''}`}>
+    <div className={`card hover:shadow-xl transition-shadow ${isHighlighted ? 'ring-4 ring-purple-500 bg-purple-50' : ''} ${gs.status === 'completed' ? 'ring-2 ring-green-400' : gs.status === 'failed' ? 'ring-2 ring-red-400' : ''}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div>
@@ -104,8 +104,34 @@ export default function StudentCard({ student, onViewTranscript, showDebug }) {
         </div>
       )}
 
+      {/* Score & Profession */}
+      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        {gs.profession && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">Job:</span>
+            <span className="font-semibold capitalize">{gs.profession}</span>
+          </div>
+        )}
+        {gs.graceAdjustedScore > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">Score:</span>
+            <span className="font-semibold">{gs.graceAdjustedScore}</span>
+          </div>
+        )}
+        {(gs.prayersOffered || 0) > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">Prayers:</span>
+            <span className="font-semibold">{gs.prayersOffered}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="text-gray-500">Morale:</span>
+          <span className="font-semibold">{gs.morale || 0}%</span>
+        </div>
+      </div>
+
       {/* Actions */}
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         {(gs.historianTranscript || []).length > 0 && (
           <button onClick={onViewTranscript}
             className="text-xs text-trail-blue hover:underline">
@@ -118,6 +144,12 @@ export default function StudentCard({ student, onViewTranscript, showDebug }) {
         <span className="text-xs text-gray-400">
           Rests: {gs.sundayRestsTaken || 0}
         </span>
+        <button
+          onClick={() => onHighlight?.(student.studentId)}
+          className={`text-xs ml-auto ${isHighlighted ? 'text-purple-600 font-bold' : 'text-gray-400 hover:text-purple-500'}`}
+        >
+          {isHighlighted ? 'Highlighted' : 'Highlight'}
+        </button>
       </div>
 
       {/* Debug Panel */}

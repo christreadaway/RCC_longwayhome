@@ -1,5 +1,5 @@
 /**
- * In-memory state store for Pioneer Trail / The Long Way Home.
+ * In-memory state store for The Long Way Home.
  *
  * Sessions, student states, and API keys live here in memory only.
  * Nothing is persisted to disk — this is intentional for MVP.
@@ -63,6 +63,8 @@ function createSession(code, password, gradeBand, settings = {}) {
       chaos_level: settings.chaos_level || 'standard',
       ai_model: settings.ai_model || 'claude-haiku-4-5',
       ai_exam_of_conscience: settings.ai_exam_of_conscience !== undefined ? settings.ai_exam_of_conscience : true,
+      scripture_in_labels: settings.scripture_in_labels !== undefined ? settings.scripture_in_labels : true,
+      cwm_reveal_end_screen: settings.cwm_reveal_end_screen !== undefined ? settings.cwm_reveal_end_screen : true,
       ...settings,
     },
     status: 'active',

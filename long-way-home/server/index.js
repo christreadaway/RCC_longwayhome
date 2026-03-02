@@ -1,5 +1,5 @@
 /**
- * Main Express server entry point for Pioneer Trail / The Long Way Home.
+ * Main Express server entry point for The Long Way Home.
  *
  * - Loads environment variables via dotenv
  * - Sets up Express with CORS + JSON body parser

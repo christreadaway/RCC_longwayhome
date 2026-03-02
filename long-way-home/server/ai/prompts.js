@@ -1,5 +1,5 @@
 /**
- * All AI prompts for Pioneer Trail / The Long Way Home.
+ * All AI prompts for The Long Way Home.
  *
  * Placeholders use {placeholder_name} syntax and are replaced at call time.
  * Every prompt includes age-appropriate constraints and scope limitations.

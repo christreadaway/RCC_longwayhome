@@ -3,10 +3,25 @@ import { useGameState, useGameDispatch } from '../../store/GameContext';
 import { GAME_CONSTANTS, GRACE_DELTAS } from '@shared/types';
 import { formatGameDate } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
+import { api } from '../../utils/api';
 import landmarksData from '../../data/landmarks.json';
 import landmarksK2 from '../../data/landmarks-k2.json';
 import eventsData from '../../data/events.json';
 import moralLabelsData from '../../data/moral-labels.json';
+
+/**
+ * Maps landmark IDs to available NPC characters.
+ * These NPCs appear at specific locations per the spec.
+ */
+const NPC_LOCATIONS = {
+  st_marys_mission: { key: 'desmet', name: 'Fr. Pierre-Jean De Smet', description: 'A Jesuit missionary invites you to speak with him.' },
+  whitman_mission: { key: 'whitman', name: 'Marcus Whitman', description: 'The mission doctor offers a moment of conversation.' },
+  fort_laramie: { key: 'bordeaux', name: 'James Bordeaux', description: 'A grizzled fur trader leans against the wall, watching you.' },
+  fort_kearney: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'A quiet scout sits by the fire, willing to share what he knows.' },
+  fort_hall: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'A familiar scout nods to you from across the campfire.' },
+  fort_bridger: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'The Pawnee scout who guides wagon trains is here.' },
+  fort_boise: { key: 'scout', name: 'Takoda (Pawnee Scout)', description: 'A scout is available to share trail knowledge.' },
+};
 
 export default function LandmarkScreen() {
   const state = useGameState();
@@ -16,6 +31,7 @@ export default function LandmarkScreen() {
   const [cwmEvent, setCwmEvent] = useState(null);
   const [reconciliationEvent, setReconciliationEvent] = useState(null);
   const [reciprocityEvent, setReciprocityEvent] = useState(null);
+  const [showNpcChat, setShowNpcChat] = useState(false);
 
   const landmarks = state.gradeBand === 'k2' ? landmarksK2.landmarks : landmarksData.landmarks;
   const landmark = landmarks[state.currentLandmarkIndex];
@@ -338,6 +354,35 @@ export default function LandmarkScreen() {
           </div>
         )}
 
+        {/* NPC Encounter (if available at this landmark, 6-8 only) */}
+        {state.gradeBand === '6_8' && landmark && NPC_LOCATIONS[landmark.id] && !showNpcChat && (
+          <div className="card-parchment">
+            <h3 className="font-semibold text-trail-darkBrown mb-1">{NPC_LOCATIONS[landmark.id].name}</h3>
+            <p className="text-trail-brown text-sm mb-3">{NPC_LOCATIONS[landmark.id].description}</p>
+            <button
+              onClick={() => setShowNpcChat(true)}
+              className="btn-secondary"
+            >
+              Speak with {NPC_LOCATIONS[landmark.id].name.split(' ')[0]}
+            </button>
+          </div>
+        )}
+
+        {showNpcChat && landmark && NPC_LOCATIONS[landmark.id] && (
+          <NpcChatInline
+            character={NPC_LOCATIONS[landmark.id].key}
+            characterName={NPC_LOCATIONS[landmark.id].name}
+            onClose={() => setShowNpcChat(false)}
+            sessionCode={state.sessionCode}
+            studentId={state.studentId}
+            gameContext={{
+              student_name: state.studentName,
+              current_landmark: landmark.name,
+              game_date: state.gameDate,
+            }}
+          />
+        )}
+
         {/* Party Status */}
         <div className="card">
           <h3 className="font-semibold text-trail-darkBrown mb-2">Party Status</h3>
@@ -362,6 +407,80 @@ export default function LandmarkScreen() {
           Continue West
         </button>
       </div>
+    </div>
+  );
+}
+
+function NpcChatInline({ character, characterName, onClose, sessionCode, studentId, gameContext }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [exchangeCount, setExchangeCount] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const dispatch = useGameDispatch();
+
+  async function handleSend(e) {
+    e.preventDefault();
+    if (!input.trim() || loading || isComplete) return;
+
+    const userMsg = input.trim();
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const res = await api.npcChat(
+        sessionCode, studentId, character, userMsg, exchangeCount, gameContext
+      );
+      setMessages(prev => [...prev, { role: 'npc', text: res.response }]);
+      setExchangeCount(res.exchangeCount);
+      setIsComplete(res.isComplete);
+
+      dispatch({
+        type: 'ADD_NPC_TRANSCRIPT',
+        transcript: { character, exchange: res.exchangeCount, question: userMsg, response: res.response }
+      });
+    } catch {
+      setMessages(prev => [...prev, { role: 'npc', text: 'The traveler seems lost in thought and does not respond.' }]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-bold text-trail-darkBrown">{characterName}</h3>
+        <button onClick={onClose} className="text-trail-brown text-sm hover:text-trail-red">Close</button>
+      </div>
+      <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
+        {messages.length === 0 && (
+          <p className="text-trail-brown text-sm italic">Ask {characterName.split(' ')[0]} a question about the trail...</p>
+        )}
+        {messages.map((msg, i) => (
+          <div key={i} className={`text-sm p-2 rounded ${msg.role === 'user' ? 'bg-trail-blue/10 text-trail-darkBlue' : 'bg-trail-parchment text-trail-darkBrown italic'}`}>
+            <strong>{msg.role === 'user' ? 'You' : characterName.split(' ')[0]}:</strong> {msg.text}
+          </div>
+        ))}
+        {loading && <p className="text-trail-brown text-sm italic">Thinking...</p>}
+      </div>
+      {!isComplete ? (
+        <form onSubmit={handleSend} className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Ask a question..."
+            className="input-field flex-1 text-sm"
+            maxLength={200}
+          />
+          <button type="submit" disabled={loading} className="btn-primary text-sm px-3">
+            {loading ? '...' : 'Ask'}
+          </button>
+        </form>
+      ) : (
+        <p className="text-trail-brown text-sm italic">{characterName.split(' ')[0]} waves farewell and continues on their way.</p>
+      )}
     </div>
   );
 }

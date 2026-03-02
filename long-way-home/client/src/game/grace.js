@@ -86,15 +86,17 @@ export function getGraceRange(value) {
  *   goodEventModifier: number,
  *   scoreMultiplier: number,
  *   moralFloor: number,
+ *   moraleCeiling: number|null,
+ *   illnessRecoveryPenalty: number,
  *   guaranteedHardship: boolean,
  *   guaranteedStrangerHelp: boolean
  * }}
  *
  * @example
  * const effects = getGraceEffects(80);
- * // effects.illnessModifier === -0.1 (reduces illness chance)
- * // effects.goodEventModifier === 0.15 (more good events)
- * // effects.scoreMultiplier === 1.5
+ * // effects.illnessModifier === -0.15 (reduces illness chance by 15%)
+ * // effects.goodEventModifier === 0.10 (more good events)
+ * // effects.scoreMultiplier === 1.2
  */
 export function getGraceEffects(value) {
   const range = getGraceRange(value);
@@ -102,18 +104,22 @@ export function getGraceEffects(value) {
   switch (range) {
     case 'HIGH':
       return {
-        /** Reduces illness probability */
-        illnessModifier: -0.1,
-        /** Increases good event probability */
-        goodEventModifier: 0.15,
+        /** Reduces illness probability by 15% */
+        illnessModifier: -0.15,
+        /** Increases good event probability by 10% */
+        goodEventModifier: 0.10,
         /** Score multiplier at end of game */
-        scoreMultiplier: 1.5,
+        scoreMultiplier: 1.2,
         /** Morale cannot drop below this value */
-        moralFloor: 30,
-        /** Whether hardship events are guaranteed (narrative consequence) */
+        moralFloor: 0,
+        /** Morale ceiling (null = uncapped) */
+        moraleCeiling: null,
+        /** Extra days per health tier for illness recovery (0 = normal) */
+        illnessRecoveryPenalty: 0,
+        /** Whether hardship events are guaranteed */
         guaranteedHardship: false,
-        /** Whether stranger help is guaranteed when available */
-        guaranteedStrangerHelp: false,
+        /** One guaranteed "stranger helped you" late-trail */
+        guaranteedStrangerHelp: true,
       };
 
     case 'MODERATE':
@@ -121,38 +127,50 @@ export function getGraceEffects(value) {
         illnessModifier: 0,
         goodEventModifier: 0,
         scoreMultiplier: 1.0,
-        moralFloor: 15,
+        moralFloor: 0,
+        moraleCeiling: null,
+        illnessRecoveryPenalty: 0,
         guaranteedHardship: false,
         guaranteedStrangerHelp: false,
       };
 
     case 'LOW':
       return {
-        illnessModifier: 0.1,
-        goodEventModifier: -0.1,
-        scoreMultiplier: 0.75,
-        moralFloor: 5,
+        illnessModifier: 0,
+        /** Good-event probability -10% */
+        goodEventModifier: -0.10,
+        scoreMultiplier: 1.0,
+        moralFloor: 0,
+        moraleCeiling: null,
+        /** Illness recovery is 1 day/tier slower */
+        illnessRecoveryPenalty: 1,
         guaranteedHardship: false,
         guaranteedStrangerHelp: false,
       };
 
     case 'DEPLETED':
       return {
-        illnessModifier: 0.25,
-        goodEventModifier: -0.2,
-        scoreMultiplier: 0.5,
+        illnessModifier: 0,
+        /** Random events skew hostile */
+        goodEventModifier: -0.20,
+        scoreMultiplier: 1.0,
         moralFloor: 0,
+        /** Morale can't rise above 0 (10 with chaplain — handled in reducer) */
+        moraleCeiling: 0,
+        illnessRecoveryPenalty: 0,
+        /** One guaranteed hardship event in second half of trail */
         guaranteedHardship: true,
         guaranteedStrangerHelp: false,
       };
 
     default:
-      // Should never reach here, but return neutral effects as safety
       return {
         illnessModifier: 0,
         goodEventModifier: 0,
         scoreMultiplier: 1.0,
         moralFloor: 0,
+        moraleCeiling: null,
+        illnessRecoveryPenalty: 0,
         guaranteedHardship: false,
         guaranteedStrangerHelp: false,
       };

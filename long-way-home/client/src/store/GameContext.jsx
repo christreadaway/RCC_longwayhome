@@ -58,6 +58,13 @@ const initialState = {
   historianTranscript: [],
   npcTranscripts: [],
 
+  // Prayer tracking
+  prayersOffered: 0,
+  prayerCooldownDay: 0,
+
+  // Bison population (starts at 100%, depleted by overhunting)
+  bisonPopulation: 100,
+
   // Scoring
   score: 0,
   graceAdjustedScore: 0,
@@ -197,8 +204,15 @@ function gameReducer(state, action) {
     }
 
     case 'UPDATE_MORALE': {
-      const chaplainFloor = state.chaplainInParty ? 10 : 0;
-      const newMorale = Math.max(chaplainFloor, Math.min(100, state.morale + action.delta));
+      const chaplainFloor = state.chaplainInParty ? GAME_CONSTANTS.MORALE_CHAPLAIN_FLOOR : 0;
+      let newMorale = Math.max(chaplainFloor, Math.min(100, state.morale + action.delta));
+
+      // DEPLETED grace enforces a morale ceiling
+      if (state.grace < 15) {
+        const depletedCeiling = state.chaplainInParty ? GAME_CONSTANTS.MORALE_CHAPLAIN_FLOOR : 0;
+        newMorale = Math.min(newMorale, depletedCeiling);
+      }
+
       return { ...state, morale: newMorale };
     }
 
@@ -342,6 +356,20 @@ function gameReducer(state, action) {
         ...state,
         feastDaysEncountered: [...state.feastDaysEncountered, action.feastDay]
       };
+    }
+
+    case 'PRAY': {
+      logger.info('PRAYER_OFFERED', { day: state.trailDay, target: action.memberName });
+      return {
+        ...state,
+        prayersOffered: state.prayersOffered + 1,
+        prayerCooldownDay: state.trailDay
+      };
+    }
+
+    case 'DEPLETE_BISON': {
+      const newPop = Math.max(0, state.bisonPopulation - (action.amount || 15));
+      return { ...state, bisonPopulation: newPop };
     }
 
     case 'SET_SCORE': {

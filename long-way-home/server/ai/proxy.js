@@ -1,5 +1,5 @@
 /**
- * AI API proxy for Pioneer Trail / The Long Way Home.
+ * AI API proxy for The Long Way Home.
  *
  * All AI calls go through callAnthropic().
  * - Uses fetch to call the Anthropic Messages API

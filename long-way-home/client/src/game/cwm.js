@@ -151,12 +151,25 @@ export function selectCwmEvent(gameState, events) {
 
 /**
  * Assigns the deceptive flag for a CWM event recipient.
- * 25% probability. The flag is for teacher dashboard only —
+ * 25% probability normally. Guaranteed deceptive if past South Pass
+ * (landmark index >= 5) and no deceptive events have occurred yet.
+ * The flag is for teacher dashboard only —
  * it must NEVER appear in student-facing UI.
  *
+ * @param {Object} gameState - Current game state
  * @returns {boolean} true if the recipient is deceptive
  */
-export function assignDeceptiveFlag() {
+export function assignDeceptiveFlag(gameState) {
+  // Guarantee at least 1 deceptive event if past South Pass and none yet
+  const SOUTH_PASS_INDEX = 5;
+  const currentLeg = gameState?.current_leg || 0;
+  const cwmEvents = gameState?.cwm_events || [];
+  const hasDeceptive = cwmEvents.some((e) => e.recipient_genuine === false);
+
+  if (currentLeg >= SOUTH_PASS_INDEX && !hasDeceptive) {
+    return true;
+  }
+
   return rollCwmDeceptive();
 }
 
@@ -180,7 +193,7 @@ export function assignDeceptiveFlag() {
  */
 export function processCwmChoice(gameState, event, choice) {
   const isHelped = choice === 'helped';
-  const isDeceptive = assignDeceptiveFlag();
+  const isDeceptive = assignDeceptiveFlag(gameState);
 
   // Determine if the player is at hardship (low food/health)
   const atHardship = isPlayerAtHardship(gameState);

@@ -1,5 +1,5 @@
 /**
- * Server-side logger for Pioneer Trail / The Long Way Home.
+ * Server-side logger for The Long Way Home.
  *
  * - Respects LOG_LEVEL env var (debug | info | warn | error). Default: info
  * - Each entry is a single JSON line: { timestamp, level, message, data }

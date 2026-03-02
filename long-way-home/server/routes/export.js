@@ -98,6 +98,39 @@ function extractStudentRow(studentState) {
     ? npcEncounters.map((n) => `${n.character || 'unknown'}(${n.exchanges || 0})`).join('; ')
     : '';
 
+  // Grace range
+  const grace = gs.grace !== undefined ? gs.grace : 0;
+  const graceRange = grace >= 75 ? 'HIGH' : grace >= 40 ? 'MODERATE' : grace >= 15 ? 'LOW' : 'DEPLETED';
+
+  // Deceptive CWM count
+  const cwmDeceptiveCount = cwmEvents.filter((e) => e.recipient_genuine === false).length;
+
+  // Reconciliation events
+  const reconciliationLog = gs.reconciliation_log || [];
+  const reconciliationSummary = Array.isArray(reconciliationLog)
+    ? reconciliationLog.map((r) => `${r.type || 'unknown'}:${r.taken ? 'taken' : 'declined'}`).join('; ')
+    : '';
+
+  // Reciprocity events
+  const reciprocityLog = gs.reciprocity_log || [];
+  const reciprocitySummary = Array.isArray(reciprocityLog)
+    ? reciprocityLog.map((r) => `${r.type || 'unknown'}`).join('; ')
+    : '';
+
+  // Sunday rests skipped
+  const sundayRestsSkipped = gs.sunday_rests_skipped || 0;
+
+  // Feast days
+  const feastDays = gs.feast_days_encountered || [];
+  const feastDaySummary = Array.isArray(feastDays) ? feastDays.join('; ') : '';
+
+  // Prayers offered
+  const prayersOffered = gs.prayers_offered || 0;
+
+  // Moral labels dismissed count
+  const moralLabelsDismissed = gs.moral_labels_dismissed || [];
+  const moralLabelsDismissedCount = Array.isArray(moralLabelsDismissed) ? moralLabelsDismissed.length : 0;
+
   return {
     student_name: studentState.studentName || '',
     student_id: studentState.studentId || '',
@@ -111,18 +144,31 @@ function extractStudentRow(studentState) {
     deaths_count: deaths.length,
     death_names: deaths.map((m) => m.name || 'Unknown').join('; '),
     grace: gs.grace !== undefined ? gs.grace : '',
+    grace_range: graceRange,
     morale: gs.morale !== undefined ? gs.morale : '',
+    score: gs.score || 0,
+    grace_adjusted_score: gs.grace_adjusted_score || 0,
     cash_remaining: gs.cash !== undefined ? gs.cash : '',
     food_remaining: gs.food !== undefined ? gs.food : '',
+    profession: gs.profession || '',
+    chaplain_in_party: gs.chaplain_in_party ? 'Yes' : 'No',
     cwm_events_count: cwmEvents.length,
     cwm_events_detail: cwmSummary,
+    cwm_deceptive_count: cwmDeceptiveCount,
+    reconciliation_events: reconciliationSummary,
+    reciprocity_events: reciprocitySummary,
     sunday_rests: sundayRests,
+    sunday_rests_skipped: sundayRestsSkipped,
+    feast_days: feastDaySummary,
     last_rites: lastRitesSummary,
+    prayers_offered: prayersOffered,
     decisions: decisions,
     historian_query_count: historianCount,
     knowledge_panel_clicks: knowledgePanelCount,
     knowledge_panel_ids: knowledgePanelIds,
     npc_encounters: npcSummary,
+    moral_labels_dismissed: moralLabelsDismissedCount,
+    life_in_oregon: gs.life_in_oregon_narrative || '',
     joined_at: studentState.joinedAt || '',
     last_update: studentState.lastUpdateAt || '',
   };
@@ -145,18 +191,31 @@ const CSV_HEADERS = [
   'deaths_count',
   'death_names',
   'grace',
+  'grace_range',
   'morale',
+  'score',
+  'grace_adjusted_score',
   'cash_remaining',
   'food_remaining',
+  'profession',
+  'chaplain_in_party',
   'cwm_events_count',
   'cwm_events_detail',
+  'cwm_deceptive_count',
+  'reconciliation_events',
+  'reciprocity_events',
   'sunday_rests',
+  'sunday_rests_skipped',
+  'feast_days',
   'last_rites',
+  'prayers_offered',
   'decisions',
   'historian_query_count',
   'knowledge_panel_clicks',
   'knowledge_panel_ids',
   'npc_encounters',
+  'moral_labels_dismissed',
+  'life_in_oregon',
   'joined_at',
   'last_update',
 ];
@@ -174,7 +233,7 @@ router.get('/:code/csv', (req, res) => {
     const rows = students.map(extractStudentRow);
     const csv = toCSV(CSV_HEADERS, rows);
 
-    const filename = `pioneer-trail-${code}-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `long-way-home-${code}-${new Date().toISOString().split('T')[0]}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

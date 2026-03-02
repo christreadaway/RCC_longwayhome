@@ -1,18 +1,18 @@
-# CLAUDE.md — Pioneer Trail
+# CLAUDE.md — The Long Way Home
 *Project context for Claude Code. Read this first before any build session.*
 
 ---
 
 ## What This Project Is
 
-**Pioneer Trail** is a browser-based educational game — a from-scratch rebuild of Oregon Trail mechanics for Catholic middle school classroom use. It is not a clone; it uses no original MECC/HMH code or assets. All content is original.
+**The Long Way Home** is a browser-based educational game — a from-scratch rebuild of Oregon Trail mechanics for Catholic classroom use (K-2, 3-5, 6-8). It is not a clone; it uses no original MECC/HMH code or assets. All content is original.
 
 The game has three distinct surfaces:
 1. **Student game** — the main gameplay experience
 2. **Teacher dashboard** — real-time monitoring of all student sessions
 3. **Node.js backend** — session state, AI proxy, Historian logging
 
-Full requirements: `pioneer-trail-requirements.md`  
+Full requirements: `the-long-way-home-requirements.md`  
 Catholic design framework: `catholic.md`
 
 ---
@@ -35,7 +35,7 @@ Catholic design framework: `catholic.md`
 ## Project Structure
 
 ```
-pioneer-trail/
+long-way-home/
 ├── client/                    # React frontend (Vite)
 │   ├── src/
 │   │   ├── game/              # Core game logic
@@ -87,7 +87,7 @@ pioneer-trail/
 │   └── types.js
 ├── .env.example
 ├── CLAUDE.md
-├── pioneer-trail-requirements.md
+├── the-long-way-home-requirements.md
 └── catholic.md
 ```
 
@@ -314,7 +314,7 @@ Trail segment definitions: start, end, distance_miles, terrain_type, hazard_mult
 
 ```bash
 # Install dependencies
-cd /Users/christreadaway/pioneer-trail
+cd /Users/christreadaway/long-way-home
 npm install
 
 # Set up environment
@@ -361,9 +361,9 @@ npm run dev
 
 ## Open Questions for Chris Before Build
 
-See `pioneer-trail-requirements.md` Section 9 for full list. Blockers before first Claude Code session:
+See `the-long-way-home-requirements.md` Section 9 for full list. Blockers before first Claude Code session:
 
-1. **Game name confirmed?** (Default: "Pioneer Trail")
+1. **Game name confirmed?** (Confirmed: "The Long Way Home")
 2. **Art style decided?** (Default: illustrated storybook / warm palette)
 3. **Target device?** (Default: Chromebook landscape 1366×768)
 4. **Which grade band to build first?** (Recommend 6–8 as the full variant; K–2 and 3–5 can follow as simplifications)

@@ -4,6 +4,7 @@ import { logger } from '../../utils/logger';
 import StudentCard from './StudentCard';
 import SettingsPanel from './SettingsPanel';
 import TranscriptViewer from './TranscriptViewer';
+import DashboardCharts from './DashboardCharts';
 
 export default function DashboardMain({ session, setSession }) {
   const [students, setStudents] = useState([]);
@@ -16,6 +17,7 @@ export default function DashboardMain({ session, setSession }) {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [highlightedStudentId, setHighlightedStudentId] = useState(null);
 
   // Poll for student states
   useEffect(() => {
@@ -193,8 +195,18 @@ export default function DashboardMain({ session, setSession }) {
                   setShowTranscript(true);
                 }}
                 showDebug={showDebug}
+                isHighlighted={highlightedStudentId === student.studentId}
+                onHighlight={(id) => setHighlightedStudentId(prev => prev === id ? null : id)}
               />
             ))}
+          </div>
+        )}
+
+        {/* Class Charts */}
+        {students.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-xl font-bold text-trail-darkBrown mb-4">Class Overview</h2>
+            <DashboardCharts students={students} />
           </div>
         )}
 

@@ -7,13 +7,15 @@ const ANIMALS = [
   { type: 'bison', food: 100, speed: 1.5, size: 55, y: 0.55 }
 ];
 
-export default function HuntingMinigame({ onComplete, ammo }) {
+export default function HuntingMinigame({ onComplete, ammo, bisonPopulation = 100 }) {
   const canvasRef = useRef(null);
   const [ammoLeft, setAmmoLeft] = useState(Math.min(ammo * 20, 20)); // 20 shots max per hunt
   const [foodGained, setFoodGained] = useState(0);
+  const [bisonKilled, setBisonKilled] = useState(0);
   const [animals, setAnimals] = useState([]);
   const [timeLeft, setTimeLeft] = useState(30);
   const [gameActive, setGameActive] = useState(true);
+  const [overhuntWarning, setOverhuntWarning] = useState(false);
   const animationRef = useRef(null);
   const lastSpawnRef = useRef(0);
 
@@ -23,7 +25,16 @@ export default function HuntingMinigame({ onComplete, ammo }) {
 
     const interval = setInterval(() => {
       setAnimals(prev => {
-        const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+        // Bison appear less often if population is depleted
+        let pool = ANIMALS;
+        if (bisonPopulation < 30) {
+          pool = ANIMALS.filter(a => a.type !== 'bison');
+        } else if (bisonPopulation < 60) {
+          // Reduce bison frequency
+          pool = [...ANIMALS.filter(a => a.type !== 'bison'), ...ANIMALS.filter(a => a.type !== 'bison')];
+          pool.push(ANIMALS.find(a => a.type === 'bison'));
+        }
+        const animal = pool[Math.floor(Math.random() * pool.length)];
         const fromLeft = Math.random() > 0.5;
         return [...prev.filter(a => a.alive), {
           id: Date.now() + Math.random(),
@@ -80,6 +91,7 @@ export default function HuntingMinigame({ onComplete, ammo }) {
 
     // Check hits — compute which animals are hit, then update state
     let foodFromHit = 0;
+    let bisonHit = 0;
     setAnimals(prev =>
       prev.map(a => {
         if (!a.alive) return a;
@@ -87,6 +99,7 @@ export default function HuntingMinigame({ onComplete, ammo }) {
         const dy = Math.abs(clickY - a.yPos);
         if (dx < a.size && dy < a.size) {
           foodFromHit += a.food;
+          if (a.type === 'bison') bisonHit++;
           return { ...a, alive: false };
         }
         return a;
@@ -95,6 +108,13 @@ export default function HuntingMinigame({ onComplete, ammo }) {
 
     if (foodFromHit > 0) {
       setFoodGained(prev => prev + foodFromHit);
+    }
+    if (bisonHit > 0) {
+      setBisonKilled(prev => {
+        const newCount = prev + bisonHit;
+        if (newCount >= 3) setOverhuntWarning(true);
+        return newCount;
+      });
     }
 
     if (newAmmo <= 0) {
@@ -164,8 +184,14 @@ export default function HuntingMinigame({ onComplete, ammo }) {
                 </h3>
                 <p className="text-trail-brown mb-4">
                   You gathered {foodGained} lbs of food.
+                  {bisonKilled > 0 && ` (${bisonKilled} bison taken)`}
                 </p>
-                <button onClick={() => onComplete(foodGained)} className="btn-primary">
+                {overhuntWarning && (
+                  <p className="text-trail-red text-sm mb-3 italic">
+                    You took more bison than needed. The herd is smaller now.
+                  </p>
+                )}
+                <button onClick={() => onComplete(foodGained, bisonKilled)} className="btn-primary">
                   Return to Camp
                 </button>
               </div>
