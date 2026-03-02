@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES, PROFESSION_REPAIR, CHAPLAIN_COSTS, STORE_BOOKS, STORE_BIBLE } from '@shared/types';
+import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES, PROFESSION_REPAIR, CHAPLAIN_COSTS, STORE_BOOKS, STORE_BIBLE, SLEEP_SCHEDULE, WATER_CONSUMPTION } from '@shared/types';
 import { formatGameDate, isSunday, addDays, isAfter } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
 import { logCrash, trackAction } from '../../utils/crashLogger';
@@ -47,6 +47,7 @@ export default function TravelScreen() {
   const [showHunting, setShowHunting] = useState(false);
   const [isResting, setIsResting] = useState(false);
   const [travelMessage, setTravelMessage] = useState('');
+  const [showFullMap, setShowFullMap] = useState(false);
   const travelTimerRef = useRef(null);
   const skipSundayCheckRef = useRef(false);
 
@@ -163,7 +164,7 @@ export default function TravelScreen() {
     }
 
     // --- Water dehydration check ---
-    const waterAfterToday = Math.max(0, state.waterGallons - (aliveCount * 2 + state.oxenYokes * 4));
+    const waterAfterToday = Math.max(0, state.waterGallons - (aliveCount * WATER_CONSUMPTION.perPersonPerDay + state.oxenYokes * WATER_CONSUMPTION.perOxenYokePerDay));
     if (waterAfterToday <= 0 && state.waterGallons > 0) {
       // Just ran out of water
       dayMessage = 'Your water barrels are empty! The party and oxen suffer from thirst.';
@@ -196,13 +197,28 @@ export default function TravelScreen() {
       }
     }
 
-    // --- Calculate distance traveled (weather + ground + pace + oxen care) ---
+    // --- Calculate distance traveled (weather + ground + pace + sleep + oxen care) ---
     const baseMiles = GAME_CONSTANTS.BASE_DAILY_MILES;
     const paceMult = PACE_MULTIPLIER[state.pace] || 1.0;
-    let rawMiles = Math.round(baseMiles * paceMult);
+    const sleepMult = (SLEEP_SCHEDULE[state.sleepSchedule] || SLEEP_SCHEDULE.normal).travelBonus;
+    let rawMiles = Math.round(baseMiles * paceMult * sleepMult);
 
     // Apply weather/ground modifier
     rawMiles = applyWeatherToTravel(rawMiles, todayWeather);
+
+    // Sleep schedule health/morale effects
+    const sleepConfig = SLEEP_SCHEDULE[state.sleepSchedule] || SLEEP_SCHEDULE.normal;
+    if (sleepConfig.moraleModifier !== 0) {
+      dispatch({ type: 'UPDATE_MORALE', delta: sleepConfig.moraleModifier });
+    }
+    if (sleepConfig.healthRecovery < 0 && Math.random() < Math.abs(sleepConfig.healthRecovery)) {
+      // Short sleep: small chance of health degradation
+      const tiredMember = aliveAfterStarvation.find(m => m.health !== 'critical' && m.health !== 'dead');
+      if (tiredMember && tiredMember.health !== 'good') {
+        // Only affect already-weakened members
+        dispatch({ type: 'UPDATE_MORALE', delta: -1 });
+      }
+    }
 
     // Oxen care bonus (well-tended oxen pull harder)
     if (state.oxenChecked) rawMiles = Math.round(rawMiles * 1.05);
@@ -224,9 +240,9 @@ export default function TravelScreen() {
     // Reset stationary counter since we're traveling
     dispatch({ type: 'RESET_STATIONARY' });
 
-    // Random event check — events fire more frequently for a challenging game
+    // Random event check — balanced frequency for realistic gameplay
     const eventRoll = Math.random();
-    const eventThreshold = state.gradeBand === 'k2' ? 0.75 : 0.60;
+    const eventThreshold = state.gradeBand === 'k2' ? 0.80 : 0.72;
 
     if (eventRoll > eventThreshold) {
       const event = selectRandomEvent(state, eventsData);
@@ -591,6 +607,46 @@ export default function TravelScreen() {
     setIsResting(false);
   }
 
+  function handleFindWater() {
+    if (isAfter(state.gameDate, GAME_CONSTANTS.END_DATE)) {
+      dispatch({ type: 'SET_STATUS', status: 'failed' });
+      dispatch({ type: 'SET_PHASE', phase: 'GAME_OVER' });
+      return;
+    }
+
+    trackAction('find_water');
+    dispatch({ type: 'INCREMENT_STATIONARY' });
+
+    // Generate weather for the search day
+    const terrainType = currentLandmark?.terrain_type || 'plains';
+    const searchWeather = generateWeather(state.gameDate, terrainType, state.recentWeather || []);
+    dispatch({ type: 'SET_WEATHER', weather: searchWeather });
+
+    // Success depends on terrain — river terrain is almost guaranteed, mountains harder
+    let successChance = 0.55;
+    if (terrainType === 'river' || terrainType === 'riverbank') successChance = 0.95;
+    else if (terrainType === 'plains') successChance = 0.45;
+    else if (terrainType === 'mountains') successChance = 0.35;
+    else if (terrainType === 'desert') successChance = 0.20;
+
+    // Trail guide helps find water
+    if (state.hasTrailGuide) successChance = Math.min(0.95, successChance + 0.15);
+
+    const roll = Math.random();
+    if (roll < successChance) {
+      // Found water — refill between 40-120 gallons depending on terrain
+      const baseRefill = terrainType === 'river' ? 120 : terrainType === 'plains' ? 60 : 40;
+      const refillAmount = Math.round(baseRefill * (0.7 + Math.random() * 0.6));
+      dispatch({ type: 'REFILL_WATER', amount: refillAmount, capacity: 200 });
+      setTravelMessage(`Your party spent the day searching for water and found a ${terrainType === 'river' ? 'good stream' : 'spring'}. You refilled ${refillAmount} gallons.`);
+    } else {
+      setTravelMessage('Your party spent the day searching for water but found nothing. A wasted day — the trail stretches on.');
+      dispatch({ type: 'UPDATE_MORALE', delta: -3 });
+    }
+
+    dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
+  }
+
   function handleHuntingComplete(foodGained, bisonKilled = 0) {
     setShowHunting(false);
     if (foodGained > 0) {
@@ -622,10 +678,17 @@ export default function TravelScreen() {
   const graceRange = getGraceRange(state.grace);
   const terrainType = currentLandmark?.terrain_type || 'plains';
 
+  // Compute next two landmarks for mini-map display
+  const upcomingLandmarks = [];
+  if (currentLandmark) upcomingLandmarks.push({ ...currentLandmark, index: state.currentLandmarkIndex });
+  if (nextLandmark) upcomingLandmarks.push({ ...nextLandmark, index: state.currentLandmarkIndex + 1 });
+  const thirdLandmark = landmarks[state.currentLandmarkIndex + 2];
+  if (thirdLandmark) upcomingLandmarks.push({ ...thirdLandmark, index: state.currentLandmarkIndex + 2 });
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-trail-cream">
       {/* ═══ TOP BAR: date, location, grace ═══ */}
-      <div className="flex-none flex items-center justify-between px-3 py-1.5 bg-trail-darkBrown text-trail-cream border-b-2 border-trail-brown"
+      <div className="flex-none flex items-center justify-between px-3 py-1 bg-trail-darkBrown text-trail-cream border-b-2 border-trail-brown"
         style={{ fontFamily: "'Lora', Georgia, serif" }}>
         <div className="flex items-center gap-3 text-sm">
           <span className="font-semibold">{formatGameDate(state.gameDate)}</span>
@@ -649,28 +712,24 @@ export default function TravelScreen() {
         </div>
       </div>
 
-      {/* ═══ MAIN CONTENT: 3-column layout ═══ */}
+      {/* ═══ MAIN CONTENT: 2-column layout ═══ */}
       <div className="flex-1 flex min-h-0">
 
-        {/* ──── LEFT COLUMN: terrain scene + party + supplies ──── */}
-        <div className="w-64 flex-none flex flex-col border-r-2 border-trail-tan/40 bg-trail-parchment/30">
-          {/* Terrain Scene */}
-          <div className="flex-none h-28 border-b border-trail-tan/30">
-            <TerrainScene terrainType={terrainType} landmarkName={currentLandmark?.name} />
-          </div>
+        {/* ──── LEFT COLUMN: party + supplies + travel plan ──── */}
+        <div className="w-56 flex-none flex flex-col border-r-2 border-trail-tan/40 bg-trail-parchment/30 overflow-y-auto">
 
           {/* Party Members */}
-          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
-            <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1"
+          <div className="flex-none px-2.5 py-1.5 border-b border-trail-tan/30">
+            <h3 className="text-[10px] font-bold text-trail-darkBrown uppercase tracking-wider mb-0.5"
               style={{ fontVariant: 'small-caps' }}>Party</h3>
             <div className="space-y-0.5">
               {state.partyMembers.map(m => (
-                <div key={m.name} className="flex justify-between items-center text-xs">
+                <div key={m.name} className="flex justify-between items-center text-[11px]">
                   <span className={`${!m.alive ? 'line-through text-gray-400' : 'text-trail-darkBrown'}`}>
                     {m.name}
                     {m.isChaplain && <span className="text-trail-gold ml-0.5">&dagger;</span>}
                   </span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  <span className={`text-[9px] px-1 py-0.5 rounded-full ${
                     m.health === 'good' ? 'bg-green-100 text-green-700' :
                     m.health === 'fair' ? 'bg-yellow-100 text-yellow-700' :
                     m.health === 'poor' ? 'bg-orange-100 text-orange-700' :
@@ -681,8 +740,8 @@ export default function TravelScreen() {
               ))}
             </div>
             {/* Morale bar */}
-            <div className="mt-1.5">
-              <div className="flex justify-between text-[10px] text-trail-brown mb-0.5">
+            <div className="mt-1">
+              <div className="flex justify-between text-[9px] text-trail-brown mb-0.5">
                 <span>Morale</span>
                 <span>{state.morale}%</span>
               </div>
@@ -695,14 +754,14 @@ export default function TravelScreen() {
           </div>
 
           {/* Supplies */}
-          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
-            <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1"
+          <div className="flex-none px-2.5 py-1.5 border-b border-trail-tan/30">
+            <h3 className="text-[10px] font-bold text-trail-darkBrown uppercase tracking-wider mb-0.5"
               style={{ fontVariant: 'small-caps' }}>Supplies</h3>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-trail-darkBrown">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0 text-[10px] text-trail-darkBrown">
               <span className="text-trail-brown">Food:</span>
               <span className={state.foodLbs < 50 ? 'text-red-600 font-bold' : ''}>{Math.round(state.foodLbs)} lbs</span>
               <span className="text-trail-brown">Water:</span>
-              <span className={state.waterGallons < 30 ? 'text-red-600 font-bold' : state.waterGallons < 60 ? 'text-orange-600' : ''}>{Math.round(state.waterGallons)} gal</span>
+              <span className={state.waterGallons < 20 ? 'text-red-600 font-bold' : state.waterGallons < 50 ? 'text-orange-600' : ''}>{Math.round(state.waterGallons)} gal</span>
               <span className="text-trail-brown">Oxen:</span>
               <span>{state.oxenYokes} yoke</span>
               <span className="text-trail-brown">Ammo:</span>
@@ -716,34 +775,39 @@ export default function TravelScreen() {
             </div>
           </div>
 
-          {/* Weather Box */}
-          <div className="flex-none px-2 py-1.5 border-b border-trail-tan/30">
-            <WeatherBox weather={state.currentWeather} />
-          </div>
-
-          {/* Travel Settings */}
-          <div className="flex-none px-3 py-2 border-b border-trail-tan/30">
-            <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1"
-              style={{ fontVariant: 'small-caps' }}>Settings</h3>
-            <div className="space-y-1">
+          {/* Travel Plan (was "Settings") */}
+          <div className="flex-none px-2.5 py-1.5 border-b border-trail-tan/30">
+            <h3 className="text-[10px] font-bold text-trail-darkBrown uppercase tracking-wider mb-0.5"
+              style={{ fontVariant: 'small-caps' }}>Travel Plan</h3>
+            <div className="space-y-0.5">
               <div className="flex items-center gap-1">
-                <label className="text-[10px] text-trail-brown w-10">Pace:</label>
+                <label className="text-[9px] text-trail-brown w-10">Pace:</label>
                 <select value={state.pace}
                   onChange={e => dispatch({ type: 'SET_PACE', pace: e.target.value })}
-                  className="flex-1 text-[11px] px-1 py-0.5 border border-trail-tan rounded bg-white">
+                  className="flex-1 text-[10px] px-1 py-0.5 border border-trail-tan rounded bg-white">
                   <option value="steady">Steady</option>
                   <option value="strenuous">Strenuous</option>
                   <option value="grueling">Grueling</option>
                 </select>
               </div>
               <div className="flex items-center gap-1">
-                <label className="text-[10px] text-trail-brown w-10">Food:</label>
+                <label className="text-[9px] text-trail-brown w-10">Rations:</label>
                 <select value={state.rations}
                   onChange={e => dispatch({ type: 'SET_RATIONS', rations: e.target.value })}
-                  className="flex-1 text-[11px] px-1 py-0.5 border border-trail-tan rounded bg-white">
+                  className="flex-1 text-[10px] px-1 py-0.5 border border-trail-tan rounded bg-white">
                   <option value="filling">Filling</option>
                   <option value="meager">Meager</option>
                   <option value="bare_bones">Bare Bones</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <label className="text-[9px] text-trail-brown w-10">Sleep:</label>
+                <select value={state.sleepSchedule}
+                  onChange={e => dispatch({ type: 'SET_SLEEP_SCHEDULE', sleepSchedule: e.target.value })}
+                  className="flex-1 text-[10px] px-1 py-0.5 border border-trail-tan rounded bg-white">
+                  <option value="short">Short (5 hrs)</option>
+                  <option value="normal">Normal (7 hrs)</option>
+                  <option value="long">Long (9 hrs)</option>
                 </select>
               </div>
             </div>
@@ -751,7 +815,7 @@ export default function TravelScreen() {
 
           {/* Camp Activities (for older grade bands) */}
           {state.gradeBand !== 'k2' && (
-            <div className="flex-none px-2 py-1.5 border-b border-trail-tan/30">
+            <div className="flex-none px-2 py-1 border-b border-trail-tan/30">
               <CampActivitiesPanel
                 onActivityComplete={(result) => {
                   if (result.timeCost > 0) {
@@ -764,88 +828,153 @@ export default function TravelScreen() {
             </div>
           )}
 
-          {/* Warnings & Extras */}
-          <div className="flex-1 px-3 py-2 overflow-y-auto">
+          {/* Warnings */}
+          <div className="flex-none px-2.5 py-1">
             {state.foodLbs < 50 && state.foodLbs > 0 && (
-              <div className="text-[10px] text-orange-600 font-semibold mb-1">Low provisions!</div>
+              <div className="text-[9px] text-orange-600 font-semibold">Low provisions!</div>
             )}
             {state.foodLbs <= 0 && (
-              <div className="text-[10px] text-red-600 font-bold mb-1">No food! Your party is starving!</div>
+              <div className="text-[9px] text-red-600 font-bold">No food! Starving!</div>
             )}
-            {state.waterGallons > 0 && state.waterGallons < 30 && (
-              <div className="text-[10px] text-orange-600 font-semibold mb-1">Water running low!</div>
+            {state.waterGallons > 0 && state.waterGallons < 20 && (
+              <div className="text-[9px] text-orange-600 font-semibold">Water running low!</div>
             )}
             {state.waterGallons <= 0 && (
-              <div className="text-[10px] text-red-600 font-bold mb-1">No water! Find a river or fort!</div>
+              <div className="text-[9px] text-red-600 font-bold">No water!</div>
             )}
             {(state.daysStationary || 0) >= 3 && (
-              <div className="text-[10px] text-red-600 font-semibold mb-1">
-                Lingering too long! ({state.daysStationary} days idle)
+              <div className="text-[9px] text-red-600 font-semibold">
+                Lingering! ({state.daysStationary}d idle)
               </div>
             )}
-            {state.sessionSettings?.historian_enabled && (
+          </div>
+
+          {state.sessionSettings?.historian_enabled && (
+            <div className="flex-none px-2.5 py-1">
               <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })}
-                className="w-full text-[10px] py-1 px-2 bg-trail-tan/30 border border-trail-tan rounded text-trail-darkBrown hover:bg-trail-tan/50 transition-colors mt-1">
+                className="w-full text-[9px] py-1 px-2 bg-trail-tan/30 border border-trail-tan rounded text-trail-darkBrown hover:bg-trail-tan/50 transition-colors">
                 Trail Journal
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* ──── CENTER COLUMN: map + message + actions ──── */}
+        {/* ──── CENTER COLUMN: weather/daily log + map + actions ──── */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Trail Map */}
-          <div className="flex-1 min-h-0">
-            <OregonTrailMap
-              landmarks={landmarks}
-              currentIndex={state.currentLandmarkIndex}
-              distanceToNext={state.distanceToNextLandmark}
-            />
-          </div>
 
-          {/* Progress bar */}
-          <div className="flex-none px-3 py-1 bg-trail-parchment/50 border-t border-trail-tan/30">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-trail-brown whitespace-nowrap">
-                {Math.round(state.distanceTraveled)} mi
-              </span>
-              <div className="flex-1 h-2 bg-trail-tan/30 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-trail-brown to-trail-gold rounded-full transition-all duration-500"
-                  style={{ width: `${progressPercent}%` }} />
+          {/* Daily Log & Weather — prominent section */}
+          <div className="flex-none border-b border-trail-tan/30 bg-trail-parchment/40">
+            <div className="flex gap-3 px-3 py-2">
+              {/* Weather report — larger */}
+              <div className="flex-1">
+                <WeatherBox weather={state.currentWeather} />
               </div>
-              <span className="text-[10px] text-trail-brown whitespace-nowrap">
-                {totalDistance} mi
-              </span>
+
+              {/* Daily travel log */}
+              <div className="flex-1 border border-trail-tan/50 rounded bg-trail-parchment/40 px-3 py-2">
+                <h3 className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1.5"
+                  style={{ fontVariant: 'small-caps' }}>Daily Log</h3>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-trail-brown">Miles today:</span>
+                    <span className="font-semibold text-trail-darkBrown">{state.lastDayMiles || 0} mi</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-trail-brown">Total traveled:</span>
+                    <span className="text-trail-darkBrown">{Math.round(state.distanceTraveled)} mi</span>
+                  </div>
+                  {nextLandmark && (
+                    <div className="flex justify-between">
+                      <span className="text-trail-brown">To {nextLandmark.name.split(' ').slice(0,2).join(' ')}:</span>
+                      <span className={`font-semibold ${state.distanceToNextLandmark < 30 ? 'text-green-700' : 'text-trail-darkBrown'}`}>
+                        {Math.max(0, Math.round(state.distanceToNextLandmark))} mi
+                      </span>
+                    </div>
+                  )}
+                  {state.currentWeather && state.currentWeather.travelModifier < -0.1 && (
+                    <div className="text-[10px] text-orange-600 italic">Weather slowing travel</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Terrain scene */}
+              <div className="w-36 flex-none rounded overflow-hidden border border-trail-tan/40">
+                <TerrainScene terrainType={terrainType} landmarkName={currentLandmark?.name} />
+              </div>
             </div>
-            {nextLandmark && (
-              <div className="text-center text-[10px] text-trail-brown mt-0.5">
-                {Math.max(0, Math.round(state.distanceToNextLandmark))} miles to {nextLandmark.name}
-                {state.currentWeather && state.currentWeather.travelModifier < -0.1 && (
-                  <span className="text-orange-600 ml-1">(weather slowing travel)</span>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Message & Actions */}
-          <div className="flex-none px-4 py-2 bg-trail-parchment/60 border-t-2 border-trail-tan/50">
-            {travelMessage && (
-              <div className="text-center text-sm text-trail-darkBrown mb-2 italic font-serif leading-snug">
+          {/* Trail message — travel narrative */}
+          {travelMessage && (
+            <div className="flex-none px-4 py-1.5 bg-trail-parchment/60 border-b border-trail-tan/30">
+              <div className="text-center text-sm text-trail-darkBrown italic font-serif leading-snug">
                 &ldquo;{travelMessage}&rdquo;
               </div>
-            )}
-            <div className="flex gap-2 justify-center flex-wrap">
+            </div>
+          )}
+
+          {/* Compact mini-map — shows next 2-3 stops, click for full map */}
+          <div className="flex-none px-3 py-2 border-b border-trail-tan/30 bg-trail-parchment/20 cursor-pointer hover:bg-trail-parchment/40 transition-colors"
+            onClick={() => setShowFullMap(true)}
+            title="Click to view full trail map">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-trail-brown/60 uppercase tracking-wider">Trail Map</span>
+              <div className="flex-1 flex items-center gap-1">
+                {upcomingLandmarks.map((lm, i) => {
+                  const isCurrent = lm.index === state.currentLandmarkIndex;
+                  return (
+                    <div key={lm.id || i} className="flex items-center">
+                      {i > 0 && (
+                        <div className="w-8 h-0.5 bg-trail-brown/30 mx-0.5" />
+                      )}
+                      <div className="flex flex-col items-center">
+                        <div className={`rounded-full ${
+                          isCurrent
+                            ? 'w-3 h-3 bg-trail-gold border-2 border-trail-brown'
+                            : 'w-2 h-2 bg-gray-300 border border-gray-400'
+                        }`} />
+                        <span className={`text-[8px] mt-0.5 leading-tight ${
+                          isCurrent ? 'text-trail-darkBrown font-bold' : 'text-trail-brown/70'
+                        }`}>
+                          {lm.name?.split(' ').slice(0, 2).join(' ')}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="w-8 h-0.5 bg-trail-brown/20 mx-0.5" />
+                <span className="text-[8px] text-trail-brown/50">...</span>
+              </div>
+              {/* Progress */}
+              <div className="flex items-center gap-1.5">
+                <div className="w-16 h-1.5 bg-trail-tan/30 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-trail-brown to-trail-gold rounded-full transition-all duration-500"
+                    style={{ width: `${progressPercent}%` }} />
+                </div>
+                <span className="text-[8px] text-trail-brown/60">{Math.round(progressPercent)}%</span>
+              </div>
+              <span className="text-[9px] text-trail-brown/50 ml-1">View map &rarr;</span>
+            </div>
+          </div>
+
+          {/* Action Buttons — central and prominent */}
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-3 bg-trail-parchment/30">
+            <div className="flex gap-2 flex-wrap justify-center">
               <button onClick={handleContinueTravel}
-                className="btn-primary py-1.5 px-5 text-sm">
+                className="btn-primary py-2 px-6 text-sm font-semibold">
                 Continue on the Trail
               </button>
               <button onClick={handleRest}
-                className="btn-secondary py-1.5 px-4 text-sm">
+                className="btn-secondary py-2 px-4 text-sm">
                 Rest
+              </button>
+              <button onClick={handleFindWater}
+                className="btn-secondary py-2 px-4 text-sm">
+                Find Water
               </button>
               {state.gradeBand !== 'k2' && state.ammoBoxes > 0 && (
                 <button onClick={() => setShowHunting(true)}
-                  className="btn-secondary py-1.5 px-4 text-sm">
+                  className="btn-secondary py-2 px-4 text-sm">
                   Hunt
                 </button>
               )}
@@ -853,7 +982,6 @@ export default function TravelScreen() {
                 <button
                   onClick={() => {
                     const criticalMember = state.partyMembers.find(m => m.alive && m.health === 'critical');
-                    // Bible amplifies prayer grace (praying with Scripture)
                     const prayerGrace = GRACE_DELTAS.PRAYER + (state.hasBible ? STORE_BIBLE.effects.prayerGraceBonus : 0);
                     dispatch({ type: 'UPDATE_GRACE', delta: prayerGrace, trigger: 'prayer_crisis' });
                     dispatch({ type: 'UPDATE_MORALE', delta: 3 });
@@ -864,7 +992,7 @@ export default function TravelScreen() {
                       setTravelMessage(`The party prays together for ${criticalMember?.name}. It doesn't change the illness, but it steadies the heart.`);
                     }
                   }}
-                  className="py-1.5 px-4 text-sm bg-trail-gold/20 border border-trail-gold text-trail-darkBrown rounded-lg hover:bg-trail-gold/30 transition-colors">
+                  className="py-2 px-4 text-sm bg-trail-gold/20 border border-trail-gold text-trail-darkBrown rounded-lg hover:bg-trail-gold/30 transition-colors">
                   Pray
                 </button>
               )}
@@ -872,13 +1000,35 @@ export default function TravelScreen() {
           </div>
         </div>
 
-        {/* ──── RIGHT COLUMN: Knowledge Panel / Historian (if open) ──── */}
+        {/* ──── RIGHT COLUMN: Historian (if open) ──── */}
         {state.showHistorian && (
           <div className="w-72 flex-none border-l-2 border-trail-tan/40 bg-trail-parchment/20 overflow-y-auto">
             <HistorianPanel />
           </div>
         )}
       </div>
+
+      {/* ═══ FULL MAP MODAL (click to expand) ═══ */}
+      {showFullMap && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setShowFullMap(false)}>
+          <div className="w-[90vw] h-[80vh] bg-trail-cream rounded-lg shadow-2xl border-2 border-trail-brown overflow-hidden"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-3 py-1.5 bg-trail-darkBrown text-trail-cream">
+              <span className="text-sm font-serif">Oregon Trail — Full Map</span>
+              <button onClick={() => setShowFullMap(false)}
+                className="text-trail-cream/80 hover:text-white text-lg leading-none px-2">&times;</button>
+            </div>
+            <div className="h-[calc(100%-2.5rem)]">
+              <OregonTrailMap
+                landmarks={landmarks}
+                currentIndex={state.currentLandmarkIndex}
+                distanceToNext={state.distanceToNextLandmark}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sunday Rest Prompt */}
       {showSundayPrompt && (

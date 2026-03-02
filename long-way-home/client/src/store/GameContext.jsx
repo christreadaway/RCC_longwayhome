@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE } from '@shared/types';
+import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE, WATER_CONSUMPTION } from '@shared/types';
 
 const GameContext = createContext(null);
 const GameDispatchContext = createContext(null);
@@ -42,8 +42,10 @@ const initialState = {
   distanceToNextLandmark: 0,
   pace: 'steady',
   rations: 'filling',
+  sleepSchedule: 'normal',
   gameDate: GAME_CONSTANTS.START_DATE,
   trailDay: 1,
+  lastDayMiles: 0,
 
   // Health & Status
   morale: GAME_CONSTANTS.INITIAL_MORALE,
@@ -166,6 +168,10 @@ function gameReducer(state, action) {
       return { ...state, rations: action.rations };
     }
 
+    case 'SET_SLEEP_SCHEDULE': {
+      return { ...state, sleepSchedule: action.sleepSchedule };
+    }
+
     case 'ADVANCE_DAY': {
       const newDate = addDaysToDate(state.gameDate, 1);
       let foodConsumed = getFoodConsumption(state.rations, state.partyMembers);
@@ -177,9 +183,9 @@ function gameReducer(state, action) {
 
       const newFood = Math.max(0, state.foodLbs - foodConsumed);
 
-      // Water consumption: ~2 gal per person + ~4 gal per yoke of oxen
+      // Water consumption: ~0.5 gal per person/day + ~2 gal per yoke of oxen
       const aliveCount = state.partyMembers.filter(m => m.alive).length;
-      const waterConsumed = (aliveCount * 2) + (state.oxenYokes * 4);
+      const waterConsumed = (aliveCount * WATER_CONSUMPTION.perPersonPerDay) + (state.oxenYokes * WATER_CONSUMPTION.perOxenYokePerDay);
       const newWater = Math.max(0, state.waterGallons - waterConsumed);
 
       // Chaplain clothing wear: every N days, uses 1 extra clothing set
@@ -197,7 +203,8 @@ function gameReducer(state, action) {
         waterGallons: newWater,
         clothingSets: newClothing,
         distanceTraveled: state.distanceTraveled + (action.distanceTraveled || 0),
-        distanceToNextLandmark: Math.max(0, state.distanceToNextLandmark - (action.distanceTraveled || 0))
+        distanceToNextLandmark: Math.max(0, state.distanceToNextLandmark - (action.distanceTraveled || 0)),
+        lastDayMiles: action.distanceTraveled || 0
       };
     }
 
