@@ -41,12 +41,14 @@ client/src/
 │   │   ├── EventScreen.jsx    # Event resolution with choices
 │   │   ├── GameOverScreen.jsx # Score, narrative, exam of conscience
 │   │   └── shared/            # Reusable game UI components
-│   │       ├── MoralLabel.jsx       # Dismissible moral label card
+│   │       ├── MoralLabel.jsx       # Centered pop-in moral label (green/red)
 │   │       ├── PauseOverlay.jsx     # Teacher-paused overlay
 │   │       ├── TrailMap.jsx         # Trail progress visualization
+│   │       ├── OregonTrailMap.jsx   # SVG map with 1848 boundaries, zoom/pan
+│   │       ├── TerrainScene.jsx     # Dynamic terrain (plains/hills/mountains/river)
 │   │       ├── PartyStatus.jsx      # Party health/supplies
 │   │       ├── SundayRestPrompt.jsx # Sunday rest decision
-│   │       ├── HuntingMinigame.jsx  # Canvas-based hunting
+│   │       ├── HuntingMinigame.jsx  # Click-based hunting with hit feedback
 │   │       ├── HistorianPanel.jsx   # AI Trail Historian chat
 │   │       └── KnowledgePanel.jsx   # Historical knowledge cards
 │   └── dashboard/             # Teacher dashboard
@@ -65,7 +67,8 @@ client/src/
 │   ├── knowledge-panel.json   # 12 historical cards for 6-8
 │   ├── knowledge-panel-3-5.json # 5 cards for 3-5
 │   ├── moral-labels.json      # 22 label groups x 3 grade bands
-│   └── catholic-curriculum.json # CWM, Commandments, Beatitudes
+│   ├── catholic-curriculum.json # CWM, Commandments, Beatitudes
+│   └── trail-flavor.js        # 300+ ambient narrative messages (14 categories)
 └── utils/
     ├── logger.js              # Client-side logger with buffer
     ├── api.js                 # API client wrapper
@@ -132,11 +135,32 @@ server/
 
 ### AI Features
 - [x] Trail Historian (context-aware Q&A, post-event or free access)
-- [x] NPC Encounters (4 characters, 3-exchange cap)
+- [x] NPC Encounters (7 characters, 3-exchange cap, preloaded dialogue with suggested questions)
 - [x] Personalized Examination of Conscience (AI-generated from event log)
 - [x] Teacher Insight Generator (anonymized aggregate analysis)
 - [x] Graceful fallbacks when API unavailable
 - [x] API key security (server-side only, never logged)
+
+### Historically Accurate NPC Scouts
+- [x] Takoda (Pawnee Scout) at Fort Kearney — Pawnee territory
+- [x] Washakie (Shoshone Guide) at Fort Bridger — Shoshone territory
+- [x] Taghee (Bannock Guide) at Fort Hall — Bannock territory
+- [x] Hímiin Maqsmáqs (Nez Perce Scout) at Fort Boise — Nez Perce territory
+- [x] Each scout provides regionally accurate dialogue with gameplay tips
+- [x] Preloaded suggested questions with hardcoded answers (no AI dependency)
+
+### Trail Flavor Text System
+- [x] 300+ ambient narrative messages across 14 categories
+- [x] Categories: terrain (4 types), weather, wildlife, camp life, humanity, children, faith, hardship, wagon train, night sky, food, water, seasonal, milestone
+- [x] Weighted random selection based on game context (low food → more hardship messages, etc.)
+- [x] Historical humanity touches: singing "Oh! Susanna", fiddle playing, reading Pilgrim's Progress, journal writing, James Fenimore Cooper, harmonica playing "Amazing Grace"
+
+### Difficulty Tuning
+- [x] Base illness rate doubled (3% → 6%) with terrain/seasonal modifiers
+- [x] Weekly trail wear mechanic (degraded health from journey hardship)
+- [x] Morale decay every 5 days
+- [x] Increased death chance at low food levels
+- [x] Event frequency increased (threshold 0.75 → 0.60, 40% more events)
 
 ### Teacher Dashboard
 - [x] Session creation with code, password, grade band, settings
@@ -166,10 +190,13 @@ server/
 - [x] Animated wagon SVG
 - [x] Parallax trail scene header
 - [x] Health-coded party status bars
-- [x] Grace-colored progress bar (teacher only)
+- [x] Grace-colored progress bar (visible on travel screen top bar + teacher dashboard)
 - [x] Pulsing knowledge panel indicators
-- [x] Moral label slide-in/fade-out animation
+- [x] Moral label centered pop-in animation (green for positive, red for negative)
 - [x] Mission vs Fort distinct visual treatment
+- [x] SVG trail map with 1848 state/territory boundaries, zoom/pan controls
+- [x] Terrain scene visualization (plains, hills, mountains, river) based on current geography
+- [x] Viewport-fitting layout (no scrolling — entire game above the fold)
 
 ---
 
@@ -250,6 +277,51 @@ All fixes verified via clean production build (66 modules, 107KB gzipped).
 - Added `serverless-http` dependency
 - Updated `package.json` with `postinstall` script, `engines` field (Node 18+), and improved `build` script
 - Production build verified: client serves from single port alongside API
+
+### v1.0.3 — Playtest Feedback Session (2026-03-02)
+
+**Major UI overhaul and bug fixes** from live playtest feedback:
+
+#### Layout & Visual
+- Viewport-fitting layout: entire game above the fold, no scrolling (h-screen flex)
+- 3-column travel screen: left sidebar (terrain/party/supplies), center (map/progress/actions), right (optional historian)
+- SVG trail map with 1848 state/territory boundaries, landmark dots, zoom/pan controls
+- Dynamic terrain scene (plains, hills, mountains, river) based on current geography
+- Grace score visible on travel screen top bar with color-coded progress bar
+
+#### Moral Labels Fix
+- Centered pop-in animation (was sliding from left)
+- Green border/background for positive, red for negative (was inconsistent)
+- **Critical bug fix:** CWM events used diverse choice IDs (share_food, pay_fair_price, forgive, etc.) but label lookup only checked for 'help'/'helped' — ALL CWM events showed negative labels. Fixed by checking `grace_change > 0` to determine helped/declined.
+
+#### Event System Fixes
+- Template placeholders ({member_name}, {student_name}, {party_size}) now properly resolved in event descriptions
+- Effect key mismatches fixed: events.json used `morale_change`/`health_change` but code only checked `morale`/`health_delta` — now handles both
+- Added health_change processing (numeric → tier conversion: each -5 = 1 tier down)
+- Added oxen_loss effect handling
+
+#### Hunting Minigame Fixes
+- Animal sizes increased: squirrel 20→35, rabbit 25→40, deer 40→55, bison 55→70
+- **Critical bug fix:** Food wasn't accumulating due to React state batching — click handler read stale state outside setAnimals callback. Fixed by moving all logic inside functional state updates.
+- Hit radius increased to `size * 0.9` for better click detection
+- Added hit/miss flash feedback
+
+#### NPC Scout System
+- Historically accurate tribal scouts per region (Pawnee, Shoshone, Bannock, Nez Perce)
+- Preloaded dialogue with 4-5 suggested questions per NPC containing gameplay tips
+- Still supports free-form AI-powered questions as fallback
+
+#### Difficulty Increase
+- Base illness rate doubled (3% → 6%) with terrain/seasonal modifiers
+- Weekly trail wear mechanic (health degradation from journey hardship)
+- Morale decay every 5 days without rest
+- Death chance increased at low food levels
+- Event frequency up 40% (threshold 0.75 → 0.60)
+
+#### Trail Flavor Text
+- 300+ ambient narrative messages across 14 categories
+- Context-aware weighted selection (hardship increases when food/morale low, seasonal by game date)
+- Historical humanity: singing, fiddle, harmonica, books, journal writing, cards, dancing
 
 ---
 
