@@ -1,6 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { PROFESSION_CASH, GAME_CONSTANTS, GRACE_DELTAS } from '@shared/types';
+import { PROFESSION_CASH, GAME_CONSTANTS, GRACE_DELTAS, CLERGY_SKILLS, randomClergySkill, randomClergyAge } from '@shared/types';
+
+const AGE_OPTIONS = [
+  { label: 'Child (6-12)', min: 6, max: 12 },
+  { label: 'Teen (13-17)', min: 13, max: 17 },
+  { label: 'Adult (18-45)', min: 18, max: 45 },
+  { label: 'Elder (46-65)', min: 46, max: 65 },
+];
+
+function randomAgeInRange(range) {
+  return range.min + Math.floor(Math.random() * (range.max - range.min + 1));
+}
 
 export default function SetupScreen() {
   const state = useGameState();
@@ -9,17 +20,27 @@ export default function SetupScreen() {
   const is35 = state.gradeBand === '3_5';
   const isK2 = state.gradeBand === 'k2';
 
+  const companionCount = isK2 ? 2 : 4;
+
   const [playerName, setPlayerName] = useState(state.studentName || '');
+  const [playerGender, setPlayerGender] = useState('male');
+  const [playerAgeRange, setPlayerAgeRange] = useState(2); // Adult index
   const [companions, setCompanions] = useState(
-    isK2 ? ['', ''] : ['', '', '', '']
+    Array.from({ length: companionCount }, () => ({ name: '', gender: 'male', ageRange: 2 }))
   );
   const [profession, setProfession] = useState('tradesman');
   const [includeChaplain, setIncludeChaplain] = useState(false);
   const [error, setError] = useState('');
 
-  function handleCompanionChange(index, value) {
+  // Generate chaplain details once when toggled on
+  const chaplainDetails = useMemo(() => ({
+    skill: randomClergySkill(),
+    age: randomClergyAge(),
+  }), [includeChaplain]);
+
+  function handleCompanionChange(index, field, value) {
     const updated = [...companions];
-    updated[index] = value;
+    updated[index] = { ...updated[index], [field]: value };
     setCompanions(updated);
   }
 
@@ -30,19 +51,46 @@ export default function SetupScreen() {
       return;
     }
 
-    const validCompanions = companions.filter(c => c.trim());
+    const validCompanions = companions.filter(c => c.name.trim());
     if (validCompanions.length === 0) {
       setError(isK2 ? 'Name at least one friend to travel with.' : 'Name at least one companion.');
       return;
     }
 
     const partyMembers = [
-      { name: playerName.trim(), health: 'good', alive: true, isPlayer: true, morale: GAME_CONSTANTS.INITIAL_MORALE },
-      ...validCompanions.map(name => ({ name: name.trim(), health: 'good', alive: true, isPlayer: false, morale: GAME_CONSTANTS.INITIAL_MORALE }))
+      {
+        name: playerName.trim(),
+        health: 'good',
+        alive: true,
+        isPlayer: true,
+        gender: playerGender,
+        age: randomAgeInRange(AGE_OPTIONS[playerAgeRange]),
+        morale: GAME_CONSTANTS.INITIAL_MORALE,
+      },
+      ...validCompanions.map(c => ({
+        name: c.name.trim(),
+        health: 'good',
+        alive: true,
+        isPlayer: false,
+        gender: c.gender,
+        age: randomAgeInRange(AGE_OPTIONS[c.ageRange]),
+        morale: GAME_CONSTANTS.INITIAL_MORALE,
+      }))
     ];
 
     if (includeChaplain) {
-      partyMembers.push({ name: 'Fr. Joseph', health: 'good', alive: true, isPlayer: false, isChaplain: true, morale: GAME_CONSTANTS.INITIAL_MORALE });
+      const skill = CLERGY_SKILLS[chaplainDetails.skill];
+      partyMembers.push({
+        name: 'Fr. Joseph',
+        health: 'good',
+        alive: true,
+        isPlayer: false,
+        isChaplain: true,
+        gender: 'male',
+        age: chaplainDetails.age,
+        clergySkill: chaplainDetails.skill,
+        morale: GAME_CONSTANTS.INITIAL_MORALE,
+      });
     }
 
     const startingCash = isK2 ? 0 : (PROFESSION_CASH[profession] || 400);
@@ -62,7 +110,6 @@ export default function SetupScreen() {
     }
 
     if (isK2) {
-      // K-2 skips supply purchase — go straight to travel
       dispatch({
         type: 'SET_SUPPLIES',
         cash: 0,
@@ -79,9 +126,11 @@ export default function SetupScreen() {
     }
   }
 
+  const chaplainSkill = CLERGY_SKILLS[chaplainDetails.skill];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-trail-cream to-trail-parchment flex items-center justify-center px-4 py-8">
-      <form onSubmit={handleSubmit} className="card max-w-lg w-full space-y-6">
+      <form onSubmit={handleSubmit} className="card max-w-2xl w-full space-y-5">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-trail-darkBrown">
             {isK2 ? 'Start Your Journey!' : 'Prepare for the Trail'}
@@ -89,23 +138,49 @@ export default function SetupScreen() {
           <p className="text-trail-brown mt-1">
             {isK2
               ? 'Who are you traveling with?'
-              : 'Independence, Missouri — April 1, 1848'}
+              : 'Independence, Missouri \u2014 April 1, 1848'}
           </p>
         </div>
 
-        {/* Player name */}
-        <div>
-          <label className="block text-sm font-semibold text-trail-darkBrown mb-1">
-            {isK2 ? 'What is your name?' : 'Your Name'}
-          </label>
-          <input
-            type="text"
-            value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
-            className="input-field"
-            maxLength={20}
-            autoFocus
-          />
+        {/* Player name + demographics */}
+        <div className="grid grid-cols-[1fr_auto_auto] gap-3 items-end">
+          <div>
+            <label className="block text-sm font-semibold text-trail-darkBrown mb-1">
+              {isK2 ? 'What is your name?' : 'Your Name'}
+            </label>
+            <input
+              type="text"
+              value={playerName}
+              onChange={e => setPlayerName(e.target.value)}
+              className="input-field"
+              maxLength={20}
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-trail-darkBrown mb-1 uppercase tracking-wider">Gender</label>
+            <div className="flex gap-1">
+              {['male', 'female'].map(g => (
+                <button key={g} type="button" onClick={() => setPlayerGender(g)}
+                  className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                    playerGender === g
+                      ? 'border-trail-blue bg-trail-blue/10 text-trail-darkBlue font-semibold'
+                      : 'border-trail-tan hover:border-trail-blue/50 text-trail-brown'
+                  }`}>
+                  {g === 'male' ? 'M' : 'F'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-trail-darkBrown mb-1 uppercase tracking-wider">Age</label>
+            <select value={playerAgeRange} onChange={e => setPlayerAgeRange(Number(e.target.value))}
+              className="text-sm px-2 py-2 border border-trail-tan rounded-lg bg-white">
+              {AGE_OPTIONS.map((opt, i) => (
+                <option key={i} value={i}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Profession (6-8 and 3-5 only) */}
@@ -115,8 +190,8 @@ export default function SetupScreen() {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { id: 'tradesman', label: 'Tradesman', cash: `$${PROFESSION_CASH.tradesman}`, difficulty: 'Easy', diffColor: 'text-green-700 bg-green-50', trait: 'Master of repairs, never loses time' },
-                { id: 'farmer', label: 'Farmer', cash: `$${PROFESSION_CASH.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced — can fix some things' },
-                { id: 'banker', label: 'Banker', cash: `$${PROFESSION_CASH.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills — repairs cost time and parts' }
+                { id: 'farmer', label: 'Farmer', cash: `$${PROFESSION_CASH.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced \u2014 can fix some things' },
+                { id: 'banker', label: 'Banker', cash: `$${PROFESSION_CASH.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills \u2014 repairs cost time and parts' }
               ].map(p => (
                 <button
                   key={p.id}
@@ -138,29 +213,48 @@ export default function SetupScreen() {
           </div>
         )}
 
-        {/* Companions */}
+        {/* Companions with age & gender */}
         <div>
           <label className="block text-sm font-semibold text-trail-darkBrown mb-1">
             {isK2 ? 'Name your friends:' : 'Name Your Companions'}
           </label>
           <div className="space-y-2">
-            {companions.map((name, i) => (
-              <input
-                key={i}
-                type="text"
-                value={name}
-                onChange={e => handleCompanionChange(i, e.target.value)}
-                placeholder={`Companion ${i + 1}`}
-                className="input-field"
-                maxLength={20}
-              />
+            {companions.map((comp, i) => (
+              <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+                <input
+                  type="text"
+                  value={comp.name}
+                  onChange={e => handleCompanionChange(i, 'name', e.target.value)}
+                  placeholder={`Companion ${i + 1}`}
+                  className="input-field"
+                  maxLength={20}
+                />
+                <div className="flex gap-1">
+                  {['male', 'female'].map(g => (
+                    <button key={g} type="button" onClick={() => handleCompanionChange(i, 'gender', g)}
+                      className={`px-2.5 py-2 rounded border text-xs transition-all ${
+                        comp.gender === g
+                          ? 'border-trail-blue bg-trail-blue/10 text-trail-darkBlue font-semibold'
+                          : 'border-trail-tan/50 text-trail-brown hover:border-trail-blue/40'
+                      }`}>
+                      {g === 'male' ? 'M' : 'F'}
+                    </button>
+                  ))}
+                </div>
+                <select value={comp.ageRange} onChange={e => handleCompanionChange(i, 'ageRange', Number(e.target.value))}
+                  className="text-xs px-1.5 py-2 border border-trail-tan rounded bg-white">
+                  {AGE_OPTIONS.map((opt, j) => (
+                    <option key={j} value={j}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
             ))}
           </div>
         </div>
 
         {/* Chaplain option (6-8 only) */}
         {is68 && (
-          <div className="card-parchment">
+          <div className="card-parchment !p-4">
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -168,7 +262,7 @@ export default function SetupScreen() {
                 onChange={e => setIncludeChaplain(e.target.checked)}
                 className="mt-1 w-5 h-5 text-trail-blue rounded"
               />
-              <div>
+              <div className="flex-1">
                 <span className="font-semibold text-trail-darkBrown">Include a Trail Chaplain</span>
                 <p className="text-sm text-trail-brown mt-1">
                   Fr. Joseph, a Franciscan friar, will join your party. He provides morale support,
@@ -177,6 +271,18 @@ export default function SetupScreen() {
                 <p className="text-xs text-orange-700 mt-1">
                   Cost: extra food and clothing, added weight strains your oxen and wagon.
                 </p>
+                {includeChaplain && (
+                  <div className="mt-2 p-2 bg-trail-cream rounded border border-trail-tan/50">
+                    <div className="text-xs text-trail-darkBrown">
+                      <span className="font-semibold">Fr. Joseph</span>
+                      <span className="text-trail-brown ml-1">\u2014 Age {chaplainDetails.age}</span>
+                    </div>
+                    <div className="text-xs mt-1">
+                      <span className="font-semibold text-trail-blue">Skill: {chaplainSkill.name}</span>
+                      <span className="text-trail-brown ml-1">\u2014 {chaplainSkill.description}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </label>
           </div>

@@ -37,6 +37,8 @@ export default function LandmarkScreen() {
   const [reconciliationEvent, setReconciliationEvent] = useState(null);
   const [reciprocityEvent, setReciprocityEvent] = useState(null);
   const [showNpcChat, setShowNpcChat] = useState(false);
+  const [daysRested, setDaysRested] = useState(0);
+  const [restMessage, setRestMessage] = useState('');
 
   const landmarks = state.gradeBand === 'k2' ? landmarksK2.landmarks : landmarksData.landmarks;
   const landmark = landmarks[state.currentLandmarkIndex];
@@ -178,6 +180,53 @@ export default function LandmarkScreen() {
     }
     dispatch({ type: 'UPDATE_SUPPLIES', cash: state.cash - price, [item]: (state[item] || 0) + (item === 'foodLbs' ? 50 : 1) });
     setStoreMessage(`Purchased ${item === 'foodLbs' ? '50 lbs of food' : item}.`);
+  }
+
+  function handleRestOneDay() {
+    if (daysRested >= 3) {
+      setRestMessage('Your party has rested enough. Time to move on.');
+      return;
+    }
+
+    // Advance the day (consumes food/water)
+    dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
+
+    // Heal each alive member by one tier
+    const healthUpdates = state.partyMembers
+      .filter(m => m.alive && m.health !== 'good')
+      .map(m => {
+        const order = ['dead', 'critical', 'poor', 'fair', 'good'];
+        const idx = order.indexOf(m.health);
+        return { name: m.name, health: idx < 4 ? order[idx + 1] : m.health, illness: null };
+      });
+    if (healthUpdates.length > 0) {
+      dispatch({ type: 'UPDATE_PARTY_HEALTH', updates: healthUpdates });
+    }
+
+    // Boost morale
+    dispatch({ type: 'UPDATE_MORALE', delta: 10 });
+
+    // Refill water at settlements
+    if (landmark.type === 'fort' || landmark.type === 'town' || landmark.type === 'mission') {
+      dispatch({ type: 'REFILL_WATER', amount: 200, capacity: 200 });
+    }
+
+    const newDaysRested = daysRested + 1;
+    setDaysRested(newDaysRested);
+
+    const healed = healthUpdates.length;
+    setRestMessage(
+      healed > 0
+        ? `Day ${newDaysRested} of rest: ${healed} party member${healed > 1 ? 's' : ''} improved. Morale boosted. Water refilled.`
+        : `Day ${newDaysRested} of rest: Party is in good spirits. Morale boosted. Water refilled.`
+    );
+
+    logger.info('REST_AT_LANDMARK', {
+      landmark: landmark.name,
+      day: state.trailDay,
+      daysRested: newDaysRested,
+      healed: healthUpdates.map(u => u.name)
+    });
   }
 
   function handleContinue() {
@@ -391,21 +440,91 @@ export default function LandmarkScreen() {
         {/* Party Status */}
         <div className="card">
           <h3 className="font-semibold text-trail-darkBrown mb-2">Party Status</h3>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {state.partyMembers.map(m => (
-              <div key={m.name} className="flex justify-between text-sm">
-                <span className={!m.alive ? 'line-through text-gray-400' : ''}>
-                  {m.name} {m.isChaplain ? '(Chaplain)' : ''}
-                </span>
-                <span className={`health-${m.health}`}>{m.alive ? m.health : 'deceased'}</span>
+              <div key={m.name} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={!m.alive ? 'line-through text-gray-400' : 'text-trail-darkBrown'}>
+                    {m.name} {m.isChaplain ? '(Chaplain)' : ''}
+                  </span>
+                  {m.alive && m.age && (
+                    <span className="text-[10px] text-trail-brown/60">age {m.age}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {m.alive && (
+                    <div className="flex items-center gap-1">
+                      <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${
+                          (m.morale ?? 70) >= 60 ? 'bg-green-500' : (m.morale ?? 70) >= 30 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`} style={{ width: `${m.morale ?? 70}%` }} />
+                      </div>
+                      <span className="text-[10px] text-trail-brown/60">{m.morale ?? 70}%</span>
+                    </div>
+                  )}
+                  <span className={`health-${m.health} text-xs font-medium`}>{m.alive ? m.health : 'deceased'}</span>
+                </div>
               </div>
             ))}
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-sm text-trail-brown">
+          <div className="mt-3 pt-3 border-t border-trail-tan/30 grid grid-cols-4 gap-2 text-sm text-trail-brown">
             <div>Food: {Math.round(state.foodLbs)} lbs</div>
+            <div>Water: {Math.round(state.waterGallons)} gal</div>
             <div>Cash: ${state.cash.toFixed(2)}</div>
-            <div>Morale: {state.morale}%</div>
+            <div>Medicine: {state.medicineDoses || 0}</div>
           </div>
+        </div>
+
+        {/* Rest at Landmark */}
+        <div className="card-parchment">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-trail-darkBrown">Rest &amp; Recover</h3>
+            {daysRested > 0 && (
+              <span className="text-xs text-trail-brown bg-trail-cream px-2 py-0.5 rounded-full">
+                Rested {daysRested}/3 days
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-trail-brown mb-3">
+            {landmark.type === 'fort'
+              ? 'The fort offers shelter and clean water. Rest here to heal your party.'
+              : landmark.type === 'mission'
+              ? 'The mission welcomes weary travelers. Rest and pray for recovery.'
+              : 'A safe place to rest. Your party can recover their strength here.'}
+          </p>
+          {restMessage && (
+            <p className="text-sm text-trail-blue mb-3 bg-trail-blue/5 p-2 rounded">{restMessage}</p>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={handleRestOneDay}
+              disabled={daysRested >= 3}
+              className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                daysRested >= 3
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-trail-blue/10 text-trail-darkBlue border border-trail-blue/30 hover:bg-trail-blue/20'
+              }`}
+            >
+              Rest 1 Day
+            </button>
+            {state.medicineDoses > 0 && state.partyMembers.some(m => m.alive && m.health !== 'good') && (
+              <button
+                onClick={() => {
+                  const sick = state.partyMembers.find(m => m.alive && m.health !== 'good');
+                  if (sick) {
+                    dispatch({ type: 'USE_MEDICINE', name: sick.name });
+                    setRestMessage(`Used medicine on ${sick.name}. (${state.medicineDoses - 1} doses left)`);
+                  }
+                }}
+                className="flex-1 py-2 rounded-lg font-semibold text-sm bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors"
+              >
+                Use Medicine ({state.medicineDoses})
+              </button>
+            )}
+          </div>
+          <p className="text-[10px] text-trail-brown/50 mt-2">
+            Each rest day costs food and water but heals sick members and boosts morale.
+          </p>
         </div>
 
         <button onClick={handleContinue} className="btn-primary w-full py-3 text-lg">

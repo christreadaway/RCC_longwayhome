@@ -272,16 +272,19 @@ export default function EventScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-trail-cream to-trail-parchment flex items-center justify-center px-4 py-8">
-      <div className="scene-card max-w-2xl w-full bg-white">
-        {/* Event Scene Header */}
-        <div className={`p-6 ${getEventHeaderColor(event.category)}`}>
-          <h2 className="text-2xl font-bold text-white">{event.title}</h2>
-          <p className="text-white/80 text-sm mt-1">{event.category?.replace(/_/g, ' ')}</p>
+    <div className="h-screen bg-gradient-to-b from-trail-cream to-trail-parchment flex items-center justify-center px-4 overflow-hidden">
+      <div className="scene-card max-w-2xl w-full bg-white max-h-[95vh] overflow-hidden flex flex-col">
+        {/* Illustrated Event Header */}
+        <div className={`relative p-5 ${getEventHeaderColor(event.category)} overflow-hidden flex-none`}>
+          <EventIllustration category={event.category} />
+          <div className="relative z-10">
+            <h2 className="text-2xl font-bold text-white drop-shadow-md">{event.title}</h2>
+            <p className="text-white/80 text-sm mt-1">{event.category?.replace(/_/g, ' ')}</p>
+          </div>
         </div>
 
         {/* Event Description */}
-        <div className="p-6">
+        <div className="p-5 flex-1 overflow-hidden">
           <p className="text-trail-darkBrown text-lg leading-relaxed mb-6">
             {event.description}
           </p>
@@ -348,6 +351,29 @@ export default function EventScreen() {
       </div>
     </div>
   );
+}
+
+/** SVG illustrations for event types */
+function EventIllustration({ category }) {
+  const shared = "absolute right-2 top-1/2 -translate-y-1/2 opacity-20 w-24 h-24";
+  switch (category) {
+    case 'weather':
+      return <svg className={shared} viewBox="0 0 64 64"><path d="M32 12a14 14 0 0 1 14 14 10 10 0 0 1-2 20H18a10 10 0 0 1-2-20A14 14 0 0 1 32 12z" fill="white"/><path d="M22 50l-4 8M30 50l-4 8M38 50l-4 8M46 50l-4 8" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>;
+    case 'illness':
+      return <svg className={shared} viewBox="0 0 64 64"><rect x="26" y="8" width="12" height="48" rx="2" fill="white"/><rect x="8" y="26" width="48" height="12" rx="2" fill="white"/></svg>;
+    case 'trail_hazard':
+      return <svg className={shared} viewBox="0 0 64 64"><polygon points="32,6 58,54 6,54" fill="none" stroke="white" strokeWidth="3"/><line x1="32" y1="22" x2="32" y2="38" stroke="white" strokeWidth="3" strokeLinecap="round"/><circle cx="32" cy="46" r="2" fill="white"/></svg>;
+    case 'resource':
+      return <svg className={shared} viewBox="0 0 64 64"><rect x="12" y="24" width="40" height="28" rx="4" fill="none" stroke="white" strokeWidth="3"/><path d="M20 24V18a12 12 0 0 1 24 0v6" fill="none" stroke="white" strokeWidth="3"/></svg>;
+    case 'good_event':
+      return <svg className={shared} viewBox="0 0 64 64"><circle cx="32" cy="28" r="16" fill="none" stroke="white" strokeWidth="3"/><path d="M32 16l3 8h8l-6 5 2 8-7-5-7 5 2-8-6-5h8z" fill="white"/></svg>;
+    case 'cwm':
+      return <svg className={shared} viewBox="0 0 64 64"><path d="M32 8C18 8 8 20 8 32c0 18 24 26 24 26s24-8 24-26C56 20 46 8 32 8z" fill="none" stroke="white" strokeWidth="3"/></svg>;
+    case 'moral_choice':
+      return <svg className={shared} viewBox="0 0 64 64"><circle cx="22" cy="32" r="12" fill="none" stroke="white" strokeWidth="2.5"/><circle cx="42" cy="32" r="12" fill="none" stroke="white" strokeWidth="2.5"/><path d="M30 26l4-4 4 4M30 38l4 4 4-4" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>;
+    default:
+      return <svg className={shared} viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="none" stroke="white" strokeWidth="3"/><path d="M32 20v16M32 42v4" stroke="white" strokeWidth="3" strokeLinecap="round"/></svg>;
+  }
 }
 
 function getEventHeaderColor(category) {

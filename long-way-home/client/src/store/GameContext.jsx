@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE, WATER_RATIONS, WATER_OXEN_MULTIPLIER, getHeatWaterMultiplier, FIREWOOD_CONSUMPTION } from '@shared/types';
+import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE, WATER_RATIONS, WATER_OXEN_MULTIPLIER, getHeatWaterMultiplier, FIREWOOD_CONSUMPTION, MEDICINE_CONFIG } from '@shared/types';
 
 const GameContext = createContext(null);
 const GameDispatchContext = createContext(null);
@@ -31,6 +31,7 @@ const initialState = {
   waterGallons: 0,
   waterRations: 'full',
   firewoodBundles: 0,
+  medicineDoses: 0,
 
   // Purchasable items (books & tools)
   hasFarmersAlmanac: false,
@@ -155,6 +156,7 @@ function gameReducer(state, action) {
         spareParts: action.spareParts,
         oxenYokes: action.oxenYokes,
         waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons,
+        medicineDoses: action.medicineDoses !== undefined ? action.medicineDoses : state.medicineDoses,
         hasFarmersAlmanac: action.hasFarmersAlmanac !== undefined ? action.hasFarmersAlmanac : state.hasFarmersAlmanac,
         hasTrailGuide: action.hasTrailGuide !== undefined ? action.hasTrailGuide : state.hasTrailGuide,
         hasToolSet: action.hasToolSet !== undefined ? action.hasToolSet : state.hasToolSet,
@@ -357,8 +359,30 @@ function gameReducer(state, action) {
         spareParts: action.spareParts || state.spareParts,
         oxenYokes: action.oxenYokes !== undefined ? action.oxenYokes : state.oxenYokes,
         waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons,
-        firewoodBundles: action.firewoodBundles !== undefined ? action.firewoodBundles : state.firewoodBundles
+        firewoodBundles: action.firewoodBundles !== undefined ? action.firewoodBundles : state.firewoodBundles,
+        medicineDoses: action.medicineDoses !== undefined ? action.medicineDoses : state.medicineDoses
       };
+    }
+
+    case 'USE_MEDICINE': {
+      if (state.medicineDoses <= 0) return state;
+      const target = state.partyMembers.find(m => m.name === action.name && m.alive);
+      if (!target || target.health === 'good') return state;
+      logger.info('MEDICINE_USED', { target: action.name, day: state.trailDay });
+      const healed = Math.random() < MEDICINE_CONFIG.healChance;
+      if (healed) {
+        const order = ['dead', 'critical', 'poor', 'fair', 'good'];
+        const idx = order.indexOf(target.health);
+        const newHealth = idx < 4 ? order[idx + 1] : target.health;
+        return {
+          ...state,
+          medicineDoses: state.medicineDoses - 1,
+          partyMembers: state.partyMembers.map(m =>
+            m.name === action.name ? { ...m, health: newHealth, illness: null } : m
+          )
+        };
+      }
+      return { ...state, medicineDoses: state.medicineDoses - 1 };
     }
 
     case 'REFILL_WATER': {

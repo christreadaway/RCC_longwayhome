@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { STORE_BOOKS, STORE_TOOLS, STORE_BIBLE } from '@shared/types';
+import { STORE_BOOKS, STORE_TOOLS, STORE_BIBLE, MEDICINE_CONFIG } from '@shared/types';
 
 const STORE_ITEMS = {
   oxenYokes: { name: 'Oxen (yoke)', price: 40, min: 1, max: 9, unit: 'yoke', desc: 'You need at least 1 yoke to move.' },
@@ -10,7 +10,8 @@ const STORE_ITEMS = {
   ammoBoxes: { name: 'Ammunition', price: 2, min: 0, max: 99, unit: 'boxes', desc: '20 rounds per box for hunting.' },
   wheels: { name: 'Spare Wheels', price: 10, min: 0, max: 3, unit: '', desc: 'Wagons break down on rough terrain.' },
   axles: { name: 'Spare Axles', price: 10, min: 0, max: 3, unit: '', desc: '' },
-  tongues: { name: 'Spare Tongues', price: 10, min: 0, max: 3, unit: '', desc: '' }
+  tongues: { name: 'Spare Tongues', price: 10, min: 0, max: 3, unit: '', desc: '' },
+  medicineDoses: { name: 'Medicine', price: MEDICINE_CONFIG.price, min: 0, max: MEDICINE_CONFIG.maxDoses, unit: 'doses', desc: 'Treats illness and improves health. 60% chance per dose.' }
 };
 
 /** Toggle items (books, tools, Bible) — one-time purchases, not quantities */
@@ -35,7 +36,8 @@ export default function SupplyStore() {
     ammoBoxes: 10,
     wheels: 1,
     axles: 1,
-    tongues: 1
+    tongues: 1,
+    medicineDoses: 5
   });
 
   // Toggle items only available for 6-8 (and 3-5 for some)
@@ -91,6 +93,7 @@ export default function SupplyStore() {
         tongues: quantities.tongues
       },
       oxenYokes: quantities.oxenYokes,
+      medicineDoses: quantities.medicineDoses,
       hasBible: toggles.bible,
       hasFarmersAlmanac: toggles.farmers_almanac,
       hasTrailGuide: toggles.trail_guide,
