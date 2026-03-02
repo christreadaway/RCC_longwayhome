@@ -1,7 +1,7 @@
 /**
  * @typedef {'k2' | '3_5' | '6_8'} GradeBand
  * @typedef {'SETUP' | 'SUPPLY_PURCHASE' | 'TRAVELING' | 'REST_POINT' | 'EVENT_RESOLUTION' | 'LANDMARK' | 'GAME_OVER'} GameState
- * @typedef {'banker' | 'carpenter' | 'farmer'} Profession
+ * @typedef {'banker' | 'farmer' | 'tradesman'} Profession
  * @typedef {'steady' | 'strenuous' | 'grueling'} Pace
  * @typedef {'filling' | 'meager' | 'bare_bones'} Rations
  * @typedef {'good' | 'fair' | 'poor' | 'critical' | 'dead'} HealthStatus
@@ -15,8 +15,79 @@
 /** @type {Object<Profession, number>} */
 export const PROFESSION_CASH = {
   banker: 1600,
-  carpenter: 800,
-  farmer: 400
+  farmer: 800,
+  tradesman: 400
+};
+
+/**
+ * Profession repair abilities.
+ * - repairChance: probability of fixing without consuming a spare part
+ * - timeCostDays: days lost per repair (0 = no delay, 1 = lose a full day)
+ * - description: player-facing text
+ */
+export const PROFESSION_REPAIR = {
+  banker: { repairChance: 0, timeCostDays: 1, description: 'No trail skills — repairs always cost a spare part and a full day.' },
+  farmer: { repairChance: 0.3, timeCostDays: 0.5, description: 'Handy enough — sometimes fixes things without a spare part.' },
+  tradesman: { repairChance: 0.7, timeCostDays: 0, description: 'Master craftsman — often repairs without spare parts, never loses time.' }
+};
+
+/**
+ * Extra daily costs incurred by having a chaplain in the party.
+ * Spiritual benefits come at material cost.
+ */
+export const CHAPLAIN_COSTS = {
+  extraFoodPerDay: 1,             // Extra lb of food consumed daily (a non-working mouth)
+  clothingWearIntervalDays: 14,   // Every N days, chaplain's presence wears through 1 clothing set
+  oxenStrainChance: 0.03,         // Daily chance of oxen strain (extra weight in wagon)
+  wagonFragilityBonus: 0.05       // Added to mechanical breakdown probability
+};
+
+/**
+ * Purchasable reference books and their gameplay bonuses.
+ * Only available for 6-8 (and optionally 3-5) grade bands.
+ * Expensive enough to force a real budget trade-off at the store.
+ */
+export const STORE_BOOKS = {
+  farmers_almanac: {
+    name: "Farmer's Almanac (1848)",
+    price: 75,
+    description: "Weather patterns, planting calendars, folk remedies, and practical wisdom for life on the frontier.",
+    effects: {
+      illnessReduction: 0.03,       // Reduces daily illness probability (herbal remedies)
+      weatherForecast: true,         // Shows tomorrow's weather forecast
+      foodSpoilageReduction: 0.02,  // Better food preservation knowledge
+      healingBonus: true             // Rest days heal one extra health tier
+    }
+  },
+  trail_guide: {
+    name: "Lansford Hastings' Emigrants' Guide",
+    price: 90,
+    description: "Maps, river ford depths, tribal territories, shortcuts, and practical advice from those who traveled before you.",
+    effects: {
+      riverCrossingBonus: 0.20,     // Reduced danger at river crossings
+      shortcutChance: 0.10,         // Chance to find shortcut, saving miles
+      nativeEncounterBonus: 0.15,   // Better outcomes with native encounters
+      tradeBonus: 0.10,             // Better prices at forts in native territory
+      dangerAvoidance: 0.05,        // Chance to avoid trail dangers entirely
+      travelBonus: 0.03             // Slight daily miles bonus from better route knowledge
+    }
+  }
+};
+
+/**
+ * Purchasable tool set and its gameplay bonuses.
+ */
+export const STORE_TOOLS = {
+  tool_set: {
+    name: "Complete Tool Set",
+    price: 50,
+    description: "Hammer, saw, auger, drawknife, files, and tongs. Greatly improves repair ability for all professions.",
+    effects: {
+      repairBonus: 0.25,          // Added to profession's base repair chance
+      repairTimeReduction: 0.5,   // Halves repair time cost
+      wagonMaintenanceBonus: true  // Mend wagon activity is more effective
+    }
+  }
 };
 
 export const HEALTH_ORDER = ['good', 'fair', 'poor', 'critical', 'dead'];

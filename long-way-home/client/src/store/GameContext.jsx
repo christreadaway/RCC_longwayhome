@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { GAME_CONSTANTS, GRACE_DELTAS } from '@shared/types';
+import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS } from '@shared/types';
 
 const GameContext = createContext(null);
 const GameDispatchContext = createContext(null);
@@ -28,6 +28,12 @@ const initialState = {
   ammoBoxes: 0,
   spareParts: { wheels: 0, axles: 0, tongues: 0 },
   oxenYokes: 0,
+  waterGallons: 0,
+
+  // Purchasable items (books & tools)
+  hasFarmersAlmanac: false,
+  hasTrailGuide: false,
+  hasToolSet: false,
 
   // Trail
   currentLandmarkIndex: 0,
@@ -142,7 +148,11 @@ function gameReducer(state, action) {
         clothingSets: action.clothingSets,
         ammoBoxes: action.ammoBoxes,
         spareParts: action.spareParts,
-        oxenYokes: action.oxenYokes
+        oxenYokes: action.oxenYokes,
+        waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons,
+        hasFarmersAlmanac: action.hasFarmersAlmanac !== undefined ? action.hasFarmersAlmanac : state.hasFarmersAlmanac,
+        hasTrailGuide: action.hasTrailGuide !== undefined ? action.hasTrailGuide : state.hasTrailGuide,
+        hasToolSet: action.hasToolSet !== undefined ? action.hasToolSet : state.hasToolSet
       };
     }
 
@@ -156,14 +166,34 @@ function gameReducer(state, action) {
 
     case 'ADVANCE_DAY': {
       const newDate = addDaysToDate(state.gameDate, 1);
-      const foodConsumed = getFoodConsumption(state.rations, state.partyMembers);
+      let foodConsumed = getFoodConsumption(state.rations, state.partyMembers);
+
+      // Chaplain costs extra food (a non-working mouth to feed)
+      if (state.chaplainInParty) {
+        foodConsumed += CHAPLAIN_COSTS.extraFoodPerDay;
+      }
+
       const newFood = Math.max(0, state.foodLbs - foodConsumed);
+
+      // Water consumption: ~2 gal per person + ~4 gal per yoke of oxen
+      const aliveCount = state.partyMembers.filter(m => m.alive).length;
+      const waterConsumed = (aliveCount * 2) + (state.oxenYokes * 4);
+      const newWater = Math.max(0, state.waterGallons - waterConsumed);
+
+      // Chaplain clothing wear: every N days, uses 1 extra clothing set
+      let newClothing = state.clothingSets;
+      const newTrailDay = state.trailDay + 1;
+      if (state.chaplainInParty && newTrailDay % CHAPLAIN_COSTS.clothingWearIntervalDays === 0 && newClothing > 0) {
+        newClothing -= 1;
+      }
 
       return {
         ...state,
         gameDate: newDate,
-        trailDay: state.trailDay + 1,
+        trailDay: newTrailDay,
         foodLbs: newFood,
+        waterGallons: newWater,
+        clothingSets: newClothing,
         distanceTraveled: state.distanceTraveled + (action.distanceTraveled || 0),
         distanceToNextLandmark: Math.max(0, state.distanceToNextLandmark - (action.distanceTraveled || 0))
       };
@@ -244,7 +274,17 @@ function gameReducer(state, action) {
         clothingSets: action.clothingSets !== undefined ? action.clothingSets : state.clothingSets,
         ammoBoxes: action.ammoBoxes !== undefined ? action.ammoBoxes : state.ammoBoxes,
         spareParts: action.spareParts || state.spareParts,
-        oxenYokes: action.oxenYokes !== undefined ? action.oxenYokes : state.oxenYokes
+        oxenYokes: action.oxenYokes !== undefined ? action.oxenYokes : state.oxenYokes,
+        waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons
+      };
+    }
+
+    case 'REFILL_WATER': {
+      // Refill water at rivers, forts, or missions
+      const capacity = action.capacity || 200;
+      return {
+        ...state,
+        waterGallons: Math.min(capacity, state.waterGallons + (action.amount || capacity))
       };
     }
 

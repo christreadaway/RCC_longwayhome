@@ -1,7 +1,7 @@
 /**
  * @typedef {'k2' | '3_5' | '6_8'} GradeBand
  * @typedef {'SETUP' | 'SUPPLY_PURCHASE' | 'TRAVELING' | 'REST_POINT' | 'EVENT_RESOLUTION' | 'LANDMARK' | 'GAME_OVER'} GameState
- * @typedef {'banker' | 'carpenter' | 'farmer'} Profession
+ * @typedef {'banker' | 'farmer' | 'tradesman'} Profession
  * @typedef {'steady' | 'strenuous' | 'grueling'} Pace
  * @typedef {'filling' | 'meager' | 'bare_bones'} Rations
  * @typedef {'good' | 'fair' | 'poor' | 'critical' | 'dead'} HealthStatus
@@ -15,8 +15,8 @@
 /** @type {Object<Profession, number>} */
 export const PROFESSION_CASH = {
   banker: 1600,
-  carpenter: 800,
-  farmer: 400
+  farmer: 800,
+  tradesman: 400
 };
 
 export const HEALTH_ORDER = ['good', 'fair', 'poor', 'critical', 'dead'];
