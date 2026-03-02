@@ -206,11 +206,18 @@ const NPC_PROMPTS = {
   whitman: NPC_WHITMAN,
   bordeaux: NPC_BORDEAUX,
   scout: NPC_SCOUT,
+  // Region-accurate scout variants — all use the same base prompt style
+  // but the client provides preloaded dialogue for these.
+  // The server prompt is a fallback for free-form questions.
+  scout_pawnee: NPC_SCOUT,
+  scout_shoshone: NPC_SCOUT.replace('Takoda, a Pawnee scout', 'Washakie, a Shoshone guide').replace('Pawnee', 'Shoshone'),
+  scout_bannock: NPC_SCOUT.replace('Takoda, a Pawnee scout', 'Taghee, a Bannock guide').replace('Pawnee', 'Bannock'),
+  scout_nez_perce: NPC_SCOUT.replace('Takoda, a Pawnee scout', 'Yellow Wolf, a Nez Perce scout').replace('Pawnee', 'Nez Perce'),
 };
 
 /**
  * Get the NPC prompt for a given character key.
- * @param {string} characterKey - e.g. 'desmet', 'whitman', 'bordeaux', 'scout'
+ * @param {string} characterKey - e.g. 'desmet', 'whitman', 'bordeaux', 'scout_pawnee'
  * @returns {string|null}
  */
 function getNpcPrompt(characterKey) {

@@ -90,20 +90,20 @@
   100% { transform: translateY(100vh) translateX(20px); }
 }
 
-/* Moral label animations */
-@keyframes label-slide-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+/* Moral label animations — centered pop-in */
+@keyframes label-pop-in {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 @keyframes label-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.9); }
 }
 .moral-label-enter {
-  animation: label-slide-in 0.4s ease-out;
+  animation: label-pop-in 0.35s ease-out;
 }
 .moral-label-exit {
-  animation: label-fade-out 0.8s ease-out forwards;
+  animation: label-fade-out 0.6s ease-out forwards;
 }
 
 /* Pulsing knowledge panel icon */

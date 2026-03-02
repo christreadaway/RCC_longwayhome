@@ -27,19 +27,19 @@ export default function MoralLabel({ label }) {
 
   return (
     <div
-      className={`fixed top-4 right-4 max-w-sm z-50 ${fading ? 'moral-label-exit' : 'moral-label-enter'}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none ${fading ? 'moral-label-exit' : 'moral-label-enter'}`}
     >
       <div
-        className={`rounded-xl shadow-2xl border-2 overflow-hidden ${
+        className={`pointer-events-auto max-w-md w-full mx-4 rounded-xl shadow-2xl border-2 overflow-hidden ${
           isPositive
-            ? 'border-trail-gold bg-gradient-to-br from-yellow-50 to-amber-50'
-            : 'border-orange-400 bg-gradient-to-br from-orange-50 to-red-50'
+            ? 'border-green-500 bg-gradient-to-br from-green-50 to-emerald-50'
+            : 'border-red-500 bg-gradient-to-br from-red-50 to-rose-50'
         }`}
       >
         {/* Header */}
-        <div className={`px-4 py-2 ${isPositive ? 'bg-trail-gold/20' : 'bg-orange-200/50'}`}>
+        <div className={`px-4 py-2 ${isPositive ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
           <div className="flex items-center justify-between">
-            <h3 className={`font-bold text-lg ${isPositive ? 'text-trail-darkBrown' : 'text-red-900'}`}>
+            <h3 className={`font-bold text-lg ${isPositive ? 'text-green-900' : 'text-red-900'}`}>
               {label.title}
             </h3>
             <button
@@ -65,7 +65,7 @@ export default function MoralLabel({ label }) {
           )}
 
           {label.forward_prompt && (
-            <p className={`text-sm mt-2 ${isPositive ? 'text-trail-blue' : 'text-orange-700'} italic`}>
+            <p className={`text-sm mt-2 ${isPositive ? 'text-green-700' : 'text-red-700'} italic`}>
               {label.forward_prompt}
             </p>
           )}
