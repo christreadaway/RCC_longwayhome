@@ -442,4 +442,89 @@ Chris requested: Bible as purchasable/giftable item, items (books, tools, Bible)
 
 ---
 
+## Session 7 — Resource Management, Per-Member Morale, Terrain-Adaptive Difficulty & UI Redesign (2026-03-02)
+
+### Context
+Chris playtested the game and provided extensive feedback on layout, gameplay depth, and difficulty progression. Key complaints: map too large, dashboard requires scrolling, "Settings" should be "Travel Plan", unicode gibberish in weather, lack of resource management depth, morale too abstract (party-wide, not per-person), terrain difficulty doesn't vary enough. Also requested: water rationing, firewood for winter, per-member morale with Talk action, terrain-adaptive difficulty modeled after original Oregon Trail.
+
+### What was done
+
+#### Resource Management — Water, Firewood, Cold/Heat Effects
+- **Water rationing system** (full/moderate/minimal) paralleling food rations
+  - Full: 0.75 gal/person, Moderate: 0.50, Minimal: 0.25
+  - Oxen consume 3× person rate
+  - Heat multiplier: 1.25× at 80°F, 1.5× at 90°F, 1.8× at 100°F
+  - Auto-refill at river terrain, forts, missions
+  - "Find Water" action added (success varies by terrain: 95% river, 45% plains, 20% desert)
+- **Firewood resource** for cold weather survival
+  - 1 bundle/night below 50°F, 2 bundles below 32°F
+  - "Gather Firewood" action (yield varies: 5 in mountains, 2 on plains)
+  - No fire in cold: morale drops (-2 to -5), sleep recovery negated
+- **Cold weather food increase**: 1.2× below 50°F, 1.4× below 32°F (bodies burn more calories)
+- **Sleep schedule**: short (5hr), normal (7hr), long (9hr) — affects travel distance, health, morale
+
+#### Per-Member Morale System
+- Each party member now has individual `morale` field (initialized at INITIAL_MORALE = 70)
+- `UPDATE_MORALE` applies delta to ALL alive members, computes average for backward compat
+- `UPDATE_MEMBER_MORALE` targets specific member
+- `TALK_TO_MEMBER` action: boosts morale (+12 if < 40, +8 if < 60, +5 otherwise), sets cooldown (once per day)
+- Talk button visible in family panel when member needs help (morale < 50 or health poor/critical)
+- Contextual dialogue: 15+ lines covering critical health, poor health, low morale, mid morale, okay, good spirits
+
+#### Terrain-Adaptive Difficulty
+- Event frequency, danger chance, illness rate, and positive encounter rate now scale with terrain type:
+  - Plains: eventMod +0.06 (fewer events), dangerMod -0.03, encounterMod +0.04
+  - Hills: baseline (all zero)
+  - Mountains: eventMod -0.06 (more events), dangerMod +0.06, illnessMod +0.04, encounterMod -0.02
+  - River: eventMod -0.03, dangerMod +0.04, illnessMod +0.03, encounterMod +0.01
+- All modifiers stacked with weather difficulty (difficultyScore >= 5 adds +5%)
+- Landmark `hazard_multiplier` applied to danger chance and trail wear
+- Late-season escalation: +3% danger after Sep 15, +5% after Nov 1
+- Early journey (< 500 miles) gets +3% positive encounter chance (more fellow travelers)
+- Weekly trail wear scales with hazard_multiplier and terrain type
+
+#### Travel Screen UI Redesign
+- **Layout**: Hero terrain scene (35vh) at top → narrative bar → dashboard (left: actions/travel plan/supplies, right: weather/family/log)
+- **Terrain scene rewrite**: 800×280 SVG with detailed wagon (oxen, wheels, yoke, canvas), weather-responsive sky, terrain-specific art (buffalo silhouettes, pine forests, water reflections, snow-capped peaks)
+- **Mini-map overlay**: bottom of terrain scene showing next 2-3 landmarks, click for full map modal
+- **Travel Plan**: renamed from "Settings", now includes pace, rations, water rationing, sleep schedule
+- **Family panel**: per-member health badge + morale indicator + Talk button
+- **Supply display**: now shows water, firewood with warning indicators
+- **"Miles today" → "Miles yesterday"** (nitpick fix)
+- **WeatherBox unicode fix**: `\u00B0` in JSX renders literally as text, replaced with `°`
+
+### Files modified
+- `client/src/components/game/TravelScreen.jsx` — Complete layout rewrite, resource management, terrain-adaptive difficulty, Talk to Family, Gather Firewood, Find Water
+- `client/src/store/GameContext.jsx` — Per-member morale, water rationing, firewood, cold-without-fire penalty, sleep schedule, cold food consumption, TALK_TO_MEMBER, UPDATE_MEMBER_MORALE, SET_WATER_RATIONS, SET_SLEEP_SCHEDULE
+- `client/src/shared/types.js` — SLEEP_SCHEDULE, WATER_RATIONS, WATER_OXEN_MULTIPLIER, getHeatWaterMultiplier, FIREWOOD_CONSUMPTION
+- `client/src/components/game/shared/TerrainScene.jsx` — Complete rewrite to 800×280 immersive hero visual
+- `client/src/components/game/shared/WeatherBox.jsx` — Unicode fix, compact prop
+- `client/src/components/game/shared/OregonTrailMap.jsx` — Topographical features added
+- `client/src/components/game/SetupScreen.jsx` — Per-member morale initialization
+
+### Key decisions
+- **Water rationing parallels food** — same UX pattern (dropdown) makes it intuitive. Heat multiplier adds realistic seasonal pressure.
+- **Firewood as a "gather or suffer" resource** — creates strategic decisions: spend a day gathering or push through cold nights. Mountains yield more wood (forests) but consume more (colder).
+- **Per-member morale rather than party-wide** — makes Talk to Family meaningful (target the one who needs it most), adds depth without complexity.
+- **Terrain-adaptive difficulty via modifier table** — clean implementation that stacks with weather. Plains early = easy, mountains late = hard. Mirrors the original Oregon Trail experience.
+- **Hero terrain scene as primary visual** — the landscape IS the game. Dashboard is secondary. This design philosophy matches the user's feedback that the trail visual should be most prominent.
+
+### Balance analysis
+- **Trip duration**: ~136 days at steady pace (2040mi / 15mi/day), ~151 with weather. April 1 start → ~Sep arrival. Plenty of time.
+- **Food**: 5 people × 3 lbs × 151 days = 2,265 lbs. At $0.10/lb = $226.50. Tradesman ($1,200) has ample budget.
+- **Water**: 8.25 gal/day (5 people + 2 oxen) × 24 days per full tank. Multiple river segments and fort refills.
+- **Firewood**: 1-2 bundles/night in cold months. Gather action yields 2-5 bundles. Manageable with occasional gather days.
+- **Difficulty curve**: Plains (early) → Hills → Mountains → River → Mountains (late). Natural escalation matches historical trail geography.
+
+### Open items
+- [ ] Firewood purchasable at supply store (currently gather-only)
+- [ ] Supply purchase screen updates for water/firewood
+- [ ] Thematic CSS improvements (parchment textures, period styling)
+- [ ] Test K-2 simplified trail flow
+- [ ] Test 3-5 intermediate variant
+- [ ] Performance test on Chromebook-equivalent specs
+- [ ] Add database for persistent classroom sessions (v2)
+
+---
+
 *Add new session entries below as the project evolves.*

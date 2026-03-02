@@ -132,10 +132,41 @@ export const SLEEP_SCHEDULE = {
   long:   { label: 'Long (9 hrs)',   healthRecovery: 0.05,  moraleModifier: 1,  travelBonus: 0.90 }
 };
 
-/** Water consumption: ~0.5 gal per person per day, ~2 gal per yoke of oxen */
-export const WATER_CONSUMPTION = {
-  perPersonPerDay: 0.5,
-  perOxenYokePerDay: 2
+/**
+ * Water rationing levels (parallels food rations).
+ * Base consumption per person per day; oxen consume 3x the person rate.
+ * Heat multiplier applied in ADVANCE_DAY based on current temperature.
+ */
+export const WATER_RATIONS = {
+  full:     { perPerson: 0.75, label: 'Full',     moraleModifier: 0,  healthModifier: 0 },
+  moderate: { perPerson: 0.50, label: 'Moderate',  moraleModifier: -1, healthModifier: 0 },
+  minimal:  { perPerson: 0.25, label: 'Minimal',   moraleModifier: -3, healthModifier: 0.02 }
+};
+
+export const WATER_OXEN_MULTIPLIER = 3; // oxen drink 3x a person
+
+/**
+ * Heat multiplier for water consumption.
+ * Above 80°F, everyone drinks more.
+ */
+export function getHeatWaterMultiplier(tempF) {
+  if (tempF >= 100) return 1.8;
+  if (tempF >= 90) return 1.5;
+  if (tempF >= 80) return 1.25;
+  return 1.0;
+}
+
+/**
+ * Firewood — consumed during cold weather for warmth and cooking.
+ * Measured in bundles. 1 bundle per night below 50°F, 2 below 32°F.
+ * Running out in winter = health degradation + morale loss.
+ */
+export const FIREWOOD_CONSUMPTION = {
+  getDaily(tempF) {
+    if (tempF < 32) return 2;
+    if (tempF < 50) return 1;
+    return 0; // Warm enough, no firewood needed
+  }
 };
 
 export const GRACE_RANGES = {

@@ -172,6 +172,9 @@ server/
 - [x] Morale decay every 5 days
 - [x] Increased death chance at low food levels
 - [x] Event frequency increased (threshold 0.75 → 0.60, 40% more events)
+- [x] Terrain-adaptive difficulty: plains quieter, mountains harder
+- [x] Weather compounds terrain difficulty
+- [x] Late-season danger escalation (after Sep 15 and Nov 1)
 
 ### Teacher Dashboard
 - [x] Session creation with code, password, grade band, settings
@@ -238,6 +241,12 @@ server/
 - [x] Lingering danger system: each stationary day increases bandit/robbery probability
 - [x] Warning displayed after 2+ consecutive rest days about lingering danger
 - [x] Daily bonuses (oxen check, wagon maintenance) reset each travel day
+- [x] Water rationing (full/moderate/minimal) with heat multiplier for hot weather
+- [x] Firewood resource for cold weather survival (below 50°F)
+- [x] Cold weather food consumption increase (1.2× below 50°F, 1.4× below 32°F)
+- [x] No-fire penalty: morale drop and negated sleep recovery in cold without firewood
+- [x] Per-member morale tracking with Talk to Family interaction
+- [x] Sleep schedule (short/normal/long) affecting travel, health, and morale
 
 ### Trip Difficulty Report
 - [x] End-of-trip difficulty index (0-10 scale) with descriptive labels
@@ -271,9 +280,12 @@ server/
 - [x] Pulsing knowledge panel indicators
 - [x] Moral label centered pop-in animation (green for positive, red for negative)
 - [x] Mission vs Fort distinct visual treatment
-- [x] SVG trail map with 1848 state/territory boundaries, zoom/pan controls
-- [x] Terrain scene visualization (plains, hills, mountains, river) based on current geography
-- [x] Viewport-fitting layout (no scrolling — entire game above the fold)
+- [x] SVG trail map with 1848 state/territory boundaries, topographical features, zoom/pan controls
+- [x] Immersive terrain scene hero visual (800×280 SVG) with detailed wagon, oxen, weather-responsive sky
+- [x] Terrain-specific scenes: plains (buffalo silhouettes, tall grass), hills (rolling hills, scattered trees), mountains (snow-capped peaks, pine forests), river (far bank, water reflections, ripples)
+- [x] Travel screen: hero terrain scene at top → narrative → dashboard (actions/travel plan/supplies left, weather/family/daily log right)
+- [x] Per-member health and morale display with Talk button for troubled family members
+- [x] Mini-map overlay on terrain scene showing next 2-3 landmarks with click-to-expand full map
 
 ---
 
@@ -424,6 +436,50 @@ All fixes verified via clean production build (66 modules, 107KB gzipped).
 - SetupScreen shows color-coded difficulty badges (Easy/Medium/Hard)
 - Balance playtest script (`balancePlaytest.mjs`) for ongoing tuning
 - Production build verified: 76 modules, 464KB JS (143KB gzipped)
+
+### v1.0.6 — Resource Management, Per-Member Morale, Terrain-Adaptive Difficulty & UI Redesign (2026-03-02)
+
+#### Resource Management Systems
+- Water rationing (full/moderate/minimal) paralleling food rations, with heat multiplier for hot weather (1.25× at 80°F, 1.5× at 90°F, 1.8× at 100°F)
+- Firewood resource for cold weather survival: 1 bundle/night below 50°F, 2 bundles below 32°F
+- Cold-without-fire penalty: morale drops, sleep recovery negated
+- Cold weather increases food consumption (1.2× below 50°F, 1.4× below 32°F)
+- Sleep schedule (short/normal/long) affecting travel distance, health recovery, and morale
+- Gather Firewood and Find Water actions added to travel screen
+
+#### Per-Member Morale System
+- Individual morale tracked per party member (replaces party-wide average)
+- Talk to Family action: contextual dialogue based on health/morale state (critical, poor, low, mid, okay, good)
+- Talk button appears for troubled family members (morale < 50 or health poor/critical)
+- Morale boost scales with need: +12 for morale < 40, +8 for < 60, +5 otherwise
+- Party-wide morale average maintained for backward compatibility
+
+#### Terrain-Adaptive Difficulty
+- Event/danger/illness/encounter rates now scale with terrain type and landmark hazard_multiplier
+- Plains: fewer events (-6%), less danger (-3%), more positive encounters (+4%)
+- Hills: baseline difficulty
+- Mountains: more events (+6%), more danger (+6%), more illness (+4%), fewer positive encounters (-2%)
+- River: moderate danger (+4%), some illness (+3%), slight encounter bonus (+1%)
+- Weather compounds terrain difficulty (difficultyScore >= 5 adds +5% to events and danger)
+- Late-season escalation: danger increases after Sep 15 and again after Nov 1
+- Trail wear (weekly health degradation) scales with terrain hazard_multiplier
+- Early journey (< 500 miles) has +3% positive encounter chance (more fellow travelers)
+
+#### Travel Screen UI Redesign
+- Hero terrain scene at top (35vh) with immersive 800×280 SVG visualization
+- TerrainScene rewritten: detailed wagon with oxen/wheels/yoke, weather-responsive sky, terrain-specific elements (buffalo, pine forests, water reflections, mountain peaks)
+- Mini-map overlay on terrain scene showing next 2-3 landmarks, click to expand full map
+- Narrative message bar below scene with period-style quoting
+- Dashboard below: actions + travel plan + supplies on left, weather + family + daily log on right
+- "Settings" renamed to "Travel Plan" with pace, rations, water, sleep dropdowns
+- Per-member health + morale display with Talk buttons on right panel
+- Firewood and water supplies shown with warning indicators
+- "Miles today" corrected to "Miles yesterday"
+
+#### WeatherBox Fix
+- Fixed unicode gibberish: `\u00B0` in JSX text renders literally; replaced with `°` character
+
+- Production build verified: 76 modules, 484KB JS (149KB gzipped)
 
 ---
 
