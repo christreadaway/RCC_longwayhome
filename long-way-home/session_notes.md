@@ -95,4 +95,57 @@
 
 ---
 
+## Session 3 — Verification & Deployment (2026-03-02)
+
+### What was done
+
+#### Full Project Verification
+- Ran comprehensive automated verification across 10 checkpoints
+- All checks passed: package.json, dependencies, build, imports, server routes, client state, game logic, components, API client, utilities
+- Production build confirmed: 67 modules, 366KB JS (111KB gzipped), 35KB CSS (6KB gzipped)
+- Server confirmed serving built client + API from single port in production mode
+
+#### Deployment Setup
+- Added Netlify deployment support as primary deploy target
+  - `netlify.toml`: build config, Node 20, esbuild bundler, API redirects, SPA fallback
+  - `netlify/functions/api.js`: wraps Express app via `serverless-http`
+  - Refactored `server/index.js` with `require.main === module` guard so app.listen() only runs standalone
+- Added multi-platform deploy configs as alternatives:
+  - `Dockerfile` + `.dockerignore` for container-based platforms
+  - `render.yaml` for Render one-click deploy
+  - `Procfile` for Heroku/Railway
+- Updated `package.json`: `postinstall` for client deps, `engines` field (Node 18+), improved build script
+
+#### Netlify Deployment
+- Site created at longwayhome.netlify.app
+- Initial deploy failed: 404 because Netlify couldn't find project files
+- Root cause: repo root is `RCC_longwayhome/` but project lives in `long-way-home/` subdirectory
+- Fix: set **Base directory** to `long-way-home` in Netlify UI settings (required because Netlify reads `netlify.toml` only after it knows the base directory)
+- Updated `netlify.toml` base from `.` to `long-way-home` for consistency
+
+### Key decisions
+- **Netlify as primary deploy platform** — free tier, no-login offline play works perfectly as static site, serverless functions available for classroom features
+- **Express app exported without listen()** — `require.main === module` pattern allows the same `server/index.js` to work both as standalone server and as serverless function import
+- **Offline mode confirmed fully static** — no server calls needed; all game logic client-side, state in localStorage
+
+### Netlify deployment notes
+- Base directory MUST be set in Netlify UI — `netlify.toml`'s `base` field is only read after Netlify finds the file, creating a chicken-and-egg problem when the toml is in a subdirectory
+- Netlify Functions are stateless — in-memory session store resets between cold starts, so classroom sessions (multi-student) won't persist. For persistent classroom use, deploy to a long-running host or add a database
+- "Play Offline" works regardless of backend state — fully client-side
+
+### Open items
+- [ ] Confirm Netlify deploy succeeds after Base directory fix
+- [ ] Verify CWM event firing logic across multiple playthroughs
+- [ ] Test deceptive charity rate across 100+ events
+- [ ] Test AI Historian with real API key
+- [ ] Test NPC encounters with 3-exchange cap
+- [ ] Verify CSV export completeness
+- [ ] Test K-2 simplified trail flow
+- [ ] Test 3-5 intermediate variant
+- [ ] Performance test on Chromebook-equivalent specs
+- [ ] Verify no API key leakage in client network traffic
+- [ ] Add database for persistent classroom sessions (v2)
+
+---
+
 *Add new session entries below as the project evolves.*

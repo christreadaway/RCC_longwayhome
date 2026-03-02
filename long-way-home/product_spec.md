@@ -184,9 +184,42 @@ server/
 
 ---
 
+## Deployment
+
+### Netlify (Current)
+- **URL:** longwayhome.netlify.app
+- **Platform:** Netlify (static hosting + serverless functions)
+- **Config:** `netlify.toml` in `long-way-home/` directory
+- **Base directory:** `long-way-home` (must be set in Netlify UI since repo root is `RCC_longwayhome`)
+- **Build command:** `cd client && npm install && npx vite build`
+- **Publish directory:** `client/dist` (relative to base)
+- **Functions:** `netlify/functions/api.js` wraps Express app via `serverless-http`
+- **Redirects:** `/api/*` → serverless function, `/*` → `index.html` (SPA fallback)
+- **Node version:** 20 (set in `netlify.toml`)
+
+### Architecture (Production)
+- Static client build served by Netlify CDN
+- Express API wrapped as a single Netlify Function (`api.js`)
+- `server/index.js` uses `require.main === module` guard so `app.listen()` only runs standalone, not when imported by serverless wrapper
+- "Play Offline" mode requires no backend — fully client-side
+
+### Also Supported
+- **Docker:** `Dockerfile` + `.dockerignore` included
+- **Render:** `render.yaml` for one-click deploy
+- **Heroku/Railway:** `Procfile` included
+- **Any Node.js host:** `npm run build && npm start` serves everything from port 3000
+
+### Note on Serverless State
+Netlify Functions are stateless — the in-memory session store (`server/state/store.js`) resets between cold starts. This means:
+- "Play Offline" works perfectly (no server calls)
+- Classroom sessions (multi-student with teacher dashboard) will lose state between function invocations
+- For persistent classroom use, deploy to a long-running Node.js host (Render, Railway, Docker) or add a database
+
+---
+
 ## Known Limitations (MVP)
 
-- No persistent database — sessions lost on server restart
+- No persistent database — sessions lost on server restart (or serverless cold start)
 - No WebSocket — 10s polling latency for dashboard
 - No mobile-optimized layout (works on tablet landscape)
 - Hunting minigame is click-based only (no keyboard/touch optimization)
@@ -208,6 +241,15 @@ server/
 - **Low (7):** Render-time dispatch, confusing hook guard, useMemo with full state dep, stale closure in hunting ammo, nested state update in hunting, unused import, missing useEffect dependency
 
 All fixes verified via clean production build (66 modules, 107KB gzipped).
+
+### v1.0.2 — Deployment Setup (2026-03-02)
+
+- Added Netlify deployment support (`netlify.toml`, serverless function wrapper)
+- Added multi-platform deploy configs (Dockerfile, render.yaml, Procfile)
+- Refactored `server/index.js` to guard `app.listen()` behind `require.main === module` for serverless compatibility
+- Added `serverless-http` dependency
+- Updated `package.json` with `postinstall` script, `engines` field (Node 18+), and improved `build` script
+- Production build verified: client serves from single port alongside API
 
 ---
 
