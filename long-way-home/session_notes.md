@@ -249,4 +249,126 @@ Live playtest by Chris revealed 13+ issues across UI, game logic, difficulty, NP
 
 ---
 
+## Session 5 — Weather, Camp Activities, Trail Dangers & Crash Logging (2026-03-02)
+
+### Context
+Chris requested comprehensive trip management features: daily weather affecting travel, camp activities for older grades, trail dangers, difficulty scoring, grace-influenced fortune, historically accurate 1848 content, and crash logging.
+
+### What was built
+
+#### Weather System (`client/src/game/weather.js`)
+- Historically accurate 1848 weather generation using seeded PRNG for determinism
+- 16 weather conditions: sunny, mostly_sunny, partly_cloudy, cloudy, overcast, light_rain, rain, heavy_rain, thunderstorm, light_snow, snow, heavy_snow, sleet, fog, dust_storm, hail
+- Monthly temperature ranges calibrated to 1848 Great Plains/Rocky Mountain data
+- Terrain modifiers: mountains (-12°F, more snow), desert (+8°F, dust storms), river valley (fog, rain)
+- Wind system: calm, light, moderate, strong, gale — with travel modifiers
+- Ground conditions accumulate moisture from recent weather (last 5 days) and dry with sun/wind
+- Ground states: firm, dry, damp, wet, muddy, sloshy, icy, snowpack
+- Travel modifier applied per weather condition (e.g., heavy snow = -70%, thunderstorm = -50%)
+- `WeatherBox.jsx` UI: compact display with Unicode icons, temperature, wind, ground, travel impact
+
+#### Camp Activities System (`client/src/game/campActivities.js`)
+- 11 activities all written in 1848-appropriate language:
+  - Talk with Family: rich dialogue system (40+ lines across morale states + conditionals)
+  - Tend the Oxen: check yokes, hooves, find good grass (travel bonus)
+  - Cook a Proper Meal: johnnycakes, bacon, dried apple pie (food cost + morale)
+  - Take Stock of Provisions: count barrels, check spoilage (awareness bonus)
+  - Wash Up at the Creek: hygiene with lye soap (health + morale)
+  - Pray Together: family devotions, psalms (grace + morale)
+  - Attend Mass: at missions only, with priest (grace + morale + health)
+  - Go to Confession: sacrament of Reconciliation at missions (clears reconciliation pending)
+  - Let the Children Play: mumblety-peg, hoop rolling, river skipping stones (morale)
+  - Mend the Wagon: tallow axles, check felloes, tighten spokes (breakdown prevention)
+  - Help Fellow Emigrants: assist nearby wagon train families (grace + morale)
+- Each activity has: time cost, cooldown days, grade band filter, requirements
+- Family dialogue includes conditional lines for: hungry, sick member (by name), bad weather, death, lingering
+- Family suggestions provide actionable hints based on current game state
+- `CampActivitiesPanel.jsx` UI: activity list → selection → confirmation → result flow
+
+#### Trail Dangers (`client/src/data/trail-dangers.json`)
+- 30+ dangers across 9 categories: environmental, mechanical, animal, wildlife, human, health, navigation, social, supply
+- Each danger has: difficulty score (0-10), terrain filters, season filters, weather triggers, probability weight
+- Choice-based dangers: robbery (comply/resist/negotiate), bad water (drink/boil/search), etc.
+- `lingering_boost: true` on theft, robbery, hostile encounters — probability increases with stationary days
+- 13 positive encounters including CWM opportunities:
+  - Sick traveler, struggling family, found lost belongings, shared campfire, traveling musician
+  - Grace-threshold encounters: helpful native guide (grace ≥ 50)
+  - Choice-based: share food (grace +10) or keep it (-5); return found goods (+15) or keep (-10)
+
+#### Trip Difficulty Report (`client/src/game/tripReport.js`)
+- End-of-trip difficulty index (0-10) with labels: "Remarkably Easy" through "Nearly Impossible"
+- Four weighted categories: weather (25%), dangers (35%), health (25%), supplies (15%)
+- Grace influence summary based on final grace score
+- Comprehensive stats: days traveled, bad weather days, dangers, deaths, robberies, breakdowns
+- Period-appropriate narrative builder
+
+#### Crash Logging (`client/src/utils/crashLogger.js` + `server/routes/crashReport.js`)
+- Client tracks last 30 user actions with timestamps
+- Crash reports capture: error + stack, sanitized game state, recent actions, event log, browser info, log buffer
+- Reports stored in localStorage (up to 20) AND sent to server
+- Global error handlers for window.onerror and unhandledrejection
+- React Error Boundary helper (`logReactError`)
+- Server: POST `/api/session/crash-report` writes JSON lines to `crash-reports.log`
+- Server: GET `/api/session/crash-reports` returns last 50 for teacher debug panel
+
+#### TravelScreen Integration
+- `travelOneDay()` now: generates weather → applies to miles → checks trail dangers → checks positive encounters → adjusts illness
+- Miles = baseMiles × paceMultiplier × weatherModifier × oxenBonus × graceModifier
+- Trail danger selection filtered by terrain, season, weather, with lingering boost
+- Positive encounter probability boosted by grace score
+- Lingering warning after 2+ consecutive rest days
+- Weather description used as daily flavor text
+- Camp activities panel available during rest for non-K2 grades
+
+#### GameContext Updates
+- New state fields: currentWeather, weatherLog, recentWeather, activityCooldowns, activityLog, daysStationary, totalDaysStationary, oxenChecked, wagonMaintained, illnessPreventionBonus, spoilagePreventionBonus, dangerLog, tripDifficultyPoints
+- 6 new reducer actions: SET_WEATHER, CAMP_ACTIVITY_PERFORMED, INCREMENT_STATIONARY, RESET_STATIONARY, RESET_DAILY_BONUSES, LOG_DANGER
+
+#### Tests
+- 12 weather tests: valid reports, determinism, terrain effects, seasonal temps, travel modifiers, ground conditions from rain, drying
+- 12 camp activities tests: activity structure, grade band filtering, mission requirements, cooldowns, effects, dialogue, anachronism check
+- Custom ESM loader (`loader.mjs`) handles extensionless imports and @shared Vite alias for Node test execution
+- All 24 tests passing
+
+### Files created
+- `client/src/game/weather.js` — weather generation engine
+- `client/src/game/campActivities.js` — camp activities with 1848-accurate dialogue
+- `client/src/game/tripReport.js` — difficulty scoring and trip report
+- `client/src/data/trail-dangers.json` — 30+ dangers + 13 positive encounters
+- `client/src/utils/crashLogger.js` — client crash logging
+- `client/src/components/game/shared/WeatherBox.jsx` — weather display UI
+- `client/src/components/game/shared/CampActivitiesPanel.jsx` — camp activities UI
+- `client/src/game/__tests__/weather.test.js` — weather tests
+- `client/src/game/__tests__/campActivities.test.js` — camp activities tests
+- `client/src/game/__tests__/loader.mjs` — custom ESM loader for tests
+- `server/routes/crashReport.js` — crash report server endpoint
+
+### Files modified
+- `client/src/components/game/TravelScreen.jsx` — major integration of weather, dangers, camp activities, miles calculation
+- `client/src/store/GameContext.jsx` — new state fields and 6 reducer actions
+- `server/index.js` — added crash report route
+
+### Key decisions
+- **Seeded PRNG for weather** — same date always produces same weather, enabling reproducibility and consistency
+- **Ground conditions as accumulated moisture** — solves the "geography memory" problem by tracking last 5 days
+- **Lingering danger** — historically accurate: emigrants who fell behind faced increased risk from bandits and hostile encounters
+- **Grace-influenced fortune** — higher grace subtly increases positive encounters and reduces dangers, testing greed vs. charity
+- **1848-appropriate language throughout** — johnnycakes (not pancakes), buffalo chips (not firewood), mumblety-peg (not tag), tallow (not grease), felloe (not rim)
+- **Test files run via Node with custom ESM loader** — avoids needing a test framework dependency while handling Vite's extensionless imports and @shared alias
+
+### Open items
+- [ ] Playtest weather impact on game balance (may need modifier tuning)
+- [ ] Verify camp activities work at all missions on the trail
+- [ ] Test positive encounter frequency feels balanced (not too rare/common)
+- [ ] Test lingering danger escalation at various stationary day counts
+- [ ] Integrate trip report into GameOverScreen
+- [ ] Verify crash logger captures enough info for debugging real issues
+- [ ] Test AI Historian with real API key
+- [ ] Test K-2 simplified trail flow
+- [ ] Test 3-5 intermediate variant
+- [ ] Performance test on Chromebook-equivalent specs
+- [ ] Add database for persistent classroom sessions (v2)
+
+---
+
 *Add new session entries below as the project evolves.*

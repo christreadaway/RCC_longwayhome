@@ -68,11 +68,21 @@ client/src/
 │   ├── knowledge-panel-3-5.json # 5 cards for 3-5
 │   ├── moral-labels.json      # 22 label groups x 3 grade bands
 │   ├── catholic-curriculum.json # CWM, Commandments, Beatitudes
-│   └── trail-flavor.js        # 300+ ambient narrative messages (14 categories)
+│   ├── trail-flavor.js        # 300+ ambient narrative messages (14 categories)
+│   └── trail-dangers.json     # 30+ trail dangers + 13 positive encounters
+├── game/
+│   ├── __tests__/             # Test suite (Node-runnable ESM)
+│   │   ├── weather.test.js    # 12 weather system tests
+│   │   ├── campActivities.test.js # 12 camp activities tests
+│   │   └── loader.mjs         # Custom ESM loader for Vite aliases
+│   ├── weather.js             # Historically accurate 1848 weather generation
+│   ├── campActivities.js      # Camp activities system (11 activities)
+│   └── tripReport.js          # End-of-trip difficulty index generator
 └── utils/
     ├── logger.js              # Client-side logger with buffer
     ├── api.js                 # API client wrapper
-    └── dateUtils.js           # Game date utilities
+    ├── dateUtils.js           # Game date utilities
+    └── crashLogger.js         # Crash logging with game state snapshots
 ```
 
 ### Server (Node.js + Express)
@@ -86,7 +96,8 @@ server/
 │   ├── historian.js           # AI historian query proxy
 │   ├── npc.js                 # AI NPC encounter proxy
 │   ├── insights.js            # AI class insights generator
-│   └── export.js              # CSV session export
+│   ├── export.js              # CSV session export
+│   └── crashReport.js         # Crash report persistence (POST + GET)
 └── ai/
     ├── prompts.js             # All AI system prompts
     └── proxy.js               # Anthropic API proxy with fallbacks
@@ -184,6 +195,72 @@ server/
 - [x] Trigger by landmark arrival or event type
 - [x] Non-blocking (rest points only)
 - [x] Reading tracked per student
+
+### Weather System
+- [x] Historically accurate 1848 weather generation based on month, terrain, and region
+- [x] Temperature (Fahrenheit), wind speed/direction, 16 condition types (sunny, cloudy, rain, snow, dust storm, etc.)
+- [x] Deterministic via seeded PRNG — same date always produces same weather
+- [x] Ground conditions: firm, dry, damp, wet, muddy, sloshy, icy, snowpack
+- [x] Ground moisture accumulates from recent weather history (last 5 days) and dries with sun/wind
+- [x] Terrain weather shifts: mountains boost snow, rivers boost fog/rain, desert boosts dust storms
+- [x] Weather affects travel speed via per-condition travel modifiers
+- [x] Weather affects illness probability (cold + wet = higher illness chance)
+- [x] WeatherBox UI component: temperature, wind, condition, ground, travel impact (color-coded)
+- [x] Monthly temperature ranges calibrated to 1848 Great Plains/Rocky Mountain data
+
+### Camp Activities System
+- [x] 11 activities: talk with family, tend oxen, cook a proper meal, check provisions, wash up, pray, attend Mass, confession, let children play, mend wagon, help fellow emigrants
+- [x] All activities use 1848-appropriate language (johnnycakes, buffalo chips, mumblety-peg, tallow, felloe, hardtack)
+- [x] Time cost per activity (portion of a travel day)
+- [x] Cooldown system (day-based, prevents spam)
+- [x] Grade band filtering (K-2 gets simplified subset, 6-8 gets all activities)
+- [x] Mission-only activities: attend Mass, confession (only at landmarks with type: mission)
+- [x] Rich family dialogue system with 40+ lines across morale states (high, moderate, low, critical)
+- [x] Conditional dialogue: hungry, sick member by name, bad weather, death occurred, lingering too long
+- [x] Family suggestions system providing actionable hints based on game state
+- [x] Activity effects: morale boost, grace increase, health recovery, food cost, travel bonus, reconciliation clear
+- [x] CampActivitiesPanel UI component with activity list → confirmation → result flow
+
+### Trail Dangers & Positive Encounters
+- [x] 30+ trail dangers across 9 categories: environmental, mechanical, animal, wildlife, human, health, navigation, social, supply
+- [x] Each danger: difficulty score (0-10), terrain/season/weather filters, probability weight
+- [x] Some dangers have player choices (robbery: comply/resist/negotiate; bad water: drink/boil/search)
+- [x] Lingering danger: theft, robbery, hostile encounters boosted when stationary too long
+- [x] 13 positive encounters including CWM opportunities (sick traveler, struggling family, found lost belongings)
+- [x] Grace-influenced encounter probability: higher grace = more positive encounters, lower grace = more hardship
+- [x] Grace threshold on some encounters (helpful native guide requires grace ≥ 50)
+- [x] Choice-based encounters test greed vs. charity (share food or keep it, return found goods or keep them)
+
+### Trip Management & Miles Calculation
+- [x] Miles driven by pace × weather × ground conditions × oxen care × grace bonus/penalty
+- [x] Oxen checked bonus: +10% travel distance after tending
+- [x] Grace influence: grace ≥ 70 = +5% travel; grace ≤ 20 = -8% travel
+- [x] Lingering danger system: each stationary day increases bandit/robbery probability
+- [x] Warning displayed after 2+ consecutive rest days about lingering danger
+- [x] Daily bonuses (oxen check, wagon maintenance) reset each travel day
+
+### Trip Difficulty Report
+- [x] End-of-trip difficulty index (0-10 scale) with descriptive labels
+- [x] Four weighted categories: weather hardship (25%), trail dangers (35%), party health (25%), supply management (15%)
+- [x] Labels: "Remarkably Easy" through "Nearly Impossible"
+- [x] Grace influence summary text based on final grace score
+- [x] Comprehensive stats: days traveled, bad weather days, dangers encountered, deaths, robberies, breakdowns
+
+### Crash Logging & Error Recovery
+- [x] Client-side crash logger with user action tracking (last 30 actions)
+- [x] Crash reports capture: error + stack, game state snapshot, recent actions, event log, browser info
+- [x] Reports stored in localStorage (up to 20) AND sent to server
+- [x] Global error handlers for uncaught exceptions and unhandled promise rejections
+- [x] React Error Boundary integration helper (`logReactError`)
+- [x] Server endpoint: POST `/api/session/crash-report` persists to `crash-reports.log`
+- [x] Server endpoint: GET `/api/session/crash-reports` retrieves last 50 for teacher debug panel
+- [x] Game state sanitizer extracts only essential debugging fields
+
+### Test Suite
+- [x] 12 weather system tests: valid reports, determinism, terrain effects, seasonal temps, travel modifiers, ground conditions
+- [x] 12 camp activities tests: activity structure, grade band filtering, mission requirements, cooldowns, effects, dialogue, anachronism check
+- [x] Custom ESM loader for running tests outside Vite (handles extensionless imports + @shared alias)
+- [x] All 24 tests passing
 
 ### Visual Design
 - [x] Warm illustrated storybook palette (tan/brown/blue/gold)
@@ -322,6 +399,18 @@ All fixes verified via clean production build (66 modules, 107KB gzipped).
 - 300+ ambient narrative messages across 14 categories
 - Context-aware weighted selection (hardship increases when food/morale low, seasonal by game date)
 - Historical humanity: singing, fiddle, harmonica, books, journal writing, cards, dancing
+
+### v1.0.4 — Weather, Camp Activities, Trail Dangers & Crash Logging (2026-03-02)
+
+- Added historically accurate 1848 weather system with 16 condition types, ground condition tracking, terrain modifiers
+- Added 11 camp activities with 1848-appropriate language, cooldowns, grade band filtering, rich family dialogue
+- Added 30+ trail dangers across 9 categories + 13 positive encounters with grace-influenced probability
+- Added trip difficulty report (0-10 index) with weighted scoring across weather/dangers/health/supplies
+- Added comprehensive crash logging: client action tracking, game state snapshots, server persistence
+- Integrated weather and camp activities into TravelScreen with miles calculation driven by pace, weather, ground, oxen, grace
+- Added lingering danger system (stationary days boost bandit/robbery probability)
+- 24 passing tests (12 weather + 12 camp activities)
+- Production build verified: 76 modules, 455KB JS (140KB gzipped)
 
 ---
 
