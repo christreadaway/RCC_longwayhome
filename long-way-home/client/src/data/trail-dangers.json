@@ -1,0 +1,552 @@
+{
+  "dangers": [
+    {
+      "id": "river_flooding",
+      "category": "environmental",
+      "name": "River Flooding",
+      "description": "Heavy rains upstream have swollen the river. The crossing is treacherous.",
+      "difficulty_score": 7,
+      "effects": { "health_risk": 0.15, "supply_loss_chance": 0.3, "morale": -8, "delay_days": 1 },
+      "terrain_types": ["river"],
+      "season_months": [4, 5, 6],
+      "weather_triggers": ["heavy_rain", "thunderstorm"],
+      "probability_weight": 3
+    },
+    {
+      "id": "wagon_breakdown_wheel",
+      "category": "mechanical",
+      "name": "Broken Wagon Wheel",
+      "description": "A wheel shatters on a rock. You'll need spare parts or time to repair it.",
+      "difficulty_score": 4,
+      "effects": { "spare_parts_cost": 1, "delay_days": 1, "morale": -5 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 5
+    },
+    {
+      "id": "wagon_breakdown_axle",
+      "category": "mechanical",
+      "name": "Broken Axle",
+      "description": "The wagon axle snaps under the weight. This is a serious setback.",
+      "difficulty_score": 6,
+      "effects": { "spare_parts_cost": 1, "delay_days": 2, "morale": -10 },
+      "terrain_types": ["mountains", "hills"],
+      "season_months": null,
+      "weather_triggers": ["muddy", "sloshy"],
+      "probability_weight": 3
+    },
+    {
+      "id": "wagon_breakdown_tongue",
+      "category": "mechanical",
+      "name": "Broken Wagon Tongue",
+      "description": "The wagon tongue cracks. Without repair, the oxen can't pull.",
+      "difficulty_score": 5,
+      "effects": { "spare_parts_cost": 1, "delay_days": 1, "morale": -7 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 3
+    },
+    {
+      "id": "ox_injury",
+      "category": "animal",
+      "name": "Ox Injury",
+      "description": "One of your oxen has gone lame. Travel will be slower until it heals.",
+      "difficulty_score": 4,
+      "effects": { "travel_speed_penalty": -0.2, "delay_days": 0, "morale": -5 },
+      "terrain_types": ["mountains", "hills"],
+      "season_months": null,
+      "weather_triggers": ["icy", "muddy"],
+      "probability_weight": 4
+    },
+    {
+      "id": "ox_death",
+      "category": "animal",
+      "name": "Ox Dies",
+      "description": "An ox has died from exhaustion. Your team is weaker now.",
+      "difficulty_score": 7,
+      "effects": { "oxen_lost": 1, "morale": -12, "travel_speed_penalty": -0.15 },
+      "terrain_types": null,
+      "season_months": [7, 8],
+      "weather_triggers": null,
+      "probability_weight": 2
+    },
+    {
+      "id": "ox_wander",
+      "category": "animal",
+      "name": "Oxen Wandered Off",
+      "description": "The oxen wandered during the night. Half a day spent rounding them up.",
+      "difficulty_score": 2,
+      "effects": { "delay_days": 0.5, "morale": -3 },
+      "terrain_types": ["plains"],
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 4
+    },
+    {
+      "id": "snakebite",
+      "category": "wildlife",
+      "name": "Snakebite",
+      "description": "A rattlesnake strikes! Quick action is needed.",
+      "difficulty_score": 5,
+      "effects": { "health_risk": 0.3, "morale": -8, "medicine_cost": 1 },
+      "terrain_types": ["plains", "hills", "desert"],
+      "season_months": [5, 6, 7, 8, 9],
+      "weather_triggers": null,
+      "probability_weight": 3
+    },
+    {
+      "id": "stampede",
+      "category": "wildlife",
+      "name": "Buffalo Stampede",
+      "description": "A herd of buffalo stampedes near the wagon train! Everyone scrambles for safety.",
+      "difficulty_score": 7,
+      "effects": { "health_risk": 0.2, "supply_loss_chance": 0.2, "morale": -10, "oxen_injury_chance": 0.15 },
+      "terrain_types": ["plains"],
+      "season_months": [5, 6, 7, 8],
+      "weather_triggers": ["thunderstorm"],
+      "probability_weight": 2
+    },
+    {
+      "id": "wolf_attack",
+      "category": "wildlife",
+      "name": "Wolf Pack",
+      "description": "Wolves circle the camp at night. The livestock are spooked.",
+      "difficulty_score": 4,
+      "effects": { "morale": -8, "oxen_injury_chance": 0.1, "ammo_cost": 2 },
+      "terrain_types": ["mountains", "hills", "plains"],
+      "season_months": [10, 11, 12],
+      "weather_triggers": null,
+      "probability_weight": 3
+    },
+    {
+      "id": "mosquitoes",
+      "category": "wildlife",
+      "name": "Mosquito Swarm",
+      "description": "Clouds of mosquitoes descend on the camp. Sleep is impossible.",
+      "difficulty_score": 2,
+      "effects": { "health_risk": 0.08, "morale": -5 },
+      "terrain_types": ["river", "plains"],
+      "season_months": [5, 6, 7, 8],
+      "weather_triggers": null,
+      "probability_weight": 5
+    },
+    {
+      "id": "theft_nighttime",
+      "category": "human",
+      "name": "Nighttime Theft",
+      "description": "Thieves crept into camp while everyone slept. Supplies are missing.",
+      "difficulty_score": 5,
+      "effects": { "food_loss": 30, "cash_loss": 15, "morale": -10 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 3,
+      "lingering_boost": true
+    },
+    {
+      "id": "robbery_armed",
+      "category": "human",
+      "name": "Armed Robbery",
+      "description": "Bandits demand your valuables at gunpoint. How will you respond?",
+      "difficulty_score": 8,
+      "effects": { "cash_loss": 50, "food_loss": 40, "morale": -15, "health_risk": 0.1 },
+      "terrain_types": ["hills", "mountains"],
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 2,
+      "lingering_boost": true,
+      "choices": [
+        { "id": "comply", "text": "Hand over what they want", "effects": { "cash_loss": 50, "food_loss": 20, "morale": -10 } },
+        { "id": "resist", "text": "Fight back", "effects": { "health_risk": 0.25, "ammo_cost": 5, "morale": -5, "cash_loss": 0 } },
+        { "id": "negotiate", "text": "Try to negotiate", "effects": { "cash_loss": 25, "morale": -5 } }
+      ]
+    },
+    {
+      "id": "con_artist",
+      "category": "human",
+      "name": "Swindler on the Trail",
+      "description": "A smooth-talking stranger offers a deal that seems too good to be true.",
+      "difficulty_score": 3,
+      "effects": { "cash_loss": 30, "morale": -5 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 3,
+      "choices": [
+        { "id": "trust", "text": "Take the deal", "effects": { "cash_loss": 30, "morale": -8 }, "grace_delta": -5 },
+        { "id": "decline", "text": "Politely decline", "effects": { "morale": 0 } },
+        { "id": "warn_others", "text": "Warn other travelers", "effects": { "morale": 5 }, "grace_delta": 3 }
+      ]
+    },
+    {
+      "id": "hostile_encounter",
+      "category": "human",
+      "name": "Hostile Strangers",
+      "description": "A group of rough men block the trail. They don't look friendly.",
+      "difficulty_score": 6,
+      "effects": { "morale": -10, "delay_days": 0.5 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 2,
+      "lingering_boost": true
+    },
+    {
+      "id": "grass_fire",
+      "category": "environmental",
+      "name": "Prairie Fire",
+      "description": "A wildfire sweeps across the plains. The air fills with smoke and ash.",
+      "difficulty_score": 8,
+      "effects": { "health_risk": 0.15, "supply_loss_chance": 0.25, "morale": -12, "delay_days": 1 },
+      "terrain_types": ["plains"],
+      "season_months": [7, 8, 9],
+      "weather_triggers": null,
+      "probability_weight": 2
+    },
+    {
+      "id": "quicksand",
+      "category": "environmental",
+      "name": "Quicksand",
+      "description": "The ground gives way beneath the wagon. The oxen struggle in quicksand!",
+      "difficulty_score": 6,
+      "effects": { "oxen_injury_chance": 0.2, "delay_days": 0.5, "morale": -8 },
+      "terrain_types": ["river"],
+      "season_months": null,
+      "weather_triggers": ["wet", "muddy", "sloshy"],
+      "probability_weight": 2
+    },
+    {
+      "id": "rockslide",
+      "category": "environmental",
+      "name": "Rockslide",
+      "description": "Rocks tumble down the mountainside, blocking the trail.",
+      "difficulty_score": 6,
+      "effects": { "health_risk": 0.1, "delay_days": 1, "morale": -8, "supply_loss_chance": 0.15 },
+      "terrain_types": ["mountains"],
+      "season_months": null,
+      "weather_triggers": ["heavy_rain", "thunderstorm"],
+      "probability_weight": 3
+    },
+    {
+      "id": "lost_trail",
+      "category": "navigation",
+      "name": "Lost the Trail",
+      "description": "The trail markers have disappeared. Which way do we go?",
+      "difficulty_score": 4,
+      "effects": { "delay_days": 1, "morale": -8 },
+      "terrain_types": ["plains", "hills"],
+      "season_months": null,
+      "weather_triggers": ["fog", "dust_storm", "heavy_snow", "blizzard"],
+      "probability_weight": 3
+    },
+    {
+      "id": "bad_water",
+      "category": "health",
+      "name": "Contaminated Water",
+      "description": "The water source looks murky. It may not be safe to drink.",
+      "difficulty_score": 5,
+      "effects": { "health_risk": 0.25, "morale": -5 },
+      "terrain_types": null,
+      "season_months": [6, 7, 8],
+      "weather_triggers": null,
+      "probability_weight": 4,
+      "choices": [
+        { "id": "drink_anyway", "text": "Drink it — we're thirsty", "effects": { "health_risk": 0.3 } },
+        { "id": "boil_first", "text": "Boil the water first (costs time)", "effects": { "delay_days": 0.5, "health_risk": 0.05 } },
+        { "id": "search_other", "text": "Search for another source", "effects": { "delay_days": 0.5, "health_risk": 0 } }
+      ]
+    },
+    {
+      "id": "food_spoilage",
+      "category": "supply",
+      "name": "Food Spoilage",
+      "description": "Heat and moisture have ruined some of your food supply.",
+      "difficulty_score": 4,
+      "effects": { "food_loss": 40, "morale": -6 },
+      "terrain_types": null,
+      "season_months": [6, 7, 8],
+      "weather_triggers": ["heavy_rain", "rain"],
+      "probability_weight": 4
+    },
+    {
+      "id": "clothing_worn",
+      "category": "supply",
+      "name": "Clothing Worn Out",
+      "description": "The trail has destroyed your clothing. Cold nights are harder now.",
+      "difficulty_score": 3,
+      "effects": { "clothing_loss": 1, "health_risk": 0.05, "morale": -4 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 4
+    },
+    {
+      "id": "heatstroke",
+      "category": "health",
+      "name": "Heatstroke",
+      "description": "The relentless sun takes its toll. Someone collapses from the heat.",
+      "difficulty_score": 5,
+      "effects": { "health_risk": 0.3, "delay_days": 0.5, "morale": -6 },
+      "terrain_types": ["plains", "desert"],
+      "season_months": [6, 7, 8],
+      "weather_triggers": ["sunny"],
+      "probability_weight": 3
+    },
+    {
+      "id": "frostbite",
+      "category": "health",
+      "name": "Frostbite",
+      "description": "The cold is biting. Fingers and toes are going numb.",
+      "difficulty_score": 5,
+      "effects": { "health_risk": 0.2, "morale": -8 },
+      "terrain_types": ["mountains"],
+      "season_months": [10, 11, 12],
+      "weather_triggers": ["snow", "heavy_snow", "blizzard"],
+      "probability_weight": 4
+    },
+    {
+      "id": "lightning_strike",
+      "category": "environmental",
+      "name": "Lightning Strike",
+      "description": "Lightning strikes dangerously close to the wagon train!",
+      "difficulty_score": 7,
+      "effects": { "health_risk": 0.1, "oxen_injury_chance": 0.15, "morale": -10 },
+      "terrain_types": ["plains", "hills"],
+      "season_months": [5, 6, 7, 8],
+      "weather_triggers": ["thunderstorm"],
+      "probability_weight": 2
+    },
+    {
+      "id": "alkali_water",
+      "category": "health",
+      "name": "Alkali Water",
+      "description": "The only water source is alkali poisoned. Oxen drink it before anyone can stop them.",
+      "difficulty_score": 6,
+      "effects": { "oxen_injury_chance": 0.3, "health_risk": 0.15, "morale": -8 },
+      "terrain_types": ["desert", "plains"],
+      "season_months": [6, 7, 8],
+      "weather_triggers": null,
+      "probability_weight": 3
+    },
+    {
+      "id": "dust_choke",
+      "category": "environmental",
+      "name": "Choking Dust",
+      "description": "The trail ahead is a cloud of dust from other wagon trains. Breathing is difficult.",
+      "difficulty_score": 3,
+      "effects": { "health_risk": 0.1, "morale": -5 },
+      "terrain_types": ["plains", "desert"],
+      "season_months": [6, 7, 8, 9],
+      "weather_triggers": ["sunny", "fair", "dust_storm"],
+      "probability_weight": 5
+    },
+    {
+      "id": "argument_party",
+      "category": "social",
+      "name": "Family Argument",
+      "description": "Tensions boil over in camp. Tempers are short after weeks on the trail.",
+      "difficulty_score": 2,
+      "effects": { "morale": -10 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 5
+    },
+    {
+      "id": "homesickness",
+      "category": "social",
+      "name": "Homesickness",
+      "description": "Someone in the party is overwhelmed with missing home. Tears flow freely tonight.",
+      "difficulty_score": 2,
+      "effects": { "morale": -8 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": ["rain", "overcast"],
+      "probability_weight": 5
+    },
+    {
+      "id": "fever_outbreak",
+      "category": "health",
+      "name": "Fever Spreads",
+      "description": "Fever is spreading through the wagon train. Multiple people are affected.",
+      "difficulty_score": 6,
+      "effects": { "health_risk": 0.35, "morale": -10, "delay_days": 1 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 2
+    },
+    {
+      "id": "steep_descent",
+      "category": "navigation",
+      "name": "Dangerous Descent",
+      "description": "The trail drops steeply downhill. Wagons must be lowered with ropes.",
+      "difficulty_score": 5,
+      "effects": { "delay_days": 0.5, "morale": -5, "supply_loss_chance": 0.1 },
+      "terrain_types": ["mountains"],
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 4
+    },
+    {
+      "id": "grave_sighting",
+      "category": "social",
+      "name": "Trail Graves",
+      "description": "You pass a cluster of graves along the trail. A somber reminder of those who didn't make it.",
+      "difficulty_score": 1,
+      "effects": { "morale": -5 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 6
+    },
+    {
+      "id": "abandoned_wagon",
+      "category": "social",
+      "name": "Abandoned Wagon",
+      "description": "An empty wagon sits by the trail, its owners nowhere to be seen. What happened to them?",
+      "difficulty_score": 1,
+      "effects": { "morale": -3 },
+      "terrain_types": null,
+      "season_months": null,
+      "weather_triggers": null,
+      "probability_weight": 6,
+      "choices": [
+        { "id": "search", "text": "Search for useful supplies", "effects": { "food_gain": 15, "spare_parts_gain": 1 } },
+        { "id": "pray", "text": "Pray for the owners", "effects": { "morale": 5 }, "grace_delta": 3 },
+        { "id": "pass_by", "text": "Continue past", "effects": {} }
+      ]
+    }
+  ],
+
+  "positive_encounters": [
+    {
+      "id": "fellow_travelers_share",
+      "category": "social",
+      "name": "Kind Fellow Travelers",
+      "description": "A family from another wagon train shares food and good company.",
+      "difficulty_score": 0,
+      "effects": { "food_gain": 15, "morale": 8 },
+      "probability_weight": 4,
+      "grace_threshold": 40
+    },
+    {
+      "id": "beautiful_sunset",
+      "category": "environmental",
+      "name": "Glorious Sunset",
+      "description": "The sunset paints the sky in brilliant colors. The party stops to admire God's creation.",
+      "difficulty_score": 0,
+      "effects": { "morale": 8 },
+      "probability_weight": 5
+    },
+    {
+      "id": "good_hunting",
+      "category": "supply",
+      "name": "Abundant Game",
+      "description": "Game is plentiful here. The hunters return with a bounty.",
+      "difficulty_score": 0,
+      "effects": { "food_gain": 30, "morale": 5 },
+      "probability_weight": 3
+    },
+    {
+      "id": "helpful_native_guide",
+      "category": "human",
+      "name": "Native Guide Helps",
+      "description": "A friendly native shows your party a better route, saving time and effort.",
+      "difficulty_score": 0,
+      "effects": { "distance_bonus": 10, "morale": 10 },
+      "probability_weight": 2,
+      "grace_threshold": 50
+    },
+    {
+      "id": "wild_berries",
+      "category": "supply",
+      "name": "Wild Berries Found",
+      "description": "Ripe berries grow along the trail. A welcome treat for everyone.",
+      "difficulty_score": 0,
+      "effects": { "food_gain": 10, "morale": 5 },
+      "probability_weight": 5,
+      "terrain_types": ["hills", "mountains", "river"]
+    },
+    {
+      "id": "clear_spring",
+      "category": "supply",
+      "name": "Fresh Spring Water",
+      "description": "A crystal-clear spring provides the best water anyone has tasted in weeks.",
+      "difficulty_score": 0,
+      "effects": { "health_boost": true, "morale": 6 },
+      "probability_weight": 4
+    },
+    {
+      "id": "wagon_train_joins",
+      "category": "social",
+      "name": "Wagon Train Joins Up",
+      "description": "Another small wagon group joins your party for safety. Morale lifts with new company.",
+      "difficulty_score": 0,
+      "effects": { "morale": 12 },
+      "probability_weight": 2
+    },
+    {
+      "id": "child_laughter",
+      "category": "social",
+      "name": "Children Playing",
+      "description": "The children find a moment of joy, chasing each other and laughing. It lifts everyone's spirits.",
+      "difficulty_score": 0,
+      "effects": { "morale": 6 },
+      "probability_weight": 5
+    },
+    {
+      "id": "good_campsite",
+      "category": "environmental",
+      "name": "Perfect Campsite",
+      "description": "You find an ideal campsite with shelter, water, and good grass for the oxen.",
+      "difficulty_score": 0,
+      "effects": { "morale": 8, "health_boost": true },
+      "probability_weight": 3
+    },
+    {
+      "id": "fellow_traveler_sick",
+      "category": "cwm_opportunity",
+      "name": "Sick Traveler on the Trail",
+      "description": "A traveler from another wagon sits alone, clearly unwell. They look like they could use help.",
+      "difficulty_score": 0,
+      "effects": {},
+      "probability_weight": 3,
+      "choices": [
+        { "id": "help_them", "text": "Stop and help them", "effects": { "delay_days": 0.5, "medicine_cost": 1, "morale": 8 }, "grace_delta": 10 },
+        { "id": "share_food", "text": "Share some food and water", "effects": { "food_loss": 10, "morale": 5 }, "grace_delta": 7 },
+        { "id": "pass_by", "text": "We can't afford to stop", "effects": { "morale": -3 }, "grace_delta": -5 }
+      ]
+    },
+    {
+      "id": "share_with_struggling_family",
+      "category": "cwm_opportunity",
+      "name": "Struggling Family",
+      "description": "A family ahead of you on the trail is clearly running low on food. Their children look thin.",
+      "difficulty_score": 0,
+      "effects": {},
+      "probability_weight": 3,
+      "choices": [
+        { "id": "share_generously", "text": "Share a generous portion of food", "effects": { "food_loss": 30, "morale": 10 }, "grace_delta": 15 },
+        { "id": "share_small", "text": "Offer a small amount", "effects": { "food_loss": 10, "morale": 5 }, "grace_delta": 5 },
+        { "id": "keep_moving", "text": "Keep your supplies for your family", "effects": { "morale": -5 }, "grace_delta": -8 }
+      ]
+    },
+    {
+      "id": "found_lost_item",
+      "category": "cwm_opportunity",
+      "name": "Found Lost Belongings",
+      "description": "You find a bag of supplies that clearly fell from another wagon. Do you try to return it?",
+      "difficulty_score": 0,
+      "effects": {},
+      "probability_weight": 3,
+      "choices": [
+        { "id": "return_it", "text": "Track down the owner and return it", "effects": { "delay_days": 0.5, "morale": 8 }, "grace_delta": 10 },
+        { "id": "keep_it", "text": "Keep the supplies — finders keepers", "effects": { "food_gain": 20, "cash_gain": 10 }, "grace_delta": -10 },
+        { "id": "leave_visible", "text": "Leave it where they might find it", "effects": { "morale": 2 }, "grace_delta": 0 }
+      ]
+    }
+  ]
+}

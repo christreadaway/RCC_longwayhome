@@ -65,6 +65,26 @@ const initialState = {
   // Bison population (starts at 100%, depleted by overhunting)
   bisonPopulation: 100,
 
+  // Weather & Ground
+  currentWeather: null,
+  weatherLog: [],
+  recentWeather: [],  // Last 5 days for ground condition calculation
+
+  // Camp Activities & Trip Management
+  activityCooldowns: {},
+  activityLog: [],
+  daysStationary: 0,       // Consecutive days without travel (lingering danger)
+  totalDaysStationary: 0,  // Total across journey
+  daysRested: 0,
+  oxenChecked: false,      // Resets each day; reduces breakdown chance
+  wagonMaintained: false,  // Resets each day; reduces breakdown chance
+  illnessPreventionBonus: 0,  // From wash_up activity
+  spoilagePreventionBonus: 0, // From check_provisions activity
+
+  // Trail Dangers & Difficulty
+  dangerLog: [],
+  tripDifficultyPoints: 0,
+
   // Scoring
   score: 0,
   graceAdjustedScore: 0,
@@ -415,6 +435,74 @@ function gameReducer(state, action) {
 
     case 'TOGGLE_KNOWLEDGE_PANEL': {
       return { ...state, showKnowledgePanel: !state.showKnowledgePanel };
+    }
+
+    case 'SET_WEATHER': {
+      const newRecentWeather = [...state.recentWeather, action.weather].slice(-5);
+      return {
+        ...state,
+        currentWeather: action.weather,
+        weatherLog: [...state.weatherLog, action.weather],
+        recentWeather: newRecentWeather
+      };
+    }
+
+    case 'CAMP_ACTIVITY_PERFORMED': {
+      logger.info('CAMP_ACTIVITY', { id: action.activityId, timeCost: action.timeCost, day: state.trailDay });
+      return {
+        ...state,
+        activityCooldowns: {
+          ...state.activityCooldowns,
+          [action.activityId]: state.trailDay
+        },
+        activityLog: [...state.activityLog, {
+          id: action.activityId,
+          day: state.trailDay,
+          date: state.gameDate,
+          timeCost: action.timeCost
+        }],
+        // Apply specific flags from activity effects
+        oxenChecked: action.effects?.oxenChecked || state.oxenChecked,
+        wagonMaintained: action.effects?.breakdownPrevention ? true : state.wagonMaintained,
+        illnessPreventionBonus: action.effects?.illnessPrevention || state.illnessPreventionBonus,
+        spoilagePreventionBonus: action.effects?.spoilagePrevention || state.spoilagePreventionBonus
+      };
+    }
+
+    case 'INCREMENT_STATIONARY': {
+      return {
+        ...state,
+        daysStationary: state.daysStationary + 1,
+        totalDaysStationary: state.totalDaysStationary + 1,
+        daysRested: state.daysRested + 1
+      };
+    }
+
+    case 'RESET_STATIONARY': {
+      return { ...state, daysStationary: 0 };
+    }
+
+    case 'RESET_DAILY_BONUSES': {
+      return {
+        ...state,
+        oxenChecked: false,
+        wagonMaintained: false,
+        illnessPreventionBonus: 0,
+        spoilagePreventionBonus: 0
+      };
+    }
+
+    case 'LOG_DANGER': {
+      logger.info('DANGER_ENCOUNTERED', { id: action.danger.id, day: state.trailDay });
+      return {
+        ...state,
+        dangerLog: [...state.dangerLog, {
+          ...action.danger,
+          day: state.trailDay,
+          date: state.gameDate
+        }],
+        tripDifficultyPoints: state.tripDifficultyPoints + (action.danger.difficulty_score || 0)
+      };
     }
 
     case 'LOAD_STATE': {

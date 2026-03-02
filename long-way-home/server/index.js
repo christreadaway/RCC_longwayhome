@@ -21,6 +21,7 @@ const historianRoutes = require('./routes/historian');
 const npcRoutes = require('./routes/npc');
 const insightsRoutes = require('./routes/insights');
 const exportRoutes = require('./routes/export');
+const crashReportRoutes = require('./routes/crashReport');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -51,6 +52,7 @@ app.use('/api/historian', historianRoutes);
 app.use('/api/npc', npcRoutes);
 app.use('/api/insights', insightsRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/session', crashReportRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
