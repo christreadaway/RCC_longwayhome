@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES } from '@shared/types';
+import { GAME_CONSTANTS, PACE_MULTIPLIER, GRACE_DELTAS, GRACE_RANGES, PROFESSION_REPAIR, CHAPLAIN_COSTS, STORE_BOOKS, STORE_BIBLE } from '@shared/types';
 import { formatGameDate, isSunday, addDays, isAfter } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
+import { logCrash, trackAction } from '../../utils/crashLogger';
 import OregonTrailMap from './shared/OregonTrailMap';
 import TerrainScene from './shared/TerrainScene';
 import PartyStatus from './shared/PartyStatus';
@@ -10,6 +11,12 @@ import HistorianPanel from './shared/HistorianPanel';
 import KnowledgePanel from './shared/KnowledgePanel';
 import SundayRestPrompt from './shared/SundayRestPrompt';
 import HuntingMinigame from './shared/HuntingMinigame';
+import WeatherBox from './shared/WeatherBox';
+import CampActivitiesPanel from './shared/CampActivitiesPanel';
+
+// Game systems
+import { generateWeather, applyWeatherToTravel } from '../../game/weather';
+import trailDangersData from '../../data/trail-dangers.json';
 
 // Landmarks data (loaded dynamically based on grade band)
 import landmarksData from '../../data/landmarks.json';
@@ -142,10 +149,80 @@ export default function TravelScreen() {
       return;
     }
 
-    // Calculate distance traveled
+    // --- Generate weather for the day ---
+    const terrainType = currentLandmark?.terrain_type || 'plains';
+    const todayWeather = generateWeather(state.gameDate, terrainType, state.recentWeather || []);
+    dispatch({ type: 'SET_WEATHER', weather: todayWeather });
+
+    // Weather morale effect (applied each travel day)
+    if (todayWeather.moraleModifier && todayWeather.moraleModifier !== 0) {
+      // Only apply negative morale from weather; positive is just "no penalty"
+      if (todayWeather.moraleModifier < 0) {
+        dispatch({ type: 'UPDATE_MORALE', delta: Math.round(todayWeather.moraleModifier / 2) });
+      }
+    }
+
+    // --- Water dehydration check ---
+    const waterAfterToday = Math.max(0, state.waterGallons - (aliveCount * 2 + state.oxenYokes * 4));
+    if (waterAfterToday <= 0 && state.waterGallons > 0) {
+      // Just ran out of water
+      dayMessage = 'Your water barrels are empty! The party and oxen suffer from thirst.';
+      dispatch({ type: 'UPDATE_MORALE', delta: -8 });
+    } else if (state.waterGallons <= 0) {
+      // Already out of water — health degrades
+      const dehydrationVictim = aliveAfterStarvation[Math.floor(Math.random() * aliveAfterStarvation.length)];
+      if (dehydrationVictim && dehydrationVictim.health !== 'critical') {
+        const healthOrder = ['good', 'fair', 'poor', 'critical'];
+        const idx = healthOrder.indexOf(dehydrationVictim.health);
+        if (idx < 3) {
+          dispatch({ type: 'UPDATE_PARTY_HEALTH', updates: [{ name: dehydrationVictim.name, health: healthOrder[idx + 1] }] });
+          dayMessage = `${dehydrationVictim.name} is suffering from dehydration. You must find water soon.`;
+        }
+      }
+      dispatch({ type: 'UPDATE_MORALE', delta: -5 });
+    }
+
+    // Auto-refill water at river terrain (traveling along rivers was the norm)
+    if (terrainType === 'river' && state.waterGallons < 200) {
+      dispatch({ type: 'REFILL_WATER', capacity: 200 });
+    }
+
+    // --- Chaplain oxen strain (extra weight in the wagon) ---
+    if (state.chaplainInParty && Math.random() < CHAPLAIN_COSTS.oxenStrainChance) {
+      // Small chance the extra burden lames an ox
+      if (state.oxenYokes > 1) {
+        dispatch({ type: 'UPDATE_SUPPLIES', oxenYokes: state.oxenYokes - 1 });
+        dayMessage = dayMessage || 'One of the oxen has gone lame under the heavy load. You unyoke it and leave it to graze.';
+      }
+    }
+
+    // --- Calculate distance traveled (weather + ground + pace + oxen care) ---
     const baseMiles = GAME_CONSTANTS.BASE_DAILY_MILES;
     const paceMult = PACE_MULTIPLIER[state.pace] || 1.0;
-    const dailyMiles = Math.round(baseMiles * paceMult);
+    let rawMiles = Math.round(baseMiles * paceMult);
+
+    // Apply weather/ground modifier
+    rawMiles = applyWeatherToTravel(rawMiles, todayWeather);
+
+    // Oxen care bonus (well-tended oxen pull harder)
+    if (state.oxenChecked) rawMiles = Math.round(rawMiles * 1.05);
+
+    // Grace influence: high grace = slightly better fortune on the trail
+    if (state.grace >= 75) rawMiles = Math.round(rawMiles * 1.05);
+    else if (state.grace < 15) rawMiles = Math.round(rawMiles * 0.92);
+
+    // Trail guide travel bonus (better route knowledge)
+    if (state.hasTrailGuide) rawMiles = Math.round(rawMiles * (1 + STORE_BOOKS.trail_guide.effects.travelBonus));
+
+    // Dehydration slows travel
+    if (state.waterGallons <= 0) rawMiles = Math.round(rawMiles * 0.7);
+
+    const dailyMiles = Math.max(0, rawMiles);
+
+    // Reset daily bonuses at start of new travel day
+    dispatch({ type: 'RESET_DAILY_BONUSES' });
+    // Reset stationary counter since we're traveling
+    dispatch({ type: 'RESET_STATIONARY' });
 
     // Random event check — events fire more frequently for a challenging game
     const eventRoll = Math.random();
@@ -159,19 +236,118 @@ export default function TravelScreen() {
       }
     }
 
-    // Illness check — higher base rate, terrain and conditions matter more
+    // --- Trail danger check (from comprehensive dangers list) ---
+    const dangerRoll = Math.random();
+    let dangerChance = 0.08; // 8% base chance per day
+    // Lingering increases danger (bandits, theft)
+    if (state.daysStationary >= 2) dangerChance += 0.05 * state.daysStationary;
+    // Bad weather increases certain dangers
+    if (todayWeather.difficultyScore >= 5) dangerChance += 0.05;
+    // Low grace draws more hardship
+    if (state.grace < 15) dangerChance += 0.05;
+    else if (state.grace >= 75) dangerChance -= 0.03;
+    // Chaplain adds wagon fragility (extra weight)
+    if (state.chaplainInParty) dangerChance += CHAPLAIN_COSTS.wagonFragilityBonus;
+    // Trail guide helps avoid dangers (education pays off)
+    if (state.hasTrailGuide && Math.random() < STORE_BOOKS.trail_guide.effects.dangerAvoidance) {
+      dangerChance = 0; // Guide helped identify and avoid the danger
+    }
+
+    if (dangerRoll < dangerChance) {
+      const danger = selectTrailDanger(state, todayWeather, currentLandmark);
+      if (danger && !dayMessage) {
+        dispatch({ type: 'LOG_DANGER', danger });
+        dayMessage = danger.description;
+        // Apply danger effects
+        if (danger.effects?.morale) dispatch({ type: 'UPDATE_MORALE', delta: danger.effects.morale });
+        if (danger.effects?.food_loss) dispatch({ type: 'UPDATE_SUPPLIES', foodLbs: Math.max(0, state.foodLbs - danger.effects.food_loss) });
+        if (danger.effects?.cash_loss) dispatch({ type: 'UPDATE_SUPPLIES', cash: Math.max(0, state.cash - danger.effects.cash_loss) });
+        if (danger.effects?.oxen_lost) dispatch({ type: 'UPDATE_SUPPLIES', oxenYokes: Math.max(0, state.oxenYokes - danger.effects.oxen_lost) });
+        if (danger.effects?.clothing_loss) dispatch({ type: 'UPDATE_SUPPLIES', clothingSets: Math.max(0, state.clothingSets - danger.effects.clothing_loss) });
+
+        // Items (books, tools, Bible) can be lost in river crossings, theft, fire, storms
+        const itemLossCategories = ['river_crossing', 'theft', 'fire', 'storm', 'mechanical'];
+        if (itemLossCategories.includes(danger.category) || danger.id?.includes('river') || danger.id?.includes('thief') || danger.id?.includes('fire') || danger.id?.includes('storm')) {
+          const ownedItems = [];
+          if (state.hasBible) ownedItems.push('bible');
+          if (state.hasFarmersAlmanac) ownedItems.push('farmers_almanac');
+          if (state.hasTrailGuide) ownedItems.push('trail_guide');
+          if (state.hasToolSet) ownedItems.push('tool_set');
+          if (ownedItems.length > 0 && Math.random() < 0.12) {
+            const lostItem = ownedItems[Math.floor(Math.random() * ownedItems.length)];
+            dispatch({ type: 'LOSE_ITEM', item: lostItem, cause: danger.category || danger.id });
+            const itemNames = { bible: 'your Bible', farmers_almanac: "the Farmer's Almanac", trail_guide: 'the trail guide', tool_set: 'your tool set' };
+            const lossVerbs = danger.id?.includes('thief') || danger.category === 'theft'
+              ? 'was stolen' : danger.id?.includes('river') || danger.category === 'river_crossing'
+              ? 'was lost in the crossing' : 'was destroyed';
+            dayMessage += ` ${itemNames[lostItem]} ${lossVerbs}.`;
+          }
+        }
+
+        // If danger has choices, fire it as an event instead
+        if (danger.choices) {
+          dispatch({ type: 'SET_EVENT', event: { ...danger, type: danger.id, title: danger.name } });
+          return;
+        }
+      }
+    }
+
+    // --- Positive encounter check (grace-influenced fortune) ---
+    const goodRoll = Math.random();
+    let goodChance = 0.05;
+    if (state.grace >= 75) goodChance += 0.08; // High grace = more good fortune
+    else if (state.grace >= 40) goodChance += 0.02;
+
+    if (goodRoll < goodChance && !dayMessage) {
+      const encounter = selectPositiveEncounter(state, currentLandmark);
+      if (encounter) {
+        if (encounter.effects?.morale) dispatch({ type: 'UPDATE_MORALE', delta: encounter.effects.morale });
+        if (encounter.effects?.food_gain) dispatch({ type: 'UPDATE_SUPPLIES', foodLbs: state.foodLbs + encounter.effects.food_gain });
+        // Bible can be received as a gift from missionaries, chaplains, or kind strangers
+        if (encounter.effects?.bible_gift && !state.hasBible) {
+          dispatch({ type: 'LOAD_STATE', savedState: { hasBible: true } });
+          dayMessage = (encounter.description || '') + ' They also gave your family a Bible.';
+        }
+        if (encounter.effects?.health_boost) {
+          const healTarget = aliveAfterStarvation.find(m => m.health !== 'good');
+          if (healTarget) {
+            const order = ['dead', 'critical', 'poor', 'fair', 'good'];
+            const idx = order.indexOf(healTarget.health);
+            if (idx < 4) dispatch({ type: 'UPDATE_PARTY_HEALTH', updates: [{ name: healTarget.name, health: order[idx + 1] }] });
+          }
+        }
+        if (encounter.choices) {
+          dispatch({ type: 'SET_EVENT', event: { ...encounter, type: encounter.id, title: encounter.name } });
+          return;
+        }
+        dayMessage = encounter.description;
+        dispatch({ type: 'RESOLVE_EVENT', eventType: 'positive_encounter', outcome: encounter.name, description: encounter.description });
+      }
+    }
+
+    // Illness check — weather now affects illness rates
     const illnessRoll = Math.random();
-    let illnessChance = 0.06; // 6% base (was 3%)
+    let illnessChance = 0.06;
     if (state.pace === 'grueling') illnessChance += 0.08;
     if (state.pace === 'strenuous') illnessChance += 0.03;
     if (state.rations === 'bare_bones') illnessChance += 0.06;
     if (state.rations === 'meager') illnessChance += 0.02;
     if (state.pace === 'grueling' && state.rations === 'bare_bones') illnessChance += 0.15;
-    // Mountain and river terrain increase illness risk
+    // Terrain
     if (currentLandmark?.terrain_type === 'mountains') illnessChance += 0.04;
     if (currentLandmark?.terrain_type === 'river') illnessChance += 0.03;
-    // Late season increases risk (after October)
+    // Late season
     if (state.gameDate > '1848-10-01') illnessChance += 0.05;
+    // Weather effects on illness: wet/cold weather increases risk
+    if (todayWeather.condition === 'heavy_rain' || todayWeather.condition === 'blizzard') illnessChance += 0.06;
+    else if (todayWeather.condition === 'rain' || todayWeather.condition === 'snow') illnessChance += 0.03;
+    if (todayWeather.temperature?.current < 32) illnessChance += 0.04;
+    // Insufficient clothing in cold
+    if (todayWeather.temperature?.current < 40 && state.clothingSets < aliveAfterStarvation.length) illnessChance += 0.05;
+    // Hygiene/camp activity prevention bonus
+    if (state.illnessPreventionBonus) illnessChance -= state.illnessPreventionBonus;
+    // Farmer's Almanac reduces illness (folk remedies, herbal knowledge)
+    if (state.hasFarmersAlmanac) illnessChance -= STORE_BOOKS.farmers_almanac.effects.illnessReduction;
 
     if (illnessRoll < illnessChance && aliveAfterStarvation.length > 0) {
       const victim = aliveAfterStarvation[Math.floor(Math.random() * aliveAfterStarvation.length)];
@@ -280,6 +456,17 @@ export default function TravelScreen() {
         distanceToNext: landmarks[newIdx + 1] ? landmarks[newIdx + 1].distance_from_previous : 0,
         totalLandmarks: landmarks.length
       });
+      // Refill water at forts, missions, towns, and river landmarks
+      const lType = nextLandmark.type;
+      if (lType === 'fort' || lType === 'mission' || lType === 'town' || nextLandmark.terrain_type === 'river') {
+        dispatch({ type: 'REFILL_WATER', capacity: 200 });
+      }
+      // Missions may gift a Bible to travelers who don't have one
+      if (lType === 'mission' && !state.hasBible && Math.random() < 0.4) {
+        dispatch({ type: 'LOAD_STATE', savedState: { hasBible: true } });
+        setTravelMessage(`You have arrived at ${nextLandmark.name}! The missionaries there gifted your family a Bible.`);
+        return;
+      }
       setTravelMessage(`You have arrived at ${nextLandmark.name}!`);
       return;
     }
@@ -298,11 +485,20 @@ export default function TravelScreen() {
     }
 
     if (!dayMessage) {
-      dayMessage = getFlavorMessage(
-        currentLandmark?.terrain_type || 'plains',
-        state,
-        state.trailDay
-      );
+      // Use weather description as the flavor when nothing else happens
+      if (todayWeather.difficultyScore >= 3) {
+        dayMessage = todayWeather.description;
+      } else {
+        dayMessage = getFlavorMessage(
+          currentLandmark?.terrain_type || 'plains',
+          state,
+          state.trailDay
+        );
+        // Append weather note for informational color
+        if (todayWeather.conditionLabel && todayWeather.conditionLabel !== 'Fair' && todayWeather.conditionLabel !== 'Sunny') {
+          dayMessage += ` The weather: ${todayWeather.conditionLabel.toLowerCase()}, ${todayWeather.temperature?.current || '--'}\u00B0F.`;
+        }
+      }
     }
     setTravelMessage(dayMessage);
   }, [state, dispatch, nextLandmark, landmarks]);
@@ -311,8 +507,12 @@ export default function TravelScreen() {
     setShowSundayPrompt(false);
     dispatch({ type: 'SUNDAY_REST', rested });
     if (rested) {
-      dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.SUNDAY_REST, trigger: 'sunday_rest' });
-      dispatch({ type: 'UPDATE_MORALE', delta: 5 });
+      // Bible provides extra grace on Sunday rest (reading Scripture)
+      const sundayGrace = GRACE_DELTAS.SUNDAY_REST + (state.hasBible ? STORE_BIBLE.effects.sundayRestGraceBonus : 0);
+      dispatch({ type: 'UPDATE_GRACE', delta: sundayGrace, trigger: 'sunday_rest' });
+      // Bible provides extra morale on rest (comfort from Scripture)
+      const sundayMorale = 5 + (state.hasBible ? STORE_BIBLE.effects.restMoraleBonus : 0);
+      dispatch({ type: 'UPDATE_MORALE', delta: sundayMorale });
 
       const healthUpdates = state.partyMembers
         .filter(m => m.alive && m.health !== 'good')
@@ -353,6 +553,16 @@ export default function TravelScreen() {
       return;
     }
 
+    trackAction('rest');
+
+    // Track stationary days for lingering danger
+    dispatch({ type: 'INCREMENT_STATIONARY' });
+
+    // Generate weather for the rest day
+    const terrainType = currentLandmark?.terrain_type || 'plains';
+    const restWeather = generateWeather(state.gameDate, terrainType, state.recentWeather || []);
+    dispatch({ type: 'SET_WEATHER', weather: restWeather });
+
     setIsResting(true);
     const updates = state.partyMembers
       .filter(m => m.alive && m.health !== 'good')
@@ -364,8 +574,20 @@ export default function TravelScreen() {
     if (updates.length > 0) {
       dispatch({ type: 'UPDATE_PARTY_HEALTH', updates });
     }
+    // Bible provides comfort during rest
+    if (state.hasBible) {
+      dispatch({ type: 'UPDATE_MORALE', delta: Math.round(STORE_BIBLE.effects.restMoraleBonus / 2) });
+    }
     dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
-    setTravelMessage('Your party rested for a day. The sick are feeling a little better.');
+
+    // Lingering danger warning
+    const stationaryDays = (state.daysStationary || 0) + 1;
+    if (stationaryDays >= 3) {
+      setTravelMessage('Your party rested, but you have been in one place too long. Idle camps draw unwanted attention, and winter draws closer with every day lost.');
+    } else {
+      const bibleNote = state.hasBible ? ' Reading Scripture brings comfort to the weary.' : '';
+      setTravelMessage(`Your party rested for a day. The sick are feeling a little better.${bibleNote}`);
+    }
     setIsResting(false);
   }
 
@@ -479,6 +701,8 @@ export default function TravelScreen() {
             <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-trail-darkBrown">
               <span className="text-trail-brown">Food:</span>
               <span className={state.foodLbs < 50 ? 'text-red-600 font-bold' : ''}>{Math.round(state.foodLbs)} lbs</span>
+              <span className="text-trail-brown">Water:</span>
+              <span className={state.waterGallons < 30 ? 'text-red-600 font-bold' : state.waterGallons < 60 ? 'text-orange-600' : ''}>{Math.round(state.waterGallons)} gal</span>
               <span className="text-trail-brown">Oxen:</span>
               <span>{state.oxenYokes} yoke</span>
               <span className="text-trail-brown">Ammo:</span>
@@ -490,6 +714,11 @@ export default function TravelScreen() {
               <span className="text-trail-brown">Parts:</span>
               <span>{state.spareParts.wheels}W {state.spareParts.axles}A {state.spareParts.tongues}T</span>
             </div>
+          </div>
+
+          {/* Weather Box */}
+          <div className="flex-none px-2 py-1.5 border-b border-trail-tan/30">
+            <WeatherBox weather={state.currentWeather} />
           </div>
 
           {/* Travel Settings */}
@@ -520,13 +749,39 @@ export default function TravelScreen() {
             </div>
           </div>
 
-          {/* Warnings */}
+          {/* Camp Activities (for older grade bands) */}
+          {state.gradeBand !== 'k2' && (
+            <div className="flex-none px-2 py-1.5 border-b border-trail-tan/30">
+              <CampActivitiesPanel
+                onActivityComplete={(result) => {
+                  if (result.timeCost > 0) {
+                    dispatch({ type: 'INCREMENT_STATIONARY' });
+                    dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 });
+                  }
+                  setTravelMessage(result.message);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Warnings & Extras */}
           <div className="flex-1 px-3 py-2 overflow-y-auto">
             {state.foodLbs < 50 && state.foodLbs > 0 && (
-              <div className="text-[10px] text-orange-600 font-semibold mb-1">Low food!</div>
+              <div className="text-[10px] text-orange-600 font-semibold mb-1">Low provisions!</div>
             )}
             {state.foodLbs <= 0 && (
-              <div className="text-[10px] text-red-600 font-bold mb-1">No food! Starving!</div>
+              <div className="text-[10px] text-red-600 font-bold mb-1">No food! Your party is starving!</div>
+            )}
+            {state.waterGallons > 0 && state.waterGallons < 30 && (
+              <div className="text-[10px] text-orange-600 font-semibold mb-1">Water running low!</div>
+            )}
+            {state.waterGallons <= 0 && (
+              <div className="text-[10px] text-red-600 font-bold mb-1">No water! Find a river or fort!</div>
+            )}
+            {(state.daysStationary || 0) >= 3 && (
+              <div className="text-[10px] text-red-600 font-semibold mb-1">
+                Lingering too long! ({state.daysStationary} days idle)
+              </div>
             )}
             {state.sessionSettings?.historian_enabled && (
               <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })}
@@ -565,6 +820,9 @@ export default function TravelScreen() {
             {nextLandmark && (
               <div className="text-center text-[10px] text-trail-brown mt-0.5">
                 {Math.max(0, Math.round(state.distanceToNextLandmark))} miles to {nextLandmark.name}
+                {state.currentWeather && state.currentWeather.travelModifier < -0.1 && (
+                  <span className="text-orange-600 ml-1">(weather slowing travel)</span>
+                )}
               </div>
             )}
           </div>
@@ -595,7 +853,9 @@ export default function TravelScreen() {
                 <button
                   onClick={() => {
                     const criticalMember = state.partyMembers.find(m => m.alive && m.health === 'critical');
-                    dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER, trigger: 'prayer_crisis' });
+                    // Bible amplifies prayer grace (praying with Scripture)
+                    const prayerGrace = GRACE_DELTAS.PRAYER + (state.hasBible ? STORE_BIBLE.effects.prayerGraceBonus : 0);
+                    dispatch({ type: 'UPDATE_GRACE', delta: prayerGrace, trigger: 'prayer_crisis' });
                     dispatch({ type: 'UPDATE_MORALE', delta: 3 });
                     dispatch({ type: 'PRAY', memberName: criticalMember?.name });
                     if (state.chaplainInParty) {
@@ -649,4 +909,79 @@ function selectRandomEvent(state, eventsData) {
     if (roll <= 0) return event;
   }
   return validEvents[0];
+}
+
+/**
+ * Select a contextually appropriate trail danger based on terrain, weather,
+ * season, and whether the party has been lingering.
+ */
+function selectTrailDanger(state, weather, landmark) {
+  const month = parseInt(state.gameDate?.split('-')[1] || '6', 10);
+  const terrainType = landmark?.terrain_type || 'plains';
+  const ground = weather?.ground || 'firm';
+
+  const validDangers = trailDangersData.dangers.filter(d => {
+    // Terrain filter
+    if (d.terrain_types && !d.terrain_types.includes(terrainType)) return false;
+    // Season filter
+    if (d.season_months && !d.season_months.includes(month)) return false;
+    // Weather trigger filter
+    if (d.weather_triggers) {
+      const weatherMatch = d.weather_triggers.includes(weather?.condition) ||
+        d.weather_triggers.includes(ground);
+      if (!weatherMatch) return false;
+    }
+    // Wagon maintenance reduces breakdown chance
+    if (d.category === 'mechanical' && state.wagonMaintained && Math.random() < 0.5) return false;
+    // Trail guide helps with river crossings
+    if (d.id?.includes('river') && state.hasTrailGuide && Math.random() < 0.20) return false;
+    // Tool set reduces mechanical breakdown probability
+    if (d.category === 'mechanical' && state.hasToolSet && Math.random() < 0.3) return false;
+    return true;
+  });
+
+  if (validDangers.length === 0) return null;
+
+  // Boost lingering-related dangers if party has been idle
+  const adjustedDangers = validDangers.map(d => ({
+    ...d,
+    adjustedWeight: (d.probability_weight || 1) +
+      (d.lingering_boost && (state.daysStationary || 0) >= 2 ? 5 * state.daysStationary : 0)
+  }));
+
+  const totalWeight = adjustedDangers.reduce((sum, d) => sum + d.adjustedWeight, 0);
+  let roll = Math.random() * totalWeight;
+  for (const danger of adjustedDangers) {
+    roll -= danger.adjustedWeight;
+    if (roll <= 0) return danger;
+  }
+  return adjustedDangers[0];
+}
+
+/**
+ * Select a positive encounter, influenced by grace score.
+ * Higher grace = better luck, more help from fellow travelers.
+ */
+function selectPositiveEncounter(state, landmark) {
+  const terrainType = landmark?.terrain_type || 'plains';
+
+  const validEncounters = trailDangersData.positive_encounters.filter(e => {
+    if (e.terrain_types && !e.terrain_types.includes(terrainType)) return false;
+    // Trail guide lowers grace threshold for native encounters (better cultural understanding)
+    const effectiveThreshold = (e.grace_threshold && state.hasTrailGuide)
+      ? Math.round(e.grace_threshold * (1 - STORE_BOOKS.trail_guide.effects.nativeEncounterBonus))
+      : e.grace_threshold;
+    if (effectiveThreshold && state.grace < effectiveThreshold) return false;
+    return true;
+  });
+
+  if (validEncounters.length === 0) return null;
+
+  const totalWeight = validEncounters.reduce((sum, e) => sum + (e.probability_weight || 1), 0);
+  let roll = Math.random() * totalWeight;
+  for (const encounter of validEncounters) {
+    roll -= (encounter.probability_weight || 1);
+    if (roll <= 0) return encounter;
+  }
+  return validEncounters[0];
 }

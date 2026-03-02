@@ -13,7 +13,7 @@ export default function SetupScreen() {
   const [companions, setCompanions] = useState(
     isK2 ? ['', ''] : ['', '', '', '']
   );
-  const [profession, setProfession] = useState('farmer');
+  const [profession, setProfession] = useState('tradesman');
   const [includeChaplain, setIncludeChaplain] = useState(false);
   const [error, setError] = useState('');
 
@@ -70,7 +70,8 @@ export default function SetupScreen() {
         clothingSets: validCompanions.length + 1,
         ammoBoxes: 0,
         spareParts: { wheels: 0, axles: 0, tongues: 0 },
-        oxenYokes: 2
+        oxenYokes: 2,
+        waterGallons: 200
       });
       dispatch({ type: 'SET_PHASE', phase: 'TRAVELING' });
     } else {
@@ -113,9 +114,9 @@ export default function SetupScreen() {
             <label className="block text-sm font-semibold text-trail-darkBrown mb-1">Profession</label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: 'banker', label: 'Banker', desc: `$${PROFESSION_CASH.banker}` },
-                { id: 'carpenter', label: 'Carpenter', desc: `$${PROFESSION_CASH.carpenter}` },
-                { id: 'farmer', label: 'Farmer', desc: `$${PROFESSION_CASH.farmer}` }
+                { id: 'tradesman', label: 'Tradesman', cash: `$${PROFESSION_CASH.tradesman}`, difficulty: 'Easy', diffColor: 'text-green-700 bg-green-50', trait: 'Master of repairs, never loses time' },
+                { id: 'farmer', label: 'Farmer', cash: `$${PROFESSION_CASH.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced — can fix some things' },
+                { id: 'banker', label: 'Banker', cash: `$${PROFESSION_CASH.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills — repairs cost time and parts' }
               ].map(p => (
                 <button
                   key={p.id}
@@ -128,7 +129,9 @@ export default function SetupScreen() {
                   }`}
                 >
                   <div className="font-semibold">{p.label}</div>
-                  <div className="text-sm text-trail-brown">{p.desc}</div>
+                  <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-0.5 ${p.diffColor}`}>{p.difficulty}</div>
+                  <div className="text-sm font-bold text-trail-blue mt-1">{p.cash}</div>
+                  <div className="text-[10px] mt-0.5 text-trail-brown">{p.trait}</div>
                 </button>
               ))}
             </div>
@@ -169,7 +172,10 @@ export default function SetupScreen() {
                 <span className="font-semibold text-trail-darkBrown">Include a Trail Chaplain</span>
                 <p className="text-sm text-trail-brown mt-1">
                   Fr. Joseph, a Franciscan friar, will join your party. He provides morale support,
-                  unlocks prayer options, and can administer Last Rites if needed. He requires food and space in the wagon.
+                  unlocks prayer options, and can administer Last Rites if needed.
+                </p>
+                <p className="text-xs text-orange-700 mt-1">
+                  Cost: extra food and clothing, added weight strains your oxen and wagon.
                 </p>
               </div>
             </label>

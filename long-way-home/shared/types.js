@@ -1,7 +1,7 @@
 /**
  * @typedef {'k2' | '3_5' | '6_8'} GradeBand
  * @typedef {'SETUP' | 'SUPPLY_PURCHASE' | 'TRAVELING' | 'REST_POINT' | 'EVENT_RESOLUTION' | 'LANDMARK' | 'GAME_OVER'} GameState
- * @typedef {'banker' | 'carpenter' | 'farmer'} Profession
+ * @typedef {'banker' | 'farmer' | 'tradesman'} Profession
  * @typedef {'steady' | 'strenuous' | 'grueling'} Pace
  * @typedef {'filling' | 'meager' | 'bare_bones'} Rations
  * @typedef {'good' | 'fair' | 'poor' | 'critical' | 'dead'} HealthStatus
@@ -12,11 +12,15 @@
  * @typedef {'positive' | 'negative'} LabelValence
  */
 
-/** @type {Object<Profession, number>} */
+/**
+ * Profession starting cash — inversely correlated with skill.
+ * Difficulty tiers: Tradesman (Easy) > Farmer (Medium) > Banker (Hard)
+ * @type {Object<Profession, number>}
+ */
 export const PROFESSION_CASH = {
-  banker: 1600,
-  carpenter: 800,
-  farmer: 400
+  tradesman: 1200,
+  farmer: 900,
+  banker: 650
 };
 
 export const HEALTH_ORDER = ['good', 'fair', 'poor', 'critical', 'dead'];

@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { GAME_CONSTANTS, GRACE_DELTAS } from '@shared/types';
+import { GAME_CONSTANTS, GRACE_DELTAS, CHAPLAIN_COSTS, STORE_BIBLE } from '@shared/types';
 
 const GameContext = createContext(null);
 const GameDispatchContext = createContext(null);
@@ -28,6 +28,13 @@ const initialState = {
   ammoBoxes: 0,
   spareParts: { wheels: 0, axles: 0, tongues: 0 },
   oxenYokes: 0,
+  waterGallons: 0,
+
+  // Purchasable items (books & tools)
+  hasFarmersAlmanac: false,
+  hasTrailGuide: false,
+  hasToolSet: false,
+  hasBible: false,
 
   // Trail
   currentLandmarkIndex: 0,
@@ -64,6 +71,26 @@ const initialState = {
 
   // Bison population (starts at 100%, depleted by overhunting)
   bisonPopulation: 100,
+
+  // Weather & Ground
+  currentWeather: null,
+  weatherLog: [],
+  recentWeather: [],  // Last 5 days for ground condition calculation
+
+  // Camp Activities & Trip Management
+  activityCooldowns: {},
+  activityLog: [],
+  daysStationary: 0,       // Consecutive days without travel (lingering danger)
+  totalDaysStationary: 0,  // Total across journey
+  daysRested: 0,
+  oxenChecked: false,      // Resets each day; reduces breakdown chance
+  wagonMaintained: false,  // Resets each day; reduces breakdown chance
+  illnessPreventionBonus: 0,  // From wash_up activity
+  spoilagePreventionBonus: 0, // From check_provisions activity
+
+  // Trail Dangers & Difficulty
+  dangerLog: [],
+  tripDifficultyPoints: 0,
 
   // Scoring
   score: 0,
@@ -122,7 +149,12 @@ function gameReducer(state, action) {
         clothingSets: action.clothingSets,
         ammoBoxes: action.ammoBoxes,
         spareParts: action.spareParts,
-        oxenYokes: action.oxenYokes
+        oxenYokes: action.oxenYokes,
+        waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons,
+        hasFarmersAlmanac: action.hasFarmersAlmanac !== undefined ? action.hasFarmersAlmanac : state.hasFarmersAlmanac,
+        hasTrailGuide: action.hasTrailGuide !== undefined ? action.hasTrailGuide : state.hasTrailGuide,
+        hasToolSet: action.hasToolSet !== undefined ? action.hasToolSet : state.hasToolSet,
+        hasBible: action.hasBible !== undefined ? action.hasBible : state.hasBible
       };
     }
 
@@ -136,14 +168,34 @@ function gameReducer(state, action) {
 
     case 'ADVANCE_DAY': {
       const newDate = addDaysToDate(state.gameDate, 1);
-      const foodConsumed = getFoodConsumption(state.rations, state.partyMembers);
+      let foodConsumed = getFoodConsumption(state.rations, state.partyMembers);
+
+      // Chaplain costs extra food (a non-working mouth to feed)
+      if (state.chaplainInParty) {
+        foodConsumed += CHAPLAIN_COSTS.extraFoodPerDay;
+      }
+
       const newFood = Math.max(0, state.foodLbs - foodConsumed);
+
+      // Water consumption: ~2 gal per person + ~4 gal per yoke of oxen
+      const aliveCount = state.partyMembers.filter(m => m.alive).length;
+      const waterConsumed = (aliveCount * 2) + (state.oxenYokes * 4);
+      const newWater = Math.max(0, state.waterGallons - waterConsumed);
+
+      // Chaplain clothing wear: every N days, uses 1 extra clothing set
+      let newClothing = state.clothingSets;
+      const newTrailDay = state.trailDay + 1;
+      if (state.chaplainInParty && newTrailDay % CHAPLAIN_COSTS.clothingWearIntervalDays === 0 && newClothing > 0) {
+        newClothing -= 1;
+      }
 
       return {
         ...state,
         gameDate: newDate,
-        trailDay: state.trailDay + 1,
+        trailDay: newTrailDay,
         foodLbs: newFood,
+        waterGallons: newWater,
+        clothingSets: newClothing,
         distanceTraveled: state.distanceTraveled + (action.distanceTraveled || 0),
         distanceToNextLandmark: Math.max(0, state.distanceToNextLandmark - (action.distanceTraveled || 0))
       };
@@ -204,12 +256,22 @@ function gameReducer(state, action) {
     }
 
     case 'UPDATE_MORALE': {
+      // Bible provides a small morale floor (Scripture brings comfort)
+      const bibleFloor = state.hasBible ? STORE_BIBLE.effects.moraleFloor : 0;
       const chaplainFloor = state.chaplainInParty ? GAME_CONSTANTS.MORALE_CHAPLAIN_FLOOR : 0;
-      let newMorale = Math.max(chaplainFloor, Math.min(100, state.morale + action.delta));
+      const effectiveFloor = Math.max(chaplainFloor, bibleFloor);
+
+      // Bible mitigates morale loss from deaths
+      let adjustedDelta = action.delta;
+      if (action.delta < 0 && state.hasBible && action.trigger === 'death') {
+        adjustedDelta = Math.round(action.delta * (1 - STORE_BIBLE.effects.deathMoraleMitigation));
+      }
+
+      let newMorale = Math.max(effectiveFloor, Math.min(100, state.morale + adjustedDelta));
 
       // DEPLETED grace enforces a morale ceiling
       if (state.grace < 15) {
-        const depletedCeiling = state.chaplainInParty ? GAME_CONSTANTS.MORALE_CHAPLAIN_FLOOR : 0;
+        const depletedCeiling = Math.max(chaplainFloor, bibleFloor);
         newMorale = Math.min(newMorale, depletedCeiling);
       }
 
@@ -224,8 +286,30 @@ function gameReducer(state, action) {
         clothingSets: action.clothingSets !== undefined ? action.clothingSets : state.clothingSets,
         ammoBoxes: action.ammoBoxes !== undefined ? action.ammoBoxes : state.ammoBoxes,
         spareParts: action.spareParts || state.spareParts,
-        oxenYokes: action.oxenYokes !== undefined ? action.oxenYokes : state.oxenYokes
+        oxenYokes: action.oxenYokes !== undefined ? action.oxenYokes : state.oxenYokes,
+        waterGallons: action.waterGallons !== undefined ? action.waterGallons : state.waterGallons
       };
+    }
+
+    case 'REFILL_WATER': {
+      // Refill water at rivers, forts, or missions
+      const capacity = action.capacity || 200;
+      return {
+        ...state,
+        waterGallons: Math.min(capacity, state.waterGallons + (action.amount || capacity))
+      };
+    }
+
+    case 'LOSE_ITEM': {
+      // Items (books, tools, Bible) can be lost, destroyed, or stolen
+      const updates = {};
+      if (action.item === 'bible' && state.hasBible) updates.hasBible = false;
+      if (action.item === 'farmers_almanac' && state.hasFarmersAlmanac) updates.hasFarmersAlmanac = false;
+      if (action.item === 'trail_guide' && state.hasTrailGuide) updates.hasTrailGuide = false;
+      if (action.item === 'tool_set' && state.hasToolSet) updates.hasToolSet = false;
+      if (Object.keys(updates).length === 0) return state;
+      logger.warn('ITEM_LOST', { item: action.item, cause: action.cause, day: state.trailDay });
+      return { ...state, ...updates };
     }
 
     case 'SET_EVENT': {
@@ -415,6 +499,74 @@ function gameReducer(state, action) {
 
     case 'TOGGLE_KNOWLEDGE_PANEL': {
       return { ...state, showKnowledgePanel: !state.showKnowledgePanel };
+    }
+
+    case 'SET_WEATHER': {
+      const newRecentWeather = [...state.recentWeather, action.weather].slice(-5);
+      return {
+        ...state,
+        currentWeather: action.weather,
+        weatherLog: [...state.weatherLog, action.weather],
+        recentWeather: newRecentWeather
+      };
+    }
+
+    case 'CAMP_ACTIVITY_PERFORMED': {
+      logger.info('CAMP_ACTIVITY', { id: action.activityId, timeCost: action.timeCost, day: state.trailDay });
+      return {
+        ...state,
+        activityCooldowns: {
+          ...state.activityCooldowns,
+          [action.activityId]: state.trailDay
+        },
+        activityLog: [...state.activityLog, {
+          id: action.activityId,
+          day: state.trailDay,
+          date: state.gameDate,
+          timeCost: action.timeCost
+        }],
+        // Apply specific flags from activity effects
+        oxenChecked: action.effects?.oxenChecked || state.oxenChecked,
+        wagonMaintained: action.effects?.breakdownPrevention ? true : state.wagonMaintained,
+        illnessPreventionBonus: action.effects?.illnessPrevention || state.illnessPreventionBonus,
+        spoilagePreventionBonus: action.effects?.spoilagePrevention || state.spoilagePreventionBonus
+      };
+    }
+
+    case 'INCREMENT_STATIONARY': {
+      return {
+        ...state,
+        daysStationary: state.daysStationary + 1,
+        totalDaysStationary: state.totalDaysStationary + 1,
+        daysRested: state.daysRested + 1
+      };
+    }
+
+    case 'RESET_STATIONARY': {
+      return { ...state, daysStationary: 0 };
+    }
+
+    case 'RESET_DAILY_BONUSES': {
+      return {
+        ...state,
+        oxenChecked: false,
+        wagonMaintained: false,
+        illnessPreventionBonus: 0,
+        spoilagePreventionBonus: 0
+      };
+    }
+
+    case 'LOG_DANGER': {
+      logger.info('DANGER_ENCOUNTERED', { id: action.danger.id, day: state.trailDay });
+      return {
+        ...state,
+        dangerLog: [...state.dangerLog, {
+          ...action.danger,
+          day: state.trailDay,
+          date: state.gameDate
+        }],
+        tripDifficultyPoints: state.tripDifficultyPoints + (action.danger.difficulty_score || 0)
+      };
     }
 
     case 'LOAD_STATE': {
