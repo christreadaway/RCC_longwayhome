@@ -196,7 +196,9 @@ export default function EventScreen() {
 
     // CWM event handling
     if (event.is_cwm) {
-      const helped = choice.id === 'help' || choice.id === 'helped';
+      // Determine if the player chose the charitable option — CWM help choices
+      // have positive grace_change, decline choices have negative grace_change
+      const helped = choice.effects?.grace_change > 0 || choice.effects?.grace > 0;
       const isDeceptive = Math.random() < GAME_CONSTANTS.CWM_DECEPTIVE_PROBABILITY;
 
       dispatch({
