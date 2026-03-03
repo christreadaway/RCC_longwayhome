@@ -5,14 +5,15 @@ import { formatGameDate, isSunday, addDays, isAfter } from '../../utils/dateUtil
 import { logger } from '../../utils/logger';
 import { logCrash, trackAction } from '../../utils/crashLogger';
 import OregonTrailMap from './shared/OregonTrailMap';
-import TerrainScene from './shared/TerrainScene';
-import PartyStatus from './shared/PartyStatus';
 import HistorianPanel from './shared/HistorianPanel';
 import KnowledgePanel from './shared/KnowledgePanel';
 import SundayRestPrompt from './shared/SundayRestPrompt';
 import HuntingMinigame from './shared/HuntingMinigame';
-import WeatherBox from './shared/WeatherBox';
 import CampActivitiesPanel from './shared/CampActivitiesPanel';
+import TrailSceneCSS from './shared/TrailSceneCSS';
+import TrailProgressBar from './shared/TrailProgressBar';
+import CharacterFace from './shared/CharacterFace';
+import { useWindowWidth } from '../../hooks/useWindowWidth';
 
 // Game systems
 import { generateWeather, applyWeatherToTravel } from '../../game/weather';
@@ -24,29 +25,20 @@ import landmarksK2 from '../../data/landmarks-k2.json';
 import eventsData from '../../data/events.json';
 import { getFlavorMessage } from '../../data/trail-flavor';
 
-/** Return grace range label */
-function getGraceRange(grace) {
-  if (grace >= GRACE_RANGES.HIGH.min) return 'High';
-  if (grace >= GRACE_RANGES.MODERATE.min) return 'Moderate';
-  if (grace >= GRACE_RANGES.LOW.min) return 'Low';
-  return 'Depleted';
+/** Grace pip color */
+function getGracePipColor(grace) {
+  if (grace > 70) return 'var(--gold)';
+  if (grace > 40) return '#9aaa6a';
+  return 'var(--red)';
 }
 
-/** Grace bar color */
-function getGraceColor(grace) {
-  if (grace >= 75) return 'bg-yellow-400';
-  if (grace >= 40) return 'bg-yellow-600/60';
-  if (grace >= 15) return 'bg-orange-500';
-  return 'bg-red-600';
-}
-
-/** Health bar color */
-function getHealthColor(health) {
-  if (health === 'good') return 'bg-green-500';
-  if (health === 'fair') return 'bg-yellow-500';
-  if (health === 'poor') return 'bg-orange-500';
-  if (health === 'critical') return 'bg-red-600';
-  return 'bg-gray-400';
+/** Health bar hex color */
+function getHealthBarColor(health) {
+  if (health === 'good') return 'var(--green)';
+  if (health === 'fair') return 'var(--amber)';
+  if (health === 'poor') return 'var(--amber)';
+  if (health === 'critical') return 'var(--red)';
+  return '#888';
 }
 
 function getHealthPercent(health) {
@@ -54,28 +46,44 @@ function getHealthPercent(health) {
   return map[health] ?? 0;
 }
 
-/** Supply icons */
-const SI = {
-  food: '\uD83C\uDF56',
-  water: '\uD83D\uDCA7',
-  firewood: '\uD83E\uDEB5',
-  oxen: '\uD83D\uDC02',
-  ammo: '\uD83D\uDCA5',
-  clothing: '\uD83E\uDDE5',
-  cash: '\uD83D\uDCB0',
-  parts: '\u2699',
-  medicine: '\uD83D\uDC8A',
-};
+/** Weather emoji + label */
+function getWeatherDisplay(weather) {
+  if (!weather) return { icon: '\u2600\uFE0F', label: 'Sunny', temp: '--' };
+  const c = weather.condition || 'fair';
+  const temp = weather.temperature?.current ?? '--';
+  if (c.includes('blizzard') || c.includes('storm') || c === 'stormy') return { icon: '\u26C8\uFE0F', label: 'Stormy', temp };
+  if (c.includes('rain') || c === 'rainy') return { icon: '\uD83C\uDF27\uFE0F', label: 'Rainy', temp };
+  if (c.includes('snow')) return { icon: '\uD83C\uDF28\uFE0F', label: 'Snow', temp };
+  return { icon: '\u2600\uFE0F', label: 'Sunny', temp };
+}
+
+/** Determine narrative event type for panel border color */
+function classifyMessage(msg) {
+  if (!msg) return 'encounter';
+  const m = msg.toLowerCase();
+  if (m.includes('died') || m.includes('starvation') || m.includes('dehydration') || m.includes('critical') || m.includes('broken') || m.includes('stolen') || m.includes('destroyed') || m.includes('lame') || m.includes('illness') || m.includes('cholera') || m.includes('dysentery') || m.includes('typhoid')) return 'crisis';
+  if (m.includes('rested') || m.includes('found') || m.includes('refill') || m.includes('better') || m.includes('refreshed') || m.includes('hunted') || m.includes('collected') || m.includes('gifted') || m.includes('bible')) return 'blessing';
+  if (m.includes('arrived') || m.includes('pray') || m.includes('sacrament') || m.includes('last rites')) return 'moral';
+  return 'encounter';
+}
+
+const EVENT_BORDER = { crisis: 'var(--red)', blessing: 'var(--green)', encounter: 'var(--blue)', moral: 'var(--amber)' };
+const EVENT_BG = { crisis: 'rgba(185,64,64,0.05)', blessing: 'rgba(74,124,89,0.05)', encounter: 'rgba(74,104,144,0.05)', moral: 'rgba(194,135,58,0.05)' };
+
+const TONE_COLORS = { action: '#b94040', rest: '#4a7c59', moral: '#5a7aaa', faith: '#c2a84f' };
 
 export default function TravelScreen() {
   const state = useGameState();
   const dispatch = useGameDispatch();
+  const bp = useWindowWidth();
   const [showSundayPrompt, setShowSundayPrompt] = useState(false);
   const [showHunting, setShowHunting] = useState(false);
   const [isResting, setIsResting] = useState(false);
   const [travelMessage, setTravelMessage] = useState('');
   const [showFullMap, setShowFullMap] = useState(false);
   const [showActivities, setShowActivities] = useState(false);
+  const [isTraveling, setIsTraveling] = useState(false);
+  const [selectedChoice, setSelectedChoice] = useState(null);
   const travelTimerRef = useRef(null);
   const skipSundayCheckRef = useRef(false);
 
@@ -492,7 +500,12 @@ export default function TravelScreen() {
     }
   }
 
-  function handleContinueTravel() { setTravelMessage(''); travelOneDay(); }
+  function handleContinueTravel() {
+    setTravelMessage('');
+    setSelectedChoice(null);
+    setIsTraveling(true);
+    setTimeout(() => { setIsTraveling(false); travelOneDay(); }, 3500);
+  }
 
   function handleRest() {
     if (isAfter(state.gameDate, GAME_CONSTANTS.END_DATE)) { dispatch({ type: 'SET_STATUS', status: 'failed' }); dispatch({ type: 'SET_PHASE', phase: 'GAME_OVER' }); return; }
@@ -625,228 +638,428 @@ export default function TravelScreen() {
   // ════════════════════════════════════════════════════════════
   //  RENDER
   // ════════════════════════════════════════════════════════════
+
+  const isDesktop = bp === 'bp-desktop';
+  const isMobile = bp === 'bp-mobile';
+  const weatherDisplay = getWeatherDisplay(state.currentWeather);
+  const eventType = classifyMessage(travelMessage);
+  const faceSize = isMobile ? 40 : 48;
+
+  // Build choices
+  const choices = [];
+  choices.push({ id: 'continue', emoji: '\u25B6\uFE0F', label: 'Push Forward', sub: `${state.pace} pace \u2022 ~${Math.round(GAME_CONSTANTS.BASE_DAILY_MILES * (PACE_MULTIPLIER[state.pace] || 1))} mi/day`, tone: 'action', handler: handleContinueTravel, disabled: isTraveling });
+  choices.push({ id: 'rest', emoji: '\uD83D\uDECF\uFE0F', label: 'Rest for a Day', sub: 'Recover health, no miles traveled', tone: 'rest', handler: handleRest });
+  choices.push({ id: 'water', emoji: '\uD83D\uDCA7', label: 'Find Water', sub: `Current: ${Math.round(state.waterGallons)} gal`, tone: 'rest', handler: handleFindWater });
+  if (state.gradeBand !== 'k2' && state.ammoBoxes > 0) {
+    choices.push({ id: 'hunt', emoji: '\uD83C\uDFF9', label: 'Hunt for Food', sub: `${state.ammoBoxes} ammo boxes remaining`, tone: 'action', handler: () => setShowHunting(true) });
+  }
+  choices.push({ id: 'wood', emoji: '\uD83E\uDEB5', label: 'Gather Firewood', sub: `${state.firewoodBundles || 0} bundles in stock`, tone: 'rest', handler: handleGatherFirewood });
+  if (state.partyMembers.some(m => m.alive && m.health === 'critical') && state.prayerCooldownDay < state.trailDay) {
+    const cm = state.partyMembers.find(m => m.alive && m.health === 'critical');
+    choices.push({ id: 'pray', emoji: '\uD83D\uDE4F', label: 'Pray', sub: cm ? `Pray for ${cm.name}` : 'Offer prayers for the sick', tone: 'faith', handler: () => {
+      const critMember = state.partyMembers.find(m2 => m2.alive && m2.health === 'critical');
+      dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER + (state.hasBible ? STORE_BIBLE.effects.prayerGraceBonus : 0), trigger: 'prayer_crisis' });
+      dispatch({ type: 'UPDATE_MORALE', delta: 3 });
+      dispatch({ type: 'PRAY', memberName: critMember?.name });
+      setTravelMessage(state.chaplainInParty ? `Fr. Joseph leads prayer for ${critMember?.name}.` : `The party prays for ${critMember?.name}.`);
+    }});
+  }
+
+  // Resource items for the bar
+  const resources = [
+    { icon: '\uD83C\uDF3E', label: 'Food', value: `${Math.round(state.foodLbs)} lbs`, warn: state.foodLbs < 50 || state.foodLbs <= 0 },
+    { icon: '\uD83D\uDCB0', label: 'Cash', value: `$${state.cash.toFixed(0)}` },
+    { icon: '\uD83D\uDD2B', label: 'Ammo', value: `${state.ammoBoxes}`, warn: state.ammoBoxes <= 0 },
+    { icon: '\uD83D\uDD27', label: 'Spares', value: `${state.spareParts.wheels + state.spareParts.axles + state.spareParts.tongues}` },
+    { icon: '\uD83D\uDC8A', label: 'Medicine', value: `${state.medicineDoses || 0}`, warn: (state.medicineDoses || 0) < 2 },
+    { icon: '\uD83D\uDC02', label: 'Oxen', value: `${state.oxenYokes}`, warn: state.oxenYokes < 1 },
+  ];
+
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-trail-cream" style={{ fontFamily: "'Lora', Georgia, serif" }}>
+    <div className={`game-root ${bp}`}>
 
-      {/* ═══ TOP BAR ═══ */}
-      <div className="flex-none flex items-center justify-between px-4 py-1 bg-trail-darkBrown text-trail-cream" style={{ minHeight: '30px' }}>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-bold text-sm tracking-wide" style={{ fontVariant: 'small-caps' }}>The Long Way Home</span>
-          <span className="text-trail-tan/40">|</span>
-          <span>{formatGameDate(state.gameDate)}</span>
-          <span className="text-trail-tan/40">|</span>
-          <span>Day {state.trailDay}</span>
-          {contextHint && (<><span className="text-trail-tan/40">|</span><span className="text-orange-300 text-[10px]">{contextHint}</span></>)}
-        </div>
-        <div className="flex items-center gap-3">
-          {chaplainSkillInfo && <span className="text-[10px] text-trail-tan/60" title={chaplainSkillInfo.description}>Fr. Joseph: {chaplainSkillInfo.name}</span>}
-          <span className="text-[10px] text-trail-tan/60">Grace:</span>
-          <div className="flex items-center gap-1.5">
-            <div className="w-20 h-2 bg-trail-brown/50 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-500 ${getGraceColor(state.grace)}`} style={{ width: `${state.grace}%` }} />
-            </div>
-            <span className={`text-[11px] font-semibold ${state.grace >= 75 ? 'text-yellow-300' : state.grace >= 40 ? 'text-trail-tan' : state.grace >= 15 ? 'text-orange-400' : 'text-red-400'}`}>{state.grace}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ MAIN: Scene (2/3) + Info Panel (1/3) ═══ */}
-      <div className="flex-none flex" style={{ height: '38vh', minHeight: '200px', maxHeight: '300px' }}>
-        {/* Terrain Scene */}
-        <div className="relative" style={{ width: '66.666%' }}>
-          <TerrainScene terrainType={terrainType} landmarkName={currentLandmark?.name} weather={state.currentWeather} partyMembers={state.partyMembers} />
-          {/* Mini-map overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-1.5">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowFullMap(true)}>
-              <div className="flex-1 flex items-center gap-1">
-                {upcomingLandmarks.map((lm, i) => {
-                  const isCur = lm.index === state.currentLandmarkIndex;
-                  return (<div key={lm.id || i} className="flex items-center">
-                    {i > 0 && <div className="w-8 h-0.5 bg-white/30 mx-0.5" />}
-                    <div className="flex flex-col items-center">
-                      <div className={`rounded-full ${isCur ? 'w-2.5 h-2.5 bg-trail-gold border border-white' : 'w-1.5 h-1.5 bg-white/50'}`} />
-                      <span className={`text-[8px] mt-0.5 whitespace-nowrap ${isCur ? 'text-white font-bold' : 'text-white/50'}`}>{lm.name?.split(' ').slice(0, 2).join(' ')}</span>
-                    </div>
-                  </div>);
-                })}
-                <div className="w-6 h-0.5 bg-white/20 mx-0.5" /><span className="text-[8px] text-white/30">...</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-16 h-1 bg-white/20 rounded-full overflow-hidden"><div className="h-full bg-trail-gold/80 rounded-full" style={{ width: `${progressPercent}%` }} /></div>
-                <span className="text-[8px] text-white/50">{Math.round(progressPercent)}%</span>
-              </div>
-              <span className="text-[8px] text-white/40 hover:text-white/70">Map \u2192</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Weather + Daily Log */}
-        <div className="flex flex-col border-l border-trail-tan/30 bg-trail-parchment/30" style={{ width: '33.334%' }}>
-          <div className="flex-none px-3 py-1.5 border-b border-trail-tan/20">
-            <WeatherBox weather={state.currentWeather} compact={true} />
-          </div>
-          <div className="flex-1 px-3 py-1.5 overflow-hidden">
-            <h3 className="text-[10px] font-bold text-trail-darkBrown uppercase tracking-wider mb-1" style={{ fontVariant: 'small-caps' }}>Daily Log</h3>
-            <div className="space-y-0.5 text-[11px]">
-              <div className="flex justify-between"><span className="text-trail-brown">Miles yesterday:</span><span className="font-semibold text-trail-darkBrown">{state.lastDayMiles || 0} mi</span></div>
-              <div className="flex justify-between"><span className="text-trail-brown">Total:</span><span className="text-trail-darkBrown">{Math.round(state.distanceTraveled)} / {totalDistance} mi</span></div>
-              {nextLandmark && <div className="flex justify-between"><span className="text-trail-brown">Next stop:</span><span className={`font-semibold ${state.distanceToNextLandmark < 30 ? 'text-green-700' : 'text-trail-darkBrown'}`}>{Math.max(0, Math.round(state.distanceToNextLandmark))} mi</span></div>}
-              <div className="flex justify-between"><span className="text-trail-brown">Pace:</span><span className="text-trail-darkBrown capitalize">{state.pace}</span></div>
-            </div>
-            {/* Inline warnings */}
-            <div className="mt-1 space-y-0.5">
-              {state.foodLbs <= 0 && <div className="text-[10px] text-red-600 font-bold">\u26A0 No food!</div>}
-              {state.foodLbs > 0 && state.foodLbs < 50 && <div className="text-[10px] text-orange-600">\u26A0 Low food</div>}
-              {state.waterGallons <= 0 && <div className="text-[10px] text-red-600 font-bold">\u26A0 Out of water!</div>}
-              {state.waterGallons > 0 && state.waterGallons < 20 && <div className="text-[10px] text-orange-600">\u26A0 Low water</div>}
-              {needsFirewood && (state.firewoodBundles || 0) < 2 && <div className="text-[10px] text-orange-600">\u26A0 Low firewood</div>}
-              {noFire && <div className="text-[10px] text-red-600">\u26A0 No fire last night</div>}
-              {(state.daysStationary || 0) >= 3 && <div className="text-[10px] text-red-600">\u26A0 {state.daysStationary}d idle</div>}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ NARRATIVE ═══ */}
-      {travelMessage && (
-        <div className="flex-none px-4 py-1.5 bg-trail-parchment/60 border-y border-trail-tan/30">
-          <p className="text-center text-[13px] text-trail-darkBrown italic leading-snug">&ldquo;{travelMessage}&rdquo;</p>
-        </div>
-      )}
-
-      {/* ═══ BOTTOM DASHBOARD ═══ */}
-      <div className="flex-1 flex min-h-0 border-t border-trail-tan/20">
-        {/* COL 1: Actions */}
-        <div className="flex flex-col gap-1 px-2.5 py-2 border-r border-trail-tan/20" style={{ width: '130px', flexShrink: 0 }}>
-          <h3 className="text-[9px] font-bold text-trail-darkBrown uppercase tracking-widest mb-0.5" style={{ fontVariant: 'small-caps' }}>Actions</h3>
-          <button onClick={handleContinueTravel} className="w-full text-left text-[11px] py-1.5 px-2 bg-trail-brown text-white rounded font-semibold hover:bg-trail-darkBrown transition-colors">{'\u25B6'} Continue</button>
-          <button onClick={handleRest} className="w-full text-left text-[11px] py-1 px-2 bg-trail-parchment border border-trail-tan/50 rounded text-trail-darkBrown hover:bg-trail-tan/30 transition-colors">{SI.food.charAt(0) === '\uD83C' ? '\uD83D\uDECF' : '\uD83D\uDECF'} Rest</button>
-          <button onClick={handleFindWater} className="w-full text-left text-[11px] py-1 px-2 bg-trail-parchment border border-trail-tan/50 rounded text-trail-darkBrown hover:bg-trail-tan/30 transition-colors">{SI.water} Water</button>
-          {state.gradeBand !== 'k2' && state.ammoBoxes > 0 && <button onClick={() => setShowHunting(true)} className="w-full text-left text-[11px] py-1 px-2 bg-trail-parchment border border-trail-tan/50 rounded text-trail-darkBrown hover:bg-trail-tan/30 transition-colors">{'\uD83C\uDFF9'} Hunt</button>}
-          <button onClick={handleGatherFirewood} className="w-full text-left text-[11px] py-1 px-2 bg-trail-parchment border border-trail-tan/50 rounded text-trail-darkBrown hover:bg-trail-tan/30 transition-colors">{SI.firewood} Wood</button>
-          {state.partyMembers.some(m => m.alive && m.health === 'critical') && state.prayerCooldownDay < state.trailDay && (
-            <button onClick={() => {
-              const cm = state.partyMembers.find(m => m.alive && m.health === 'critical');
-              dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER + (state.hasBible ? STORE_BIBLE.effects.prayerGraceBonus : 0), trigger: 'prayer_crisis' });
-              dispatch({ type: 'UPDATE_MORALE', delta: 3 });
-              dispatch({ type: 'PRAY', memberName: cm?.name });
-              setTravelMessage(state.chaplainInParty ? `Fr. Joseph leads prayer for ${cm?.name}.` : `The party prays for ${cm?.name}.`);
-            }} className="w-full text-left text-[11px] py-1 px-2 bg-trail-gold/20 border border-trail-gold/50 rounded text-trail-darkBrown hover:bg-trail-gold/30 transition-colors">{'\uD83D\uDE4F'} Pray</button>
-          )}
-          {state.gradeBand !== 'k2' && <button onClick={() => setShowActivities(!showActivities)} className="w-full text-left text-[10px] py-1 px-2 bg-trail-tan/15 border border-trail-tan/30 rounded text-trail-brown hover:bg-trail-tan/30 transition-colors mt-auto">{showActivities ? '\u25BC' : '\u25B6'} Activities</button>}
-          {state.sessionSettings?.historian_enabled && <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })} className="w-full text-left text-[10px] py-1 px-2 bg-trail-tan/15 border border-trail-tan/30 rounded text-trail-brown hover:bg-trail-tan/30 transition-colors">{'\uD83D\uDCD6'} Journal</button>}
-        </div>
-
-        {/* COL 2: Travel Plan + Activities */}
-        <div className="flex flex-col px-2.5 py-2 border-r border-trail-tan/20" style={{ width: '155px', flexShrink: 0 }}>
-          <h3 className="text-[9px] font-bold text-trail-darkBrown uppercase tracking-widest mb-1" style={{ fontVariant: 'small-caps' }}>Travel Plan</h3>
-          <div className="space-y-1">
-            {[
-              { label: 'Pace', value: state.pace, action: 'SET_PACE', key: 'pace', opts: [['steady','Steady'],['strenuous','Strenuous'],['grueling','Grueling']] },
-              { label: 'Rations', value: state.rations, action: 'SET_RATIONS', key: 'rations', opts: [['filling','Filling'],['meager','Meager'],['bare_bones','Bare Bones']] },
-              { label: 'Water', value: state.waterRations, action: 'SET_WATER_RATIONS', key: 'waterRations', opts: [['full','Full'],['moderate','Moderate'],['minimal','Minimal']] },
-              { label: 'Sleep', value: state.sleepSchedule, action: 'SET_SLEEP_SCHEDULE', key: 'sleepSchedule', opts: [['short','Short'],['normal','Normal'],['long','Long']] },
-            ].map(s => (
-              <div key={s.key} className="flex items-center gap-1.5">
-                <label className="text-[10px] text-trail-brown w-10">{s.label}:</label>
-                <select value={s.value} onChange={e => dispatch({ type: s.action, [s.key]: e.target.value })} className="flex-1 text-[10px] px-1 py-0.5 border border-trail-tan/50 rounded bg-white">
-                  {s.opts.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </div>
-            ))}
-          </div>
-          {showActivities && state.gradeBand !== 'k2' && (
-            <div className="mt-2 flex-1 min-h-0">
-              <CampActivitiesPanel onActivityComplete={r => { if (r.timeCost > 0) { dispatch({ type: 'INCREMENT_STATIONARY' }); dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 }); } setTravelMessage(r.message); setShowActivities(false); }} />
-            </div>
+      {/* ═══ HEADER BAR ═══ */}
+      <header style={{
+        height: 'var(--hdr-h)', flexShrink: 0,
+        background: 'var(--hdr)', borderBottom: '2px solid var(--amber-dk)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 14px', color: 'var(--parchment)',
+      }}>
+        {/* Left — Title */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0 }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--gold)', fontSize: 'clamp(13px, 1.8vw, 18px)', whiteSpace: 'nowrap' }}>
+            The Long Way Home
+          </span>
+          {!isMobile && (
+            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(245,234,216,0.48)' }}>
+              Oregon Trail, 1848
+            </span>
           )}
         </div>
 
-        {/* COL 3: Supplies */}
-        <div className="flex flex-col px-2.5 py-2 border-r border-trail-tan/20" style={{ width: '155px', flexShrink: 0 }}>
-          <h3 className="text-[9px] font-bold text-trail-darkBrown uppercase tracking-widest mb-1" style={{ fontVariant: 'small-caps' }}>Supplies</h3>
-          <div className="space-y-0.5">
-            {[
-              { icon: SI.food, label: 'Food', value: `${Math.round(state.foodLbs)} lbs`, warn: state.foodLbs < 50, crit: state.foodLbs <= 0 },
-              { icon: SI.water, label: 'Water', value: `${Math.round(state.waterGallons)} gal`, warn: state.waterGallons < 50, crit: state.waterGallons <= 0 },
-              { icon: SI.firewood, label: 'Wood', value: `${state.firewoodBundles || 0} bndl`, warn: needsFirewood && (state.firewoodBundles || 0) < 2 },
-              { icon: SI.oxen, label: 'Oxen', value: `${state.oxenYokes} yoke`, crit: state.oxenYokes < 1 },
-              { icon: SI.ammo, label: 'Ammo', value: `${state.ammoBoxes} box` },
-              { icon: SI.clothing, label: 'Clothes', value: `${state.clothingSets} sets` },
-              { icon: SI.medicine, label: 'Meds', value: `${state.medicineDoses || 0} doses`, warn: (state.medicineDoses || 0) < 2 },
-              { icon: SI.cash, label: 'Cash', value: `$${state.cash.toFixed(0)}` },
-              { icon: SI.parts, label: 'Parts', value: `${state.spareParts.wheels}W ${state.spareParts.axles}A ${state.spareParts.tongues}T` },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <span className="text-[12px] w-4 text-center">{item.icon}</span>
-                <span className="text-[10px] text-trail-brown w-9 truncate">{item.label}</span>
-                <span className={`text-[10px] font-medium flex-1 text-right ${item.crit ? 'text-red-600 font-bold' : item.warn ? 'text-orange-600 font-semibold' : 'text-trail-darkBrown'}`}>{item.value}</span>
-              </div>
-            ))}
-          </div>
+        {/* Center — Chips + Weather */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <Chip>\uD83D\uDCC5 {formatGameDate(state.gameDate)}</Chip>
+          {!isMobile && <Chip>Day {state.trailDay}</Chip>}
+          {isDesktop && <Chip style={{ textTransform: 'capitalize' }}>{state.pace} Pace</Chip>}
+          <Chip>
+            <span style={{ fontSize: '14px' }}>{weatherDisplay.icon}</span>
+            <span>{weatherDisplay.label} {weatherDisplay.temp}\u00B0F</span>
+          </Chip>
         </div>
 
-        {/* COL 4: Party */}
-        <div className="flex-1 flex flex-col px-2.5 py-2 min-w-0 overflow-hidden">
-          <h3 className="text-[9px] font-bold text-trail-darkBrown uppercase tracking-widest mb-1" style={{ fontVariant: 'small-caps' }}>Your Family</h3>
-          <div className="space-y-1.5">
-            {state.partyMembers.map(m => {
-              const morale = m.morale ?? 70;
-              const canTalk = m.alive && (m.lastTalkedDay || 0) < state.trailDay;
-              const needsTalk = m.alive && (morale < 50 || m.health === 'poor' || m.health === 'critical');
-              const canMed = m.alive && m.health !== 'good' && (state.medicineDoses || 0) > 0;
+        {/* Right — Grace Meter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <span style={{ fontSize: '16px' }}>{'\u271D'}</span>
+          {!isMobile && <span style={{ fontSize: '10px', color: 'rgba(245,234,216,0.6)' }}>Grace</span>}
+          <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+            {Array.from({ length: isMobile ? 5 : 10 }, (_, i) => {
+              const threshold = isMobile ? (i + 1) * 20 : (i + 1) * 10;
+              const filled = state.grace >= threshold;
               return (
-                <div key={m.name} className={!m.alive ? 'opacity-30' : ''}>
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className={`text-[11px] font-medium truncate ${!m.alive ? 'line-through text-gray-400' : 'text-trail-darkBrown'}`}>
-                      {m.name}{m.isChaplain && <span className="text-trail-gold ml-0.5">{'\u2020'}</span>}
-                    </span>
-                    {m.alive && m.age && <span className="text-[8px] text-trail-brown/50">{m.gender === 'female' ? 'F' : 'M'},{m.age}</span>}
-                    <span className="flex-1" />
-                    {needsTalk && canTalk && <button onClick={() => handleTalkToMember(m)} className="text-[8px] px-1.5 py-0.5 bg-trail-tan/30 border border-trail-tan/50 rounded text-trail-brown hover:bg-trail-tan/50">Talk</button>}
-                    {canMed && <button onClick={() => handleUseMedicine(m.name)} className="text-[8px] px-1.5 py-0.5 bg-green-50 border border-green-300 rounded text-green-700 hover:bg-green-100">{SI.medicine}</button>}
-                  </div>
-                  {m.alive && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 flex-1">
-                        <span className="text-[8px] text-trail-brown w-5">HP</span>
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-300 ${getHealthColor(m.health)}`} style={{ width: `${getHealthPercent(m.health)}%` }} /></div>
-                        <span className={`text-[8px] w-9 text-right font-medium ${m.health === 'good' ? 'text-green-600' : m.health === 'fair' ? 'text-yellow-600' : m.health === 'poor' ? 'text-orange-600' : 'text-red-600'}`}>{m.health}</span>
-                      </div>
-                      <div className="flex items-center gap-1 flex-1">
-                        <span className="text-[8px] w-3">{morale >= 75 ? '\uD83D\uDE0A' : morale >= 50 ? '\uD83D\uDE10' : morale >= 25 ? '\uD83D\uDE1F' : '\uD83D\uDE22'}</span>
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-300 ${morale >= 75 ? 'bg-green-500' : morale >= 50 ? 'bg-yellow-500' : morale >= 25 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${morale}%` }} /></div>
-                        <span className={`text-[8px] w-6 text-right ${morale >= 75 ? 'text-green-600' : morale >= 50 ? 'text-yellow-600' : morale >= 25 ? 'text-orange-600' : 'text-red-600'}`}>{morale}%</span>
-                      </div>
-                    </div>
-                  )}
-                  {!m.alive && <span className="text-[9px] text-gray-400 italic">deceased{m.causeOfDeath ? ` \u2014 ${m.causeOfDeath}` : ''}</span>}
-                  {m.illness && m.alive && <span className="text-[9px] text-red-600 italic">{m.illness}</span>}
-                </div>
+                <div key={i} style={{
+                  width: '12px', height: '6px', borderRadius: '2px',
+                  background: filled ? getGracePipColor(state.grace) : 'rgba(255,255,255,0.12)',
+                  transition: 'background 0.3s',
+                }} />
               );
             })}
           </div>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: getGracePipColor(state.grace), minWidth: '18px', textAlign: 'right' }}>
+            {state.grace}
+          </span>
         </div>
+      </header>
 
-        {/* Historian overlay */}
-        {state.showHistorian && <div className="w-72 flex-none border-l-2 border-trail-tan/40 bg-trail-parchment/20 overflow-hidden"><HistorianPanel /></div>}
+      {/* ═══ RESOURCE BAR ═══ */}
+      <div style={{
+        height: 'var(--res-h)', flexShrink: 0,
+        background: 'var(--parch-dark)', borderBottom: '1px solid var(--border)',
+        display: 'flex',
+      }}>
+        {resources.map((r, i) => (
+          <div key={i} style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+            borderRight: i < resources.length - 1 ? '1px solid var(--border)' : 'none',
+            padding: '0 4px', overflow: 'hidden',
+          }}>
+            <span style={{ fontSize: '14px', flexShrink: 0 }}>{r.icon}</span>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ fontSize: 'clamp(11px, 1.2vw, 13px)', fontWeight: 700, color: r.warn ? 'var(--red)' : 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {r.value}
+              </div>
+              <div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--ink-lt)', opacity: 0.6, whiteSpace: 'nowrap' }}>
+                {r.label}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* ═══ FULL MAP MODAL ═══ */}
+      {/* ═══ MAIN CONTENT: Scene + Panel ═══ */}
+      <div style={{
+        flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden',
+        flexDirection: isDesktop ? 'row' : 'column',
+      }}>
+
+        {/* SCENE COLUMN */}
+        <div style={{
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          ...(isDesktop
+            ? { width: '44%', flexShrink: 0 }
+            : { height: isMobile ? '30%' : '38%', flexShrink: 0 }),
+        }}>
+          {/* Trail Scene */}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} onClick={() => setShowFullMap(true)}>
+            <TrailSceneCSS weather={state.currentWeather} isTraveling={isTraveling} />
+          </div>
+          {/* Trail Progress Bar */}
+          <TrailProgressBar
+            landmarks={landmarks}
+            currentIndex={state.currentLandmarkIndex}
+            distanceTraveled={state.distanceTraveled}
+            distanceToNext={state.distanceToNextLandmark}
+            bp={bp}
+          />
+        </div>
+
+        {/* PANEL COLUMN */}
+        <div style={{
+          flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          borderLeft: isDesktop ? '1px solid var(--border)' : 'none',
+          borderTop: !isDesktop ? '1px solid var(--border)' : 'none',
+        }}>
+
+          {/* Event Panel (flex: 3) */}
+          <div style={{
+            flex: 3, minHeight: 0, overflow: 'hidden',
+            borderLeft: `4px solid ${EVENT_BORDER[eventType]}`,
+            background: EVENT_BG[eventType],
+            padding: '10px 14px',
+            display: 'flex', flexDirection: 'column', gap: '4px',
+          }}>
+            <span className="eyebrow">{'\u26A1'} What Just Happened</span>
+            <h2 style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: 'clamp(15px, 1.8vw, 19px)', color: 'var(--ink)',
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              margin: 0,
+            }}>
+              {travelMessage ? travelMessage.split('.')[0] : 'The trail awaits\u2026'}
+            </h2>
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: 'clamp(12px, 1.3vw, 14px)',
+              lineHeight: 1.5, color: 'var(--ink-lt)',
+              display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              margin: 0,
+            }}>
+              {travelMessage || 'Choose an action below to continue your journey west.'}
+            </p>
+            {travelMessage && (
+              <span style={{
+                alignSelf: 'flex-start', borderRadius: '20px', padding: '2px 10px',
+                background: EVENT_BORDER[eventType], color: 'white',
+                fontSize: '11px', fontWeight: 600,
+                fontFamily: 'var(--font-body)',
+              }}>
+                {eventType === 'crisis' ? 'Hardship' : eventType === 'blessing' ? 'Blessing' : eventType === 'moral' ? 'Grace' : 'Journey'}
+              </span>
+            )}
+          </div>
+
+          {/* Party Section (flex-shrink: 0) */}
+          <div style={{ flexShrink: 0, padding: '6px 14px 0', overflow: 'hidden' }}>
+            <span className="eyebrow">{'\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66'} Your Party</span>
+            <div style={{
+              display: 'grid', gap: '5px', marginTop: '5px',
+              gridTemplateColumns: isDesktop ? '1fr 1fr' : `repeat(${Math.min(4, state.partyMembers.length)}, 1fr)`,
+            }}>
+              {state.partyMembers.map(m => {
+                const morale = m.morale ?? 70;
+                const hPct = getHealthPercent(m.health);
+                const isDead = !m.alive || m.health === 'dead';
+                const isSick = m.health === 'poor' || m.illness;
+                const isCritical = m.health === 'critical';
+                const canMed = m.alive && m.health !== 'good' && (state.medicineDoses || 0) > 0;
+                return (
+                  <div key={m.name} style={{
+                    background: 'rgba(255,252,245,0.85)',
+                    border: `1px solid ${isCritical ? 'var(--red)' : isSick ? 'var(--amber)' : 'var(--border)'}`,
+                    borderRadius: '7px', padding: '6px 8px',
+                    opacity: isDead ? 0.45 : 1, filter: isDead ? 'grayscale(0.8)' : 'none',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    cursor: m.alive ? 'pointer' : 'default',
+                  }}
+                    onClick={() => m.alive && (m.lastTalkedDay || 0) < state.trailDay && handleTalkToMember(m)}
+                  >
+                    <CharacterFace member={m} size={faceSize} />
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                      <div style={{
+                        fontSize: 'clamp(12px, 1.2vw, 14px)', fontWeight: 700, color: 'var(--ink)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {m.name}{m.isChaplain ? ' \u2020' : ''}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--ink-lt)', opacity: 0.55 }}>
+                        {m.isChaplain ? 'Chaplain' : m.isPlayer ? 'Leader' : m.gender === 'female' ? 'Woman' : 'Man'}
+                        {m.illness && m.alive ? ` \u2022 ${m.illness}` : ''}
+                      </div>
+                      {m.alive && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <div style={{ flex: 1, height: '4px', background: 'rgba(0,0,0,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{
+                              height: '100%', borderRadius: '2px', transition: 'width 0.4s',
+                              width: `${hPct}%`, background: getHealthBarColor(m.health),
+                            }} />
+                          </div>
+                          <span style={{
+                            fontSize: '10px', fontWeight: 600,
+                            color: getHealthBarColor(m.health), whiteSpace: 'nowrap',
+                          }}>
+                            {isDead ? 'Dead' : m.health.charAt(0).toUpperCase() + m.health.slice(1)}
+                          </span>
+                          {canMed && (
+                            <button onClick={e => { e.stopPropagation(); handleUseMedicine(m.name); }} style={{
+                              fontSize: '10px', padding: '1px 4px', borderRadius: '4px',
+                              background: 'rgba(74,124,89,0.1)', border: '1px solid var(--green)',
+                              color: 'var(--green)', cursor: 'pointer', lineHeight: 1,
+                            }}>
+                              {'\uD83D\uDC8A'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {isDead && <span style={{ fontSize: '10px', color: '#888', fontStyle: 'italic' }}>Deceased{m.causeOfDeath ? ` \u2014 ${m.causeOfDeath}` : ''}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Choices Section (flex: 4) */}
+          <div style={{
+            flex: 4, minHeight: 0, display: 'flex', flexDirection: 'column',
+            padding: '0 14px 10px', borderTop: '1px solid var(--border)',
+            overflow: 'hidden',
+          }}>
+            <div style={{ padding: '6px 0 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="eyebrow">{'\uD83E\uDDED'} What will you do?</span>
+              {selectedChoice && (
+                <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--amber-dk)' }}>
+                  \u2192 {selectedChoice}
+                </span>
+              )}
+              {/* Travel plan controls (compact) */}
+              {state.gradeBand !== 'k2' && (
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <select value={state.pace} onChange={e => dispatch({ type: 'SET_PACE', pace: e.target.value })}
+                    style={{ fontSize: '10px', padding: '1px 4px', border: '1px solid var(--border)', borderRadius: '4px', background: 'white', fontFamily: 'var(--font-body)' }}>
+                    <option value="steady">Steady</option>
+                    <option value="strenuous">Strenuous</option>
+                    <option value="grueling">Grueling</option>
+                  </select>
+                  <select value={state.rations} onChange={e => dispatch({ type: 'SET_RATIONS', rations: e.target.value })}
+                    style={{ fontSize: '10px', padding: '1px 4px', border: '1px solid var(--border)', borderRadius: '4px', background: 'white', fontFamily: 'var(--font-body)' }}>
+                    <option value="filling">Filling</option>
+                    <option value="meager">Meager</option>
+                    <option value="bare_bones">Bare Bones</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Choice Buttons */}
+            <div style={{
+              flex: 1, minHeight: 0, display: 'flex',
+              flexDirection: (isMobile || !isDesktop) ? 'row' : 'column',
+              flexWrap: (isMobile || !isDesktop) ? 'wrap' : 'nowrap',
+              gap: '5px',
+            }}>
+              {choices.map(c => {
+                const isSelected = selectedChoice === c.label;
+                const accent = TONE_COLORS[c.tone] || TONE_COLORS.action;
+                return (
+                  <button key={c.id} onClick={() => { setSelectedChoice(c.label); c.handler(); }}
+                    disabled={c.disabled}
+                    style={{
+                      flex: (isMobile || !isDesktop) ? '1 1 calc(50% - 3px)' : 1,
+                      minHeight: 0,
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '6px 10px', borderRadius: '7px', cursor: c.disabled ? 'wait' : 'pointer',
+                      border: `1.5px solid ${isSelected ? accent : 'rgba(120,80,40,0.22)'}`,
+                      background: isSelected ? `${accent}14` : 'rgba(255,250,242,0.9)',
+                      boxShadow: isSelected ? `0 0 0 2px ${accent}28` : 'none',
+                      transform: isSelected ? 'translateX(3px)' : 'none',
+                      transition: 'all 0.12s ease',
+                      textAlign: 'left', fontFamily: 'var(--font-body)',
+                      opacity: c.disabled ? 0.5 : 1,
+                    }}
+                  >
+                    <span style={{ fontSize: 'clamp(18px, 2vw, 22px)', flexShrink: 0 }}>{c.emoji}</span>
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                      <div style={{
+                        fontSize: 'clamp(13px, 1.4vw, 16px)', fontWeight: 700, color: 'var(--ink)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {c.label}
+                      </div>
+                      {isDesktop && c.sub && (
+                        <div style={{
+                          fontSize: 'clamp(10px, 1vw, 12px)', color: 'var(--ink-lt)', opacity: 0.75,
+                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                        }}>
+                          {c.sub}
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '20px', color: accent, flexShrink: 0 }}>{'\u203A'}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Secondary actions row */}
+            <div style={{ flexShrink: 0, display: 'flex', gap: '6px', marginTop: '4px', justifyContent: 'flex-end' }}>
+              {state.gradeBand !== 'k2' && (
+                <button onClick={() => setShowActivities(!showActivities)} style={{
+                  fontSize: '10px', padding: '3px 8px', borderRadius: '4px',
+                  border: '1px solid var(--border)', background: 'rgba(255,250,242,0.8)',
+                  color: 'var(--ink-lt)', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                }}>
+                  {'\u2699\uFE0F'} Activities
+                </button>
+              )}
+              {state.sessionSettings?.historian_enabled && (
+                <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })} style={{
+                  fontSize: '10px', padding: '3px 8px', borderRadius: '4px',
+                  border: '1px solid var(--border)', background: 'rgba(255,250,242,0.8)',
+                  color: 'var(--ink-lt)', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                }}>
+                  {'\uD83D\uDCD6'} Journal
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ MODALS / OVERLAYS ═══ */}
+
+      {/* Activities overlay */}
+      {showActivities && state.gradeBand !== 'k2' && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40" onClick={() => setShowActivities(false)}>
+          <div className="w-[400px] max-h-[70vh] overflow-auto bg-white rounded-lg shadow-2xl border-2 border-trail-tan p-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-game-ink">Camp Activities</h3>
+              <button onClick={() => setShowActivities(false)} className="text-lg px-2">{'\u00D7'}</button>
+            </div>
+            <CampActivitiesPanel onActivityComplete={r => { if (r.timeCost > 0) { dispatch({ type: 'INCREMENT_STATIONARY' }); dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 }); } setTravelMessage(r.message); setShowActivities(false); }} />
+          </div>
+        </div>
+      )}
+
+      {/* Full Map Modal */}
       {showFullMap && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowFullMap(false)}>
-          <div className="w-[90vw] h-[80vh] bg-trail-cream rounded-lg shadow-2xl border-2 border-trail-brown overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-2 bg-trail-darkBrown text-trail-cream">
-              <span className="text-sm font-serif tracking-wide">Oregon Trail \u2014 1848</span>
-              <button onClick={() => setShowFullMap(false)} className="text-trail-cream/80 hover:text-white text-lg px-2">{'\u00D7'}</button>
+          <div className="w-[90vw] h-[80vh] bg-white rounded-lg shadow-2xl border-2 overflow-hidden" style={{ borderColor: 'var(--amber)' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-2" style={{ background: 'var(--hdr)', color: 'var(--parchment)' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 500 }}>Oregon Trail \u2014 1848</span>
+              <button onClick={() => setShowFullMap(false)} className="hover:text-white text-lg px-2" style={{ color: 'rgba(245,234,216,0.8)' }}>{'\u00D7'}</button>
             </div>
             <div className="h-[calc(100%-2.5rem)]"><OregonTrailMap landmarks={landmarks} currentIndex={state.currentLandmarkIndex} distanceToNext={state.distanceToNextLandmark} /></div>
           </div>
         </div>
       )}
 
+      {/* Historian overlay */}
+      {state.showHistorian && (
+        <div className="fixed inset-0 z-40 flex items-end justify-end">
+          <div className="w-80 h-full bg-white border-l-2 shadow-2xl overflow-hidden" style={{ borderColor: 'var(--amber)' }}>
+            <HistorianPanel />
+          </div>
+        </div>
+      )}
+
       {showSundayPrompt && <SundayRestPrompt onChoice={handleSundayChoice} gameDate={state.gameDate} gradeBand={state.gradeBand} />}
     </div>
+  );
+}
+
+/** Header chip pill */
+function Chip({ children, style = {} }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '4px',
+      borderRadius: '20px', padding: '3px 10px',
+      background: 'rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.12)',
+      fontSize: '11px', color: 'rgba(245,234,216,0.85)',
+      whiteSpace: 'nowrap', fontFamily: 'var(--font-body)',
+      ...style,
+    }}>
+      {children}
+    </span>
   );
 }
 
