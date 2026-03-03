@@ -24,11 +24,11 @@
   --font-body:    'Crimson Pro', Georgia, serif;
 }
 
-/* ═══ No-scroll structural rules ═══ */
+/* ═══ Structural rules ═══ */
 html, body, #root {
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
   margin: 0;
   padding: 0;
 }
