@@ -26,6 +26,7 @@ import {
   RATIONS_CONSUMPTION,
   GAME_CONSTANTS,
   GRACE_DELTAS,
+  getAgeModifiers,
 } from '@shared/types';
 
 import { getFeatureFlags } from './gradeband.js';
@@ -415,6 +416,12 @@ export function processTravel(gameState, featureFlags) {
   const baseMiles = GAME_CONSTANTS.BASE_DAILY_MILES;
   const paceMult = PACE_MULTIPLIER[state.pace] || 1.0;
 
+  // Party moves at the pace of its slowest living member
+  const livingMembers = (state.party || []).filter(m => m.health !== 'dead');
+  const slowestAgePace = livingMembers.length > 0
+    ? Math.min(...livingMembers.map(m => getAgeModifiers(m.age).paceMultiplier))
+    : 1.0;
+
   // Each leg represents multiple days of travel
   const daysPerLeg = 5;
 
@@ -439,7 +446,7 @@ export function processTravel(gameState, featureFlags) {
 
     // Calculate daily distance (reduced on Sundays if resting)
     const isSunday = checkSundayRest(state.game_date);
-    const dailyMiles = isSunday && featureFlags.sundayRest ? 0 : Math.floor(baseMiles * paceMult);
+    const dailyMiles = isSunday && featureFlags.sundayRest ? 0 : Math.floor(baseMiles * paceMult * slowestAgePace);
     distanceTraveled += dailyMiles;
 
     // Grueling pace has illness penalty
@@ -757,7 +764,12 @@ function advanceDate(state) {
 function consumeFood(state) {
   const livingMembers = state.party.filter((m) => m.health !== 'dead');
   const rationsPerPerson = RATIONS_CONSUMPTION[state.rations] || 2;
-  const totalConsumed = livingMembers.length * rationsPerPerson;
+  // Children eat less, elders eat less — age-based food multiplier
+  let totalConsumed = 0;
+  for (const m of livingMembers) {
+    const ageMods = getAgeModifiers(m.age);
+    totalConsumed += rationsPerPerson * ageMods.foodMultiplier;
+  }
 
   const currentFood = state.supplies?.food || 0;
   const newFood = Math.max(0, currentFood - totalConsumed);
@@ -822,7 +834,8 @@ function processIllnessChecks(state, graceEffects) {
       state.pace,
       state.rations,
       state.terrain || 'plains',
-      graceEffects
+      graceEffects,
+      member.age
     );
 
     if (rollProbability(illnessChance)) {
