@@ -287,11 +287,11 @@ export default function SetupScreen() {
                   <div className="mt-2 p-2 bg-trail-cream rounded border border-trail-tan/50">
                     <div className="text-sm text-trail-darkBrown">
                       <span className="font-semibold">Fr. Joseph</span>
-                      <span className="text-trail-brown ml-1">\u2014 Age {chaplainDetails.age}</span>
+                      <span className="text-trail-brown ml-1">{'\u2014'} Age {chaplainDetails.age}</span>
                     </div>
                     <div className="text-sm mt-1">
                       <span className="font-semibold text-trail-blue">Skill: {chaplainSkill.name}</span>
-                      <span className="text-trail-brown ml-1">\u2014 {chaplainSkill.description}</span>
+                      <span className="text-trail-brown ml-1">{'\u2014'} {chaplainSkill.description}</span>
                     </div>
                   </div>
                 )}

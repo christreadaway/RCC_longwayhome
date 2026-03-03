@@ -699,7 +699,7 @@ export default function TravelScreen() {
 
         {/* Center — Chips + Weather */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-          <Chip>\uD83D\uDCC5 {formatGameDate(state.gameDate)}</Chip>
+          <Chip>{'\uD83D\uDCC5'} {formatGameDate(state.gameDate)}</Chip>
           {!isMobile && <Chip>Day {state.trailDay}</Chip>}
           {isDesktop && <Chip style={{ textTransform: 'capitalize' }}>{state.pace} Pace</Chip>}
           <Chip>
@@ -1024,7 +1024,7 @@ export default function TravelScreen() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowFullMap(false)}>
           <div className="w-[90vw] h-[80vh] bg-white rounded-lg shadow-2xl border-2 overflow-hidden" style={{ borderColor: 'var(--amber)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-2" style={{ background: 'var(--hdr)', color: 'var(--parchment)' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 500 }}>Oregon Trail \u2014 1848</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 500 }}>Oregon Trail {'\u2014'} 1848</span>
               <button onClick={() => setShowFullMap(false)} className="hover:text-white text-lg px-2" style={{ color: 'rgba(245,234,216,0.8)' }}>{'\u00D7'}</button>
             </div>
             <div className="h-[calc(100%-2.5rem)]"><OregonTrailMap landmarks={landmarks} currentIndex={state.currentLandmarkIndex} distanceToNext={state.distanceToNextLandmark} /></div>
