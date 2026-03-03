@@ -62,20 +62,33 @@ export default function TerrainScene({ terrainType, landmarkName, weather, party
         <path d="M-20,255 Q100,248 200,252 Q350,258 500,250 Q650,244 820,248" stroke="url(#dirtTrail)" strokeWidth="14" fill="none" strokeLinecap="round" />
         <path d="M-20,255 Q100,248 200,252 Q350,258 500,250 Q650,244 820,248" stroke="#8a7050" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.3" strokeDasharray="4,8" />
 
-        {/* Walking family members */}
+        {/* Walking family members — sized and styled by age group */}
         {alive.slice(0, 4).map((m, i) => {
           const bx = 418 + i * 20;
           const by = 238;
-          const isChild = m.age && m.age < 13;
           const isFemale = m.gender === 'female';
-          const sc = isChild ? 0.7 : 1;
-          const dur = `${0.55 + i * 0.08}s`;
+          const age = m.age || 25;
+          const isChild = age < 13;
+          const isTeen = age >= 13 && age < 18;
+          const isElder = age >= 55;
+          const sc = isChild ? 0.7 : isTeen ? 0.88 : isElder ? 0.95 : 1;
+          // Teens bounce faster (more energy), elders walk slower
+          const dur = isElder ? `${0.75 + i * 0.08}s` : isTeen ? `${0.42 + i * 0.06}s` : `${0.55 + i * 0.08}s`;
+          // Age-appropriate clothing colors
+          const bodyColor = isFemale
+            ? (isChild ? '#B89ACB' : isTeen ? '#A07DB8' : isElder ? '#7A6080' : '#8B6D9B')
+            : (isChild ? '#8BA0B5' : isTeen ? '#5A7A9D' : isElder ? '#6A7078' : '#6B7A8D');
+          const hairColor = isElder ? '#B0A898' : isFemale ? '#C4946B' : '#5C4033';
           return (
             <g key={m.name} transform={`translate(${bx}, ${by}) scale(${sc})`}>
               <animateTransform attributeName="transform" type="translate" values={`${bx},${by};${bx},${by - 1.5};${bx},${by}`} dur={dur} repeatCount="indefinite" additive="sum" />
-              <rect x="-2" y="-10" width="4" height="8" rx="1" fill={isFemale ? '#8B6D9B' : '#6B7A8D'} />
+              <rect x="-2" y="-10" width="4" height="8" rx="1" fill={bodyColor} />
               <circle cx="0" cy="-13" r="3" fill="#D4A574" />
-              {isFemale ? <ellipse cx="0" cy="-15" rx="3.5" ry="1.5" fill="#C4946B" /> : <rect x="-3" y="-16" width="6" height="2" rx="0.5" fill="#5C4033" />}
+              {isFemale
+                ? <ellipse cx="0" cy="-15" rx="3.5" ry="1.5" fill={hairColor} />
+                : <rect x="-3" y="-16" width="6" height="2" rx="0.5" fill={hairColor} />}
+              {/* Elder: walking stick */}
+              {isElder && <line x1="4" y1="-8" x2="5" y2="4" stroke="#8B7355" strokeWidth="1" />}
               <line x1="-1" y1="-2" x2="-2.5" y2="3" stroke="#5C4033" strokeWidth="1.5">
                 <animate attributeName="x2" values="-2.5;0.5;-2.5" dur={dur} repeatCount="indefinite" />
               </line>

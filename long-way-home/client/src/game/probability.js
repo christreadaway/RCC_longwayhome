@@ -17,6 +17,7 @@ import {
   RATIONS_CONSUMPTION,
   GAME_CONSTANTS,
   HEALTH_ORDER,
+  getAgeModifiers,
 } from '@shared/types';
 
 // ---------------------------------------------------------------------------
@@ -68,9 +69,10 @@ const TERRAIN_ILLNESS_MODIFIER = {
  * @param {import('../../../shared/types.js').Rations} rations
  * @param {string} terrain - Terrain type from landmarks data
  * @param {{ illnessModifier: number }} graceEffects - From grace.getGraceEffects()
+ * @param {number} [memberAge] - Age of the party member (children/elders more vulnerable)
  * @returns {number} Probability between 0 and 1
  */
-export function calculateIllnessProbability(pace, rations, terrain, graceEffects) {
+export function calculateIllnessProbability(pace, rations, terrain, graceEffects, memberAge) {
   let probability = BASE_ILLNESS_PROBABILITY;
 
   // Pace modifier — grueling wears people down
@@ -92,8 +94,11 @@ export function calculateIllnessProbability(pace, rations, terrain, graceEffects
   // Grace effects modifier
   probability += (graceEffects.illnessModifier || 0);
 
-  // Prayer reduction (applied globally via grace effects)
-  // Additional reduction from PRAYER_ILLNESS_REDUCTION is already in graceEffects
+  // Age modifier — children and elders are more vulnerable
+  if (memberAge != null) {
+    const ageMods = getAgeModifiers(memberAge);
+    probability += ageMods.illnessBonus;
+  }
 
   return clamp(probability, 0, 0.9);
 }
@@ -161,7 +166,7 @@ export function calculateEventProbability(eventType, gameState, graceEffects) {
  * Determines whether a party member at critical health dies on this day.
  * Only called for members already at 'critical' health status.
  *
- * @param {{ health: string, daysAtCritical: number }} member - Party member data
+ * @param {{ health: string, daysAtCritical: number, age: number }} member - Party member data
  * @param {import('../../../shared/types.js').Rations} rations - Current ration setting
  * @returns {boolean} true if the member dies
  */
@@ -180,6 +185,12 @@ export function calculateDeathCheck(member, rations) {
   // Each day at critical increases the risk
   const daysAtCritical = member.daysAtCritical || 0;
   probability += daysAtCritical * 0.04;
+
+  // Age modifier — children and elders more fragile at critical health
+  if (member.age != null) {
+    const ageMods = getAgeModifiers(member.age);
+    probability += ageMods.deathBonus;
+  }
 
   return rollProbability(clamp(probability, 0, 0.7));
 }

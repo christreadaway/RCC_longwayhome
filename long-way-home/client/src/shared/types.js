@@ -284,6 +284,31 @@ export const MEDICINE_CONFIG = {
   illnessCureChance: 0.4,
 };
 
+/**
+ * Age-based gameplay modifiers.
+ * Children can't do much, teens have energy, elders are slower but wiser.
+ * getAgeModifiers(age) returns the modifier set for a given age.
+ */
+export const AGE_MODIFIERS = {
+  child:  { illnessBonus: 0.04, deathBonus: 0.02, foodMultiplier: 0.6, canHunt: false, canRepair: false, moraleBonus: 2, paceMultiplier: 0.85, label: 'Child' },
+  teen:   { illnessBonus: -0.02, deathBonus: -0.01, foodMultiplier: 0.9, canHunt: true, canRepair: true, moraleBonus: 3, paceMultiplier: 1.05, label: 'Teen' },
+  adult:  { illnessBonus: 0, deathBonus: 0, foodMultiplier: 1.0, canHunt: true, canRepair: true, moraleBonus: 0, paceMultiplier: 1.0, label: 'Adult' },
+  elder:  { illnessBonus: 0.05, deathBonus: 0.03, foodMultiplier: 0.8, canHunt: true, canRepair: true, moraleBonus: 1, paceMultiplier: 0.9, label: 'Elder' },
+};
+
+/** Returns age group key for a given numeric age */
+export function getAgeGroup(age) {
+  if (!age || age < 13) return 'child';
+  if (age < 18) return 'teen';
+  if (age < 55) return 'adult';
+  return 'elder';
+}
+
+/** Returns the modifier object for a given numeric age */
+export function getAgeModifiers(age) {
+  return AGE_MODIFIERS[getAgeGroup(age)];
+}
+
 export const GAME_CONSTANTS = {
   MAX_PARTY_SIZE: 5,
   MAX_OXEN: 9,

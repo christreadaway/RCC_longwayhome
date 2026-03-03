@@ -5,8 +5,8 @@ import { PROFESSION_CASH, PROFESSION_CASH_BY_GRADE, K2_DEFAULT_PROFESSION, K2_ST
 const AGE_OPTIONS = [
   { label: 'Child (6-12)', min: 6, max: 12 },
   { label: 'Teen (13-17)', min: 13, max: 17 },
-  { label: 'Adult (18-45)', min: 18, max: 45 },
-  { label: 'Elder (46-65)', min: 46, max: 65 },
+  { label: 'Adult (18-54)', min: 18, max: 54 },
+  { label: 'Elder (55-65)', min: 55, max: 65 },
 ];
 
 function randomAgeInRange(range) {
@@ -141,10 +141,10 @@ export default function SetupScreen() {
     <div className="min-h-screen bg-gradient-to-b from-trail-cream to-trail-parchment flex items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="card max-w-2xl w-full space-y-5">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-trail-darkBrown">
+          <h1 className="text-4xl font-bold text-trail-darkBrown">
             {isK2 ? 'Start Your Journey!' : 'Prepare for the Trail'}
           </h1>
-          <p className="text-trail-brown mt-1">
+          <p className="text-lg text-trail-brown mt-1">
             {isK2
               ? 'Who are you traveling with?'
               : 'Independence, Missouri \u2014 April 1, 1848'}
@@ -154,7 +154,7 @@ export default function SetupScreen() {
         {/* Player name + demographics */}
         <div className="grid grid-cols-[1fr_auto_auto] gap-3 items-end">
           <div>
-            <label className="block text-sm font-semibold text-trail-darkBrown mb-1">
+            <label className="block text-base font-semibold text-trail-darkBrown mb-1">
               {isK2 ? 'What is your name?' : 'Your Name'}
             </label>
             <input
@@ -167,11 +167,11 @@ export default function SetupScreen() {
             />
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-trail-darkBrown mb-1 uppercase tracking-wider">Gender</label>
+            <label className="block text-xs font-semibold text-trail-darkBrown mb-1 uppercase tracking-wider">Gender</label>
             <div className="flex gap-1">
               {['male', 'female'].map(g => (
                 <button key={g} type="button" onClick={() => setPlayerGender(g)}
-                  className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                  className={`px-3 py-2 rounded-lg border text-base transition-all ${
                     playerGender === g
                       ? 'border-trail-blue bg-trail-blue/10 text-trail-darkBlue font-semibold'
                       : 'border-trail-tan hover:border-trail-blue/50 text-trail-brown'
@@ -182,9 +182,9 @@ export default function SetupScreen() {
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-trail-darkBrown mb-1 uppercase tracking-wider">Age</label>
+            <label className="block text-xs font-semibold text-trail-darkBrown mb-1 uppercase tracking-wider">Age</label>
             <select value={playerAgeRange} onChange={e => setPlayerAgeRange(Number(e.target.value))}
-              className="text-sm px-2 py-2 border border-trail-tan rounded-lg bg-white">
+              className="text-base px-2 py-2 border border-trail-tan rounded-lg bg-white">
               {AGE_OPTIONS.map((opt, i) => (
                 <option key={i} value={i}>{opt.label}</option>
               ))}
@@ -197,7 +197,7 @@ export default function SetupScreen() {
           const gradeCash = PROFESSION_CASH_BY_GRADE[state.gradeBand] || PROFESSION_CASH;
           return (
           <div>
-            <label className="block text-sm font-semibold text-trail-darkBrown mb-1">Profession</label>
+            <label className="block text-base font-semibold text-trail-darkBrown mb-1">Profession</label>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { id: 'tradesman', label: 'Tradesman', cash: `$${gradeCash.tradesman}`, difficulty: 'Easy', diffColor: 'text-green-700 bg-green-50', trait: 'Master of repairs, never loses time' },
@@ -215,9 +215,9 @@ export default function SetupScreen() {
                   }`}
                 >
                   <div className="font-semibold">{p.label}</div>
-                  <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-0.5 ${p.diffColor}`}>{p.difficulty}</div>
-                  <div className="text-sm font-bold text-trail-blue mt-1">{p.cash}</div>
-                  <div className="text-[10px] mt-0.5 text-trail-brown">{p.trait}</div>
+                  <div className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block mt-0.5 ${p.diffColor}`}>{p.difficulty}</div>
+                  <div className="text-base font-bold text-trail-blue mt-1">{p.cash}</div>
+                  <div className="text-xs mt-0.5 text-trail-brown">{p.trait}</div>
                 </button>
               ))}
             </div>
@@ -227,7 +227,7 @@ export default function SetupScreen() {
 
         {/* Companions with age & gender */}
         <div>
-          <label className="block text-sm font-semibold text-trail-darkBrown mb-1">
+          <label className="block text-base font-semibold text-trail-darkBrown mb-1">
             {isK2 ? 'Name your friends:' : 'Name Your Companions'}
           </label>
           <div className="space-y-2">
@@ -244,7 +244,7 @@ export default function SetupScreen() {
                 <div className="flex gap-1">
                   {['male', 'female'].map(g => (
                     <button key={g} type="button" onClick={() => handleCompanionChange(i, 'gender', g)}
-                      className={`px-2.5 py-2 rounded border text-xs transition-all ${
+                      className={`px-2.5 py-2 rounded border text-sm transition-all ${
                         comp.gender === g
                           ? 'border-trail-blue bg-trail-blue/10 text-trail-darkBlue font-semibold'
                           : 'border-trail-tan/50 text-trail-brown hover:border-trail-blue/40'
@@ -254,7 +254,7 @@ export default function SetupScreen() {
                   ))}
                 </div>
                 <select value={comp.ageRange} onChange={e => handleCompanionChange(i, 'ageRange', Number(e.target.value))}
-                  className="text-xs px-1.5 py-2 border border-trail-tan rounded bg-white">
+                  className="text-sm px-1.5 py-2 border border-trail-tan rounded bg-white">
                   {AGE_OPTIONS.map((opt, j) => (
                     <option key={j} value={j}>{opt.label}</option>
                   ))}
@@ -276,20 +276,20 @@ export default function SetupScreen() {
               />
               <div className="flex-1">
                 <span className="font-semibold text-trail-darkBrown">Include a Trail Chaplain</span>
-                <p className="text-sm text-trail-brown mt-1">
+                <p className="text-base text-trail-brown mt-1">
                   Fr. Joseph, a Franciscan friar, will join your party. He provides morale support,
                   unlocks prayer options, and can administer Last Rites if needed.
                 </p>
-                <p className="text-xs text-orange-700 mt-1">
+                <p className="text-sm text-orange-700 mt-1">
                   Cost: extra food and clothing, added weight strains your oxen and wagon.
                 </p>
                 {includeChaplain && (
                   <div className="mt-2 p-2 bg-trail-cream rounded border border-trail-tan/50">
-                    <div className="text-xs text-trail-darkBrown">
+                    <div className="text-sm text-trail-darkBrown">
                       <span className="font-semibold">Fr. Joseph</span>
                       <span className="text-trail-brown ml-1">\u2014 Age {chaplainDetails.age}</span>
                     </div>
-                    <div className="text-xs mt-1">
+                    <div className="text-sm mt-1">
                       <span className="font-semibold text-trail-blue">Skill: {chaplainSkill.name}</span>
                       <span className="text-trail-brown ml-1">\u2014 {chaplainSkill.description}</span>
                     </div>
@@ -302,13 +302,13 @@ export default function SetupScreen() {
 
         {isK2 && (
           <div className="card-parchment !p-3 text-center">
-            <p className="text-sm text-trail-brown">
+            <p className="text-base text-trail-brown">
               Your wagon is loaded and ready to go! You have food, water, and everything you need.
             </p>
           </div>
         )}
 
-        {error && <p className="text-trail-red text-sm text-center">{error}</p>}
+        {error && <p className="text-trail-red text-base text-center">{error}</p>}
 
         <button type="submit" className="btn-primary w-full text-lg py-3">
           {isK2 ? 'Start the Journey!' : 'Head to the General Store'}

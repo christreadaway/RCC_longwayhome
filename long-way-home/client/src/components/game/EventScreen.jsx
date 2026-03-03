@@ -272,8 +272,8 @@ export default function EventScreen() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-b from-trail-cream to-trail-parchment flex items-center justify-center px-4 overflow-hidden">
-      <div className="scene-card max-w-2xl w-full bg-white max-h-[95vh] overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-trail-cream to-trail-parchment flex items-center justify-center px-4 py-4">
+      <div className="scene-card max-w-2xl w-full bg-white max-h-[95vh] overflow-y-auto flex flex-col">
         {/* Illustrated Event Header */}
         <div className={`relative p-5 ${getEventHeaderColor(event.category)} overflow-hidden flex-none`}>
           <EventIllustration category={event.category} />
@@ -284,7 +284,7 @@ export default function EventScreen() {
         </div>
 
         {/* Event Description */}
-        <div className="p-5 flex-1 overflow-hidden">
+        <div className="p-5 flex-1 overflow-y-auto">
           <p className="text-trail-darkBrown text-lg leading-relaxed mb-6">
             {event.description}
           </p>
