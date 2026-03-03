@@ -19,6 +19,8 @@
 
 import {
   PROFESSION_CASH,
+  PROFESSION_CASH_BY_GRADE,
+  K2_STARTING_SUPPLIES,
   HEALTH_ORDER,
   PACE_MULTIPLIER,
   RATIONS_CONSUMPTION,
@@ -51,7 +53,7 @@ import { getLabelForEvent, shouldShowLabel, formatLabelForDisplay } from './mora
  * Valid game state machine states and their allowed transitions.
  */
 const STATE_TRANSITIONS = {
-  SETUP: ['SUPPLY_PURCHASE'],
+  SETUP: ['SUPPLY_PURCHASE', 'TRAVELING'],
   SUPPLY_PURCHASE: ['TRAVELING'],
   TRAVELING: ['REST_POINT', 'EVENT_RESOLUTION', 'LANDMARK', 'GAME_OVER'],
   REST_POINT: ['TRAVELING', 'GAME_OVER'],
@@ -124,7 +126,8 @@ export function createInitialState(config) {
   } = config;
 
   const featureFlags = getFeatureFlags(gradeBand);
-  const startingCash = PROFESSION_CASH[profession] || PROFESSION_CASH.farmer;
+  const gradeCash = PROFESSION_CASH_BY_GRADE[gradeBand];
+  const startingCash = gradeCash?.[profession] ?? PROFESSION_CASH[profession] ?? PROFESSION_CASH.farmer;
 
   // Build party (leader + up to 4 members)
   const party = [
@@ -173,16 +176,18 @@ export function createInitialState(config) {
     rations: 'filling',
     moralLabelMode,
 
-    // Supplies
-    supplies: {
-      food: featureFlags.supplySystem ? 0 : 200, // K-2 starts with food pre-purchased
-      cash: featureFlags.supplySystem ? startingCash : 0,
-      oxen: featureFlags.supplySystem ? 0 : 4,
-      clothing: featureFlags.supplySystem ? 0 : 5,
-      ammunition: featureFlags.supplySystem ? 0 : 20,
-      spareParts: featureFlags.supplySystem ? 0 : 3,
-      medicine: featureFlags.supplySystem ? 0 : 2,
-    },
+    // Supplies — K-2 starts fully provisioned, 3-5/6-8 buy at store
+    supplies: featureFlags.supplySystem
+      ? { food: 0, cash: startingCash, oxen: 0, clothing: 0, ammunition: 0, spareParts: 0, medicine: 0 }
+      : {
+          food: K2_STARTING_SUPPLIES.foodLbs,
+          cash: 0,
+          oxen: K2_STARTING_SUPPLIES.oxenYokes * 2,
+          clothing: party.length,
+          ammunition: 0,
+          spareParts: K2_STARTING_SUPPLIES.wheels + K2_STARTING_SUPPLIES.axles,
+          medicine: K2_STARTING_SUPPLIES.medicineDoses,
+        },
 
     // Grace system
     grace: createGraceState(),

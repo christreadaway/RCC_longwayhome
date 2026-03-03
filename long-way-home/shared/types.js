@@ -15,12 +15,73 @@
 /**
  * Profession starting cash — inversely correlated with skill.
  * Difficulty tiers: Tradesman (Easy) > Farmer (Medium) > Banker (Hard)
+ *
+ * Grade-band-specific cash amounts:
+ * - 3_5: Lower cash because supplies are partially pre-loaded
+ * - 6_8: Tight cash to force meaningful trade-offs
+ *
  * @type {Object<Profession, number>}
  */
 export const PROFESSION_CASH = {
-  tradesman: 1200,
-  farmer: 900,
-  banker: 650
+  tradesman: 800,
+  farmer: 600,
+  banker: 400
+};
+
+/**
+ * Grade-band-specific starting cash overrides.
+ * 3-5 gets less because some supplies come pre-loaded.
+ * 6-8 is the default (uses PROFESSION_CASH directly) — tight budgets, tough choices.
+ */
+export const PROFESSION_CASH_BY_GRADE = {
+  '3_5': { tradesman: 500, farmer: 400, banker: 300 },
+  '6_8': { tradesman: 800, farmer: 600, banker: 400 },
+};
+
+/**
+ * K-2 default profession — a "somewhat handy" settler.
+ * No profession choice for young kids; they get a capable head of household.
+ * Moderate repair skill sits between tradesman and farmer.
+ */
+export const K2_DEFAULT_PROFESSION = {
+  id: 'settler',
+  name: 'Settler',
+  repairWithoutParts: 0.45,
+  repairTimePenalty: 0.25,
+  description: 'A capable frontier settler — handy with tools, good with animals.',
+};
+
+/**
+ * K-2 starting supplies — everything they need for the 5-stop journey.
+ * Young kids don't make economic decisions; they start fully provisioned.
+ */
+export const K2_STARTING_SUPPLIES = {
+  cash: 0,
+  foodLbs: 400,
+  waterGallons: 200,
+  oxenYokes: 2,
+  ammoBoxes: 0,
+  wheels: 1,
+  axles: 1,
+  tongues: 0,
+  medicineDoses: 3,
+};
+
+/**
+ * 3-5 pre-loaded supplies — a "care package" of basics already in the wagon.
+ * Kids still visit the store to buy more, but they start with a foundation.
+ * These items are free — only purchases above these amounts cost cash.
+ */
+export const GRADE_35_PRELOADED_SUPPLIES = {
+  oxenYokes: 1,
+  foodLbs: 200,
+  waterGallons: 100,
+  clothingSets: 0,
+  ammoBoxes: 0,
+  wheels: 0,
+  axles: 0,
+  tongues: 0,
+  medicineDoses: 0,
 };
 
 export const HEALTH_ORDER = ['good', 'fair', 'poor', 'critical', 'dead'];

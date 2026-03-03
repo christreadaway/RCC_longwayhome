@@ -15,12 +15,70 @@
 /**
  * Profession starting cash — inversely correlated with skill.
  * Difficulty tiers: Tradesman (Easy) > Farmer (Medium) > Banker (Hard)
+ *
+ * Default values (used by 6-8). See PROFESSION_CASH_BY_GRADE for overrides.
  * @type {Object<Profession, number>}
  */
 export const PROFESSION_CASH = {
-  tradesman: 1200,
-  farmer: 900,
-  banker: 650
+  tradesman: 800,
+  farmer: 600,
+  banker: 400
+};
+
+/**
+ * Grade-band-specific starting cash.
+ * 3-5 gets less cash because some supplies are pre-loaded.
+ * 6-8 uses tight budgets — every dollar counts.
+ */
+export const PROFESSION_CASH_BY_GRADE = {
+  '3_5': { tradesman: 500, farmer: 400, banker: 300 },
+  '6_8': { tradesman: 800, farmer: 600, banker: 400 },
+};
+
+/**
+ * K-2 default profession — a "somewhat handy" settler.
+ * No profession choice for young kids; they get a capable head of household.
+ */
+export const K2_DEFAULT_PROFESSION = {
+  id: 'settler',
+  name: 'Settler',
+  repairWithoutParts: 0.45,
+  repairTimePenalty: 0.25,
+  description: 'A capable frontier settler — handy with tools, good with animals.',
+};
+
+/**
+ * K-2 starting supplies — everything needed for the short 5-stop journey.
+ * Young kids skip the store entirely.
+ */
+export const K2_STARTING_SUPPLIES = {
+  cash: 0,
+  foodLbs: 400,
+  waterGallons: 200,
+  oxenYokes: 2,
+  clothingSets: 0,  // Set dynamically based on party size
+  ammoBoxes: 0,
+  wheels: 1,
+  axles: 1,
+  tongues: 0,
+  medicineDoses: 3,
+};
+
+/**
+ * 3-5 pre-loaded supplies — basics already in the wagon for free.
+ * Players still shop at the store but start with a foundation.
+ * Store only charges for quantities above these amounts.
+ */
+export const GRADE_35_PRELOADED_SUPPLIES = {
+  oxenYokes: 1,
+  foodLbs: 200,
+  waterGallons: 100,
+  clothingSets: 0,
+  ammoBoxes: 0,
+  wheels: 0,
+  axles: 0,
+  tongues: 0,
+  medicineDoses: 0,
 };
 
 /**
@@ -32,7 +90,8 @@ export const PROFESSION_CASH = {
 export const PROFESSION_REPAIR = {
   banker: { repairChance: 0, timeCostDays: 1, description: 'No trail skills — repairs always cost a spare part and a full day.' },
   farmer: { repairChance: 0.3, timeCostDays: 0.5, description: 'Handy enough — sometimes fixes things without a spare part.' },
-  tradesman: { repairChance: 0.7, timeCostDays: 0, description: 'Master craftsman — often repairs without spare parts, never loses time.' }
+  tradesman: { repairChance: 0.7, timeCostDays: 0, description: 'Master craftsman — often repairs without spare parts, never loses time.' },
+  settler: { repairChance: 0.45, timeCostDays: 0.25, description: 'A capable settler — fairly handy at trail repairs.' }
 };
 
 /**

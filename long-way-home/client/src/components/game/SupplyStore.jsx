@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { STORE_BOOKS, STORE_TOOLS, STORE_BIBLE, MEDICINE_CONFIG } from '@shared/types';
+import { STORE_BOOKS, STORE_TOOLS, STORE_BIBLE, MEDICINE_CONFIG, GRADE_35_PRELOADED_SUPPLIES } from '@shared/types';
 
 const STORE_ITEMS = {
   oxenYokes: { name: 'Oxen (yoke)', price: 40, min: 1, max: 9, unit: 'yoke', desc: 'You need at least 1 yoke to move.' },
@@ -27,11 +27,15 @@ export default function SupplyStore() {
   const dispatch = useGameDispatch();
   const startingCash = state.cash;
   const is68 = state.gradeBand === '6_8';
+  const is35 = state.gradeBand === '3_5';
+
+  // 3-5 gets pre-loaded supplies (free); 6-8 starts from scratch
+  const preloaded = is35 ? GRADE_35_PRELOADED_SUPPLIES : null;
 
   const [quantities, setQuantities] = useState({
-    oxenYokes: 2,
-    foodLbs: 500,
-    waterGallons: 200,
+    oxenYokes: preloaded ? Math.max(2, preloaded.oxenYokes) : 2,
+    foodLbs: preloaded ? Math.max(preloaded.foodLbs, 300) : 500,
+    waterGallons: preloaded ? Math.max(preloaded.waterGallons, 150) : 200,
     clothingSets: state.partyMembers.length,
     ammoBoxes: 10,
     wheels: 1,
@@ -51,14 +55,18 @@ export default function SupplyStore() {
   const totalCost = useMemo(() => {
     let cost = 0;
     for (const [key, item] of Object.entries(STORE_ITEMS)) {
-      cost += (quantities[key] || 0) * item.price;
+      const qty = quantities[key] || 0;
+      // 3-5: only charge for amounts above the pre-loaded baseline
+      const freeQty = preloaded?.[key] || 0;
+      const purchasedQty = Math.max(0, qty - freeQty);
+      cost += purchasedQty * item.price;
     }
     // Add toggle item costs
     for (const [key, item] of Object.entries(TOGGLE_ITEMS)) {
       if (toggles[key]) cost += item.price;
     }
     return Math.round(cost * 100) / 100;
-  }, [quantities, toggles]);
+  }, [quantities, toggles, preloaded]);
 
   const remaining = startingCash - totalCost;
   const canAfford = remaining >= 0;
@@ -66,9 +74,11 @@ export default function SupplyStore() {
   function updateQuantity(key, delta) {
     const item = STORE_ITEMS[key];
     const step = item.step || 1;
+    // 3-5: can't go below pre-loaded amounts (those are already in the wagon)
+    const floor = preloaded?.[key] != null ? Math.max(item.min, preloaded[key]) : item.min;
     setQuantities(prev => ({
       ...prev,
-      [key]: Math.max(item.min, Math.min(item.max, prev[key] + delta * step))
+      [key]: Math.max(floor, Math.min(item.max, prev[key] + delta * step))
     }));
   }
 
@@ -111,6 +121,11 @@ export default function SupplyStore() {
           <p className="text-lg font-semibold text-trail-blue mt-2">
             Budget: ${startingCash.toFixed(2)}
           </p>
+          {is35 && (
+            <p className="text-sm text-trail-brown mt-1">
+              Your wagon already has some basics loaded. Buy what else you need!
+            </p>
+          )}
         </div>
 
         {/* ═══ Standard Supplies ═══ */}
@@ -118,12 +133,19 @@ export default function SupplyStore() {
           {Object.entries(STORE_ITEMS).map(([key, item]) => (
             <div key={key} className="flex items-center justify-between p-2.5 bg-trail-parchment/50 rounded-lg">
               <div className="flex-1">
-                <div className="font-semibold text-trail-darkBrown text-sm">{item.name}</div>
+                <div className="font-semibold text-trail-darkBrown text-sm">
+                  {item.name}
+                  {preloaded?.[key] > 0 && (
+                    <span className="ml-1.5 text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full">
+                      {preloaded[key]}{item.unit ? ` ${item.unit}` : ''} free
+                    </span>
+                  )}
+                </div>
                 {item.desc && <div className="text-[10px] text-trail-brown">{item.desc}</div>}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-trail-brown w-16 text-right">
-                  ${(item.price * quantities[key]).toFixed(2)}
+                  ${(item.price * Math.max(0, quantities[key] - (preloaded?.[key] || 0))).toFixed(2)}
                 </span>
                 <button
                   onClick={() => updateQuantity(key, -1)}

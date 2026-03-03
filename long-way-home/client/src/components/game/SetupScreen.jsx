@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
-import { PROFESSION_CASH, GAME_CONSTANTS, GRACE_DELTAS, CLERGY_SKILLS, randomClergySkill, randomClergyAge } from '@shared/types';
+import { PROFESSION_CASH, PROFESSION_CASH_BY_GRADE, K2_DEFAULT_PROFESSION, K2_STARTING_SUPPLIES, GAME_CONSTANTS, GRACE_DELTAS, CLERGY_SKILLS, randomClergySkill, randomClergyAge } from '@shared/types';
 
 const AGE_OPTIONS = [
   { label: 'Child (6-12)', min: 6, max: 12 },
@@ -93,12 +93,14 @@ export default function SetupScreen() {
       });
     }
 
-    const startingCash = isK2 ? 0 : (PROFESSION_CASH[profession] || 400);
+    // Grade-band-specific starting cash
+    const gradeCash = PROFESSION_CASH_BY_GRADE[state.gradeBand];
+    const startingCash = isK2 ? 0 : (gradeCash?.[profession] ?? PROFESSION_CASH[profession] ?? 400);
 
     dispatch({
       type: 'SET_PLAYER_INFO',
       studentName: playerName.trim(),
-      profession: isK2 ? null : profession,
+      profession: isK2 ? K2_DEFAULT_PROFESSION.id : profession,
       partyMembers,
       chaplainInParty: includeChaplain,
       startingCash
@@ -110,15 +112,22 @@ export default function SetupScreen() {
     }
 
     if (isK2) {
+      // K-2: Start fully provisioned — no store visit, no economic decisions
+      const partySize = validCompanions.length + 1;
       dispatch({
         type: 'SET_SUPPLIES',
-        cash: 0,
-        foodLbs: 200,
-        clothingSets: validCompanions.length + 1,
-        ammoBoxes: 0,
-        spareParts: { wheels: 0, axles: 0, tongues: 0 },
-        oxenYokes: 2,
-        waterGallons: 200
+        cash: K2_STARTING_SUPPLIES.cash,
+        foodLbs: K2_STARTING_SUPPLIES.foodLbs,
+        clothingSets: partySize,
+        ammoBoxes: K2_STARTING_SUPPLIES.ammoBoxes,
+        spareParts: {
+          wheels: K2_STARTING_SUPPLIES.wheels,
+          axles: K2_STARTING_SUPPLIES.axles,
+          tongues: K2_STARTING_SUPPLIES.tongues
+        },
+        oxenYokes: K2_STARTING_SUPPLIES.oxenYokes,
+        waterGallons: K2_STARTING_SUPPLIES.waterGallons,
+        medicineDoses: K2_STARTING_SUPPLIES.medicineDoses
       });
       dispatch({ type: 'SET_PHASE', phase: 'TRAVELING' });
     } else {
@@ -184,14 +193,16 @@ export default function SetupScreen() {
         </div>
 
         {/* Profession (6-8 and 3-5 only) */}
-        {!isK2 && (
+        {!isK2 && (() => {
+          const gradeCash = PROFESSION_CASH_BY_GRADE[state.gradeBand] || PROFESSION_CASH;
+          return (
           <div>
             <label className="block text-sm font-semibold text-trail-darkBrown mb-1">Profession</label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: 'tradesman', label: 'Tradesman', cash: `$${PROFESSION_CASH.tradesman}`, difficulty: 'Easy', diffColor: 'text-green-700 bg-green-50', trait: 'Master of repairs, never loses time' },
-                { id: 'farmer', label: 'Farmer', cash: `$${PROFESSION_CASH.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced \u2014 can fix some things' },
-                { id: 'banker', label: 'Banker', cash: `$${PROFESSION_CASH.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills \u2014 repairs cost time and parts' }
+                { id: 'tradesman', label: 'Tradesman', cash: `$${gradeCash.tradesman}`, difficulty: 'Easy', diffColor: 'text-green-700 bg-green-50', trait: 'Master of repairs, never loses time' },
+                { id: 'farmer', label: 'Farmer', cash: `$${gradeCash.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced \u2014 can fix some things' },
+                { id: 'banker', label: 'Banker', cash: `$${gradeCash.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills \u2014 repairs cost time and parts' }
               ].map(p => (
                 <button
                   key={p.id}
@@ -211,7 +222,8 @@ export default function SetupScreen() {
               ))}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Companions with age & gender */}
         <div>
@@ -285,6 +297,14 @@ export default function SetupScreen() {
                 )}
               </div>
             </label>
+          </div>
+        )}
+
+        {isK2 && (
+          <div className="card-parchment !p-3 text-center">
+            <p className="text-sm text-trail-brown">
+              Your wagon is loaded and ready to go! You have food, water, and everything you need.
+            </p>
           </div>
         )}
 
