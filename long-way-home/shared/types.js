@@ -1,7 +1,7 @@
 /**
  * @typedef {'k2' | '3_5' | '6_8'} GradeBand
  * @typedef {'SETUP' | 'SUPPLY_PURCHASE' | 'TRAVELING' | 'REST_POINT' | 'EVENT_RESOLUTION' | 'LANDMARK' | 'GAME_OVER'} GameState
- * @typedef {'banker' | 'farmer' | 'tradesman'} Profession
+ * @typedef {'banker' | 'farmer' | 'tradesman' | 'settler'} Profession
  * @typedef {'steady' | 'strenuous' | 'grueling'} Pace
  * @typedef {'filling' | 'meager' | 'bare_bones'} Rations
  * @typedef {'good' | 'fair' | 'poor' | 'critical' | 'dead'} HealthStatus
