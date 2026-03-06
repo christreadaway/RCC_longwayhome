@@ -9,19 +9,19 @@ import { useMemo } from 'react';
 
 /** Weather condition icons using Unicode/text symbols for simplicity */
 const CONDITION_ICONS = {
-  'sun': '\u2600',             // ☀
-  'cloud-sun': '\u26C5',      // ⛅
-  'cloud': '\u2601',          // ☁
-  'cloud-drizzle': '\uD83C\uDF27', // 🌧
-  'cloud-rain': '\uD83C\uDF27',
-  'cloud-rain-heavy': '\uD83C\uDF27',
-  'cloud-lightning': '\u26C8',  // ⛈
-  'snowflake': '\u2744',       // ❄
-  'snowflake-heavy': '\u2744',
-  'wind-snow': '\uD83C\uDF28', // 🌨
-  'fog': '\uD83C\uDF2B',      // 🌫
-  'hail': '\uD83C\uDF28',
-  'wind': '\uD83C\uDF2C',     // 🌬
+  'sun': '☀',
+  'cloud-sun': '⛅',
+  'cloud': '☁',
+  'cloud-drizzle': '🌧',
+  'cloud-rain': '🌧',
+  'cloud-rain-heavy': '🌧',
+  'cloud-lightning': '⛈',
+  'snowflake': '❄',
+  'snowflake-heavy': '❄',
+  'wind-snow': '🌨',
+  'fog': '🌫',
+  'hail': '🌨',
+  'wind': '🌬',
 };
 
 /** Ground condition color coding */
@@ -39,7 +39,7 @@ const GROUND_COLORS = {
 export default function WeatherBox({ weather, compact = false }) {
   if (!weather) return null;
 
-  const icon = CONDITION_ICONS[weather.conditionIcon] || '\u2601';
+  const icon = CONDITION_ICONS[weather.conditionIcon] || '☁';
   const temp = weather.temperature || {};
   const wind = weather.wind || {};
 

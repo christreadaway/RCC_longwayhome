@@ -147,7 +147,7 @@ export default function SetupScreen() {
           <p className="text-lg text-trail-brown mt-1">
             {isK2
               ? 'Who are you traveling with?'
-              : 'Independence, Missouri \u2014 April 1, 1848'}
+              : 'Independence, Missouri — April 1, 1848'}
           </p>
         </div>
 
@@ -201,8 +201,8 @@ export default function SetupScreen() {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { id: 'tradesman', label: 'Tradesman', cash: `$${gradeCash.tradesman}`, difficulty: 'Easy', diffColor: 'text-green-700 bg-green-50', trait: 'Master of repairs, never loses time' },
-                { id: 'farmer', label: 'Farmer', cash: `$${gradeCash.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced \u2014 can fix some things' },
-                { id: 'banker', label: 'Banker', cash: `$${gradeCash.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills \u2014 repairs cost time and parts' }
+                { id: 'farmer', label: 'Farmer', cash: `$${gradeCash.farmer}`, difficulty: 'Medium', diffColor: 'text-yellow-700 bg-yellow-50', trait: 'Balanced — can fix some things' },
+                { id: 'banker', label: 'Banker', cash: `$${gradeCash.banker}`, difficulty: 'Hard', diffColor: 'text-red-700 bg-red-50', trait: 'No trail skills — repairs cost time and parts' }
               ].map(p => (
                 <button
                   key={p.id}
@@ -287,11 +287,11 @@ export default function SetupScreen() {
                   <div className="mt-2 p-2 bg-trail-cream rounded border border-trail-tan/50">
                     <div className="text-sm text-trail-darkBrown">
                       <span className="font-semibold">Fr. Joseph</span>
-                      <span className="text-trail-brown ml-1">{'\u2014'} Age {chaplainDetails.age}</span>
+                      <span className="text-trail-brown ml-1">— Age {chaplainDetails.age}</span>
                     </div>
                     <div className="text-sm mt-1">
                       <span className="font-semibold text-trail-blue">Skill: {chaplainSkill.name}</span>
-                      <span className="text-trail-brown ml-1">{'\u2014'} {chaplainSkill.description}</span>
+                      <span className="text-trail-brown ml-1">— {chaplainSkill.description}</span>
                     </div>
                   </div>
                 )}
