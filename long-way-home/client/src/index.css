@@ -18,7 +18,7 @@
   --border:     rgba(120,80,40,0.18);
 
   --hdr-h: 48px;
-  --res-h: 38px;
+  --res-h: 44px;
 
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body:    'Crimson Pro', Georgia, serif;
@@ -104,12 +104,12 @@ html, body, #root {
 /* ═══ Eyebrow label ═══ */
 .eyebrow {
   font-family: var(--font-body);
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--ink-lt);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 /* ═══ Line clamp utilities ═══ */

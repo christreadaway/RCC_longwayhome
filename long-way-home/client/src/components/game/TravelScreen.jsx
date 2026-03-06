@@ -48,13 +48,13 @@ function getHealthPercent(health) {
 
 /** Weather emoji + label */
 function getWeatherDisplay(weather) {
-  if (!weather) return { icon: '\u2600\uFE0F', label: 'Sunny', temp: '--' };
+  if (!weather) return { icon: '☀️', label: 'Sunny', temp: '--' };
   const c = weather.condition || 'fair';
   const temp = weather.temperature?.current ?? '--';
-  if (c.includes('blizzard') || c.includes('storm') || c === 'stormy') return { icon: '\u26C8\uFE0F', label: 'Stormy', temp };
-  if (c.includes('rain') || c === 'rainy') return { icon: '\uD83C\uDF27\uFE0F', label: 'Rainy', temp };
-  if (c.includes('snow')) return { icon: '\uD83C\uDF28\uFE0F', label: 'Snow', temp };
-  return { icon: '\u2600\uFE0F', label: 'Sunny', temp };
+  if (c.includes('blizzard') || c.includes('storm') || c === 'stormy') return { icon: '⛈️', label: 'Stormy', temp };
+  if (c.includes('rain') || c === 'rainy') return { icon: '🌧️', label: 'Rainy', temp };
+  if (c.includes('snow')) return { icon: '🌨️', label: 'Snow', temp };
+  return { icon: '☀️', label: 'Sunny', temp };
 }
 
 /** Determine narrative event type for panel border color */
@@ -468,7 +468,7 @@ export default function TravelScreen() {
       } else {
         dayMessage = getFlavorMessage(currentLandmark?.terrain_type || 'plains', state, state.trailDay);
         if (todayWeather.conditionLabel && todayWeather.conditionLabel !== 'Fair' && todayWeather.conditionLabel !== 'Sunny') {
-          dayMessage += ` The weather: ${todayWeather.conditionLabel.toLowerCase()}, ${todayWeather.temperature?.current || '--'}\u00B0F.`;
+          dayMessage += ` The weather: ${todayWeather.conditionLabel.toLowerCase()}, ${todayWeather.temperature?.current || '--'}°F.`;
         }
       }
     }
@@ -630,7 +630,7 @@ export default function TravelScreen() {
   if (state.foodLbs > 0 && state.foodLbs < 50) hints.push('Food running low');
   if (state.waterGallons > 0 && state.waterGallons < 20) hints.push('Water scarce');
   if (state.daysStationary >= 3) hints.push('Lingering too long');
-  const contextHint = hints.length > 0 ? hints.join(' \u2022 ') : null;
+  const contextHint = hints.length > 0 ? hints.join(' • ') : null;
 
   const chaplainMember = state.partyMembers.find(m => m.isChaplain && m.alive);
   const chaplainSkillInfo = chaplainMember?.clergySkill ? CLERGY_SKILLS[chaplainMember.clergySkill] : null;
@@ -647,16 +647,16 @@ export default function TravelScreen() {
 
   // Build choices
   const choices = [];
-  choices.push({ id: 'continue', emoji: '\u25B6\uFE0F', label: 'Push Forward', sub: `${state.pace} pace \u2022 ~${Math.round(GAME_CONSTANTS.BASE_DAILY_MILES * (PACE_MULTIPLIER[state.pace] || 1))} mi/day`, tone: 'action', handler: handleContinueTravel, disabled: isTraveling });
-  choices.push({ id: 'rest', emoji: '\uD83D\uDECF\uFE0F', label: 'Rest for a Day', sub: 'Recover health, no miles traveled', tone: 'rest', handler: handleRest });
-  choices.push({ id: 'water', emoji: '\uD83D\uDCA7', label: 'Find Water', sub: `Current: ${Math.round(state.waterGallons)} gal`, tone: 'rest', handler: handleFindWater });
+  choices.push({ id: 'continue', emoji: '▶️', label: 'Push Forward', sub: `${state.pace} pace • ~${Math.round(GAME_CONSTANTS.BASE_DAILY_MILES * (PACE_MULTIPLIER[state.pace] || 1))} mi/day`, tone: 'action', handler: handleContinueTravel, disabled: isTraveling });
+  choices.push({ id: 'rest', emoji: '🛏️', label: 'Rest for a Day', sub: 'Recover health, no miles traveled', tone: 'rest', handler: handleRest });
+  choices.push({ id: 'water', emoji: '💧', label: 'Find Water', sub: `Current: ${Math.round(state.waterGallons)} gal`, tone: 'rest', handler: handleFindWater });
   if (state.gradeBand !== 'k2' && state.ammoBoxes > 0) {
-    choices.push({ id: 'hunt', emoji: '\uD83C\uDFF9', label: 'Hunt for Food', sub: `${state.ammoBoxes} ammo boxes remaining`, tone: 'action', handler: () => setShowHunting(true) });
+    choices.push({ id: 'hunt', emoji: '🏹', label: 'Hunt for Food', sub: `${state.ammoBoxes} ammo boxes remaining`, tone: 'action', handler: () => setShowHunting(true) });
   }
-  choices.push({ id: 'wood', emoji: '\uD83E\uDEB5', label: 'Gather Firewood', sub: `${state.firewoodBundles || 0} bundles in stock`, tone: 'rest', handler: handleGatherFirewood });
+  choices.push({ id: 'wood', emoji: '🪵', label: 'Gather Firewood', sub: `${state.firewoodBundles || 0} bundles in stock`, tone: 'rest', handler: handleGatherFirewood });
   if (state.partyMembers.some(m => m.alive && m.health === 'critical') && state.prayerCooldownDay < state.trailDay) {
     const cm = state.partyMembers.find(m => m.alive && m.health === 'critical');
-    choices.push({ id: 'pray', emoji: '\uD83D\uDE4F', label: 'Pray', sub: cm ? `Pray for ${cm.name}` : 'Offer prayers for the sick', tone: 'faith', handler: () => {
+    choices.push({ id: 'pray', emoji: '🙏', label: 'Pray', sub: cm ? `Pray for ${cm.name}` : 'Offer prayers for the sick', tone: 'faith', handler: () => {
       const critMember = state.partyMembers.find(m2 => m2.alive && m2.health === 'critical');
       dispatch({ type: 'UPDATE_GRACE', delta: GRACE_DELTAS.PRAYER + (state.hasBible ? STORE_BIBLE.effects.prayerGraceBonus : 0), trigger: 'prayer_crisis' });
       dispatch({ type: 'UPDATE_MORALE', delta: 3 });
@@ -667,12 +667,12 @@ export default function TravelScreen() {
 
   // Resource items for the bar
   const resources = [
-    { icon: '\uD83C\uDF3E', label: 'Food', value: `${Math.round(state.foodLbs)} lbs`, warn: state.foodLbs < 50 || state.foodLbs <= 0 },
-    { icon: '\uD83D\uDCB0', label: 'Cash', value: `$${state.cash.toFixed(0)}` },
-    { icon: '\uD83D\uDD2B', label: 'Ammo', value: `${state.ammoBoxes}`, warn: state.ammoBoxes <= 0 },
-    { icon: '\uD83D\uDD27', label: 'Spares', value: `${state.spareParts.wheels + state.spareParts.axles + state.spareParts.tongues}` },
-    { icon: '\uD83D\uDC8A', label: 'Medicine', value: `${state.medicineDoses || 0}`, warn: (state.medicineDoses || 0) < 2 },
-    { icon: '\uD83D\uDC02', label: 'Oxen', value: `${state.oxenYokes}`, warn: state.oxenYokes < 1 },
+    { icon: '🌾', label: 'Food', value: `${Math.round(state.foodLbs)} lbs`, warn: state.foodLbs < 50 || state.foodLbs <= 0 },
+    { icon: '💰', label: 'Cash', value: `$${state.cash.toFixed(0)}` },
+    { icon: '🔫', label: 'Ammo', value: `${state.ammoBoxes}`, warn: state.ammoBoxes <= 0 },
+    { icon: '🔧', label: 'Spares', value: `${state.spareParts.wheels + state.spareParts.axles + state.spareParts.tongues}` },
+    { icon: '💊', label: 'Medicine', value: `${state.medicineDoses || 0}`, warn: (state.medicineDoses || 0) < 2 },
+    { icon: '🐂', label: 'Oxen', value: `${state.oxenYokes}`, warn: state.oxenYokes < 1 },
   ];
 
   return (
@@ -691,7 +691,7 @@ export default function TravelScreen() {
             The Long Way Home
           </span>
           {!isMobile && (
-            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(245,234,216,0.48)' }}>
+            <span style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(245,234,216,0.5)' }}>
               Oregon Trail, 1848
             </span>
           )}
@@ -699,19 +699,19 @@ export default function TravelScreen() {
 
         {/* Center — Chips + Weather */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-          <Chip>\uD83D\uDCC5 {formatGameDate(state.gameDate)}</Chip>
+          <Chip>📅 {formatGameDate(state.gameDate)}</Chip>
           {!isMobile && <Chip>Day {state.trailDay}</Chip>}
           {isDesktop && <Chip style={{ textTransform: 'capitalize' }}>{state.pace} Pace</Chip>}
           <Chip>
             <span style={{ fontSize: '14px' }}>{weatherDisplay.icon}</span>
-            <span>{weatherDisplay.label} {weatherDisplay.temp}\u00B0F</span>
+            <span>{weatherDisplay.label} {weatherDisplay.temp}°F</span>
           </Chip>
         </div>
 
         {/* Right — Grace Meter */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-          <span style={{ fontSize: '16px' }}>{'\u271D'}</span>
-          {!isMobile && <span style={{ fontSize: '10px', color: 'rgba(245,234,216,0.6)' }}>Grace</span>}
+          <span style={{ fontSize: '16px' }}>✝</span>
+          {!isMobile && <span style={{ fontSize: '12px', color: 'rgba(245,234,216,0.6)' }}>Grace</span>}
           <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
             {Array.from({ length: isMobile ? 5 : 10 }, (_, i) => {
               const threshold = isMobile ? (i + 1) * 20 : (i + 1) * 10;
@@ -725,7 +725,7 @@ export default function TravelScreen() {
               );
             })}
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: getGracePipColor(state.grace), minWidth: '18px', textAlign: 'right' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: getGracePipColor(state.grace), minWidth: '20px', textAlign: 'right' }}>
             {state.grace}
           </span>
         </div>
@@ -743,12 +743,12 @@ export default function TravelScreen() {
             borderRight: i < resources.length - 1 ? '1px solid var(--border)' : 'none',
             padding: '0 4px', overflow: 'hidden',
           }}>
-            <span style={{ fontSize: '14px', flexShrink: 0 }}>{r.icon}</span>
+            <span style={{ fontSize: '18px', flexShrink: 0 }}>{r.icon}</span>
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <div style={{ fontSize: 'clamp(11px, 1.2vw, 13px)', fontWeight: 700, color: r.warn ? 'var(--red)' : 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 'clamp(14px, 1.4vw, 16px)', fontWeight: 700, color: r.warn ? 'var(--red)' : 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {r.value}
               </div>
-              <div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--ink-lt)', opacity: 0.6, whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--ink-lt)', opacity: 0.7, whiteSpace: 'nowrap' }}>
                 {r.label}
               </div>
             </div>
@@ -798,17 +798,17 @@ export default function TravelScreen() {
             padding: '10px 14px',
             display: 'flex', flexDirection: 'column', gap: '4px',
           }}>
-            <span className="eyebrow">{'\u26A1'} What Just Happened</span>
+            <span className="eyebrow">⚡ What Just Happened</span>
             <h2 style={{
               fontFamily: 'var(--font-display)', fontWeight: 700,
-              fontSize: 'clamp(15px, 1.8vw, 19px)', color: 'var(--ink)',
+              fontSize: 'clamp(18px, 2vw, 24px)', color: 'var(--ink)',
               display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
               margin: 0,
             }}>
-              {travelMessage ? travelMessage.split('.')[0] : 'The trail awaits\u2026'}
+              {travelMessage ? travelMessage.split('.')[0] : 'The trail awaits…'}
             </h2>
             <p style={{
-              fontFamily: 'var(--font-body)', fontSize: 'clamp(12px, 1.3vw, 14px)',
+              fontFamily: 'var(--font-body)', fontSize: 'clamp(14px, 1.4vw, 16px)',
               lineHeight: 1.5, color: 'var(--ink-lt)',
               display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
               margin: 0,
@@ -817,9 +817,9 @@ export default function TravelScreen() {
             </p>
             {travelMessage && (
               <span style={{
-                alignSelf: 'flex-start', borderRadius: '20px', padding: '2px 10px',
+                alignSelf: 'flex-start', borderRadius: '20px', padding: '3px 12px',
                 background: EVENT_BORDER[eventType], color: 'white',
-                fontSize: '11px', fontWeight: 600,
+                fontSize: '13px', fontWeight: 600,
                 fontFamily: 'var(--font-body)',
               }}>
                 {eventType === 'crisis' ? 'Hardship' : eventType === 'blessing' ? 'Blessing' : eventType === 'moral' ? 'Grace' : 'Journey'}
@@ -829,7 +829,7 @@ export default function TravelScreen() {
 
           {/* Party Section (flex-shrink: 0) */}
           <div style={{ flexShrink: 0, padding: '6px 14px 0', overflow: 'hidden' }}>
-            <span className="eyebrow">{'\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66'} Your Party</span>
+            <span className="eyebrow">👨‍👩‍👧‍👦 Your Party</span>
             <div style={{
               display: 'grid', gap: '5px', marginTop: '5px',
               gridTemplateColumns: isDesktop ? '1fr 1fr' : `repeat(${Math.min(4, state.partyMembers.length)}, 1fr)`,
@@ -855,14 +855,14 @@ export default function TravelScreen() {
                     <CharacterFace member={m} size={faceSize} />
                     <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                       <div style={{
-                        fontSize: 'clamp(12px, 1.2vw, 14px)', fontWeight: 700, color: 'var(--ink)',
+                        fontSize: 'clamp(14px, 1.3vw, 16px)', fontWeight: 700, color: 'var(--ink)',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}>
-                        {m.name}{m.isChaplain ? ' \u2020' : ''}
+                        {m.name}{m.isChaplain ? ' †' : ''}
                       </div>
-                      <div style={{ fontSize: '10px', color: 'var(--ink-lt)', opacity: 0.55 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--ink-lt)', opacity: 0.65 }}>
                         {m.isChaplain ? 'Chaplain' : m.isPlayer ? 'Leader' : m.gender === 'female' ? 'Woman' : 'Man'}
-                        {m.illness && m.alive ? ` \u2022 ${m.illness}` : ''}
+                        {m.illness && m.alive ? ` • ${m.illness}` : ''}
                       </div>
                       {m.alive && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
@@ -873,7 +873,7 @@ export default function TravelScreen() {
                             }} />
                           </div>
                           <span style={{
-                            fontSize: '10px', fontWeight: 600,
+                            fontSize: '12px', fontWeight: 600,
                             color: getHealthBarColor(m.health), whiteSpace: 'nowrap',
                           }}>
                             {isDead ? 'Dead' : m.health.charAt(0).toUpperCase() + m.health.slice(1)}
@@ -884,12 +884,12 @@ export default function TravelScreen() {
                               background: 'rgba(74,124,89,0.1)', border: '1px solid var(--green)',
                               color: 'var(--green)', cursor: 'pointer', lineHeight: 1,
                             }}>
-                              {'\uD83D\uDC8A'}
+                              💊
                             </button>
                           )}
                         </div>
                       )}
-                      {isDead && <span style={{ fontSize: '10px', color: '#888', fontStyle: 'italic' }}>Deceased{m.causeOfDeath ? ` \u2014 ${m.causeOfDeath}` : ''}</span>}
+                      {isDead && <span style={{ fontSize: '10px', color: '#888', fontStyle: 'italic' }}>Deceased{m.causeOfDeath ? ` — ${m.causeOfDeath}` : ''}</span>}
                     </div>
                   </div>
                 );
@@ -904,23 +904,23 @@ export default function TravelScreen() {
             overflow: 'hidden',
           }}>
             <div style={{ padding: '6px 0 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="eyebrow">{'\uD83E\uDDED'} What will you do?</span>
+              <span className="eyebrow">🧭 What will you do?</span>
               {selectedChoice && (
-                <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--amber-dk)' }}>
-                  \u2192 {selectedChoice}
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--amber-dk)' }}>
+                  → {selectedChoice}
                 </span>
               )}
               {/* Travel plan controls (compact) */}
               {state.gradeBand !== 'k2' && (
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
                   <select value={state.pace} onChange={e => dispatch({ type: 'SET_PACE', pace: e.target.value })}
-                    style={{ fontSize: '10px', padding: '1px 4px', border: '1px solid var(--border)', borderRadius: '4px', background: 'white', fontFamily: 'var(--font-body)' }}>
+                    style={{ fontSize: '13px', padding: '3px 6px', border: '1px solid var(--border)', borderRadius: '4px', background: 'white', fontFamily: 'var(--font-body)' }}>
                     <option value="steady">Steady</option>
                     <option value="strenuous">Strenuous</option>
                     <option value="grueling">Grueling</option>
                   </select>
                   <select value={state.rations} onChange={e => dispatch({ type: 'SET_RATIONS', rations: e.target.value })}
-                    style={{ fontSize: '10px', padding: '1px 4px', border: '1px solid var(--border)', borderRadius: '4px', background: 'white', fontFamily: 'var(--font-body)' }}>
+                    style={{ fontSize: '13px', padding: '3px 6px', border: '1px solid var(--border)', borderRadius: '4px', background: 'white', fontFamily: 'var(--font-body)' }}>
                     <option value="filling">Filling</option>
                     <option value="meager">Meager</option>
                     <option value="bare_bones">Bare Bones</option>
@@ -945,8 +945,8 @@ export default function TravelScreen() {
                     style={{
                       flex: (isMobile || !isDesktop) ? '1 1 calc(50% - 3px)' : 1,
                       minHeight: 0,
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '6px 10px', borderRadius: '7px', cursor: c.disabled ? 'wait' : 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 14px', borderRadius: '8px', cursor: c.disabled ? 'wait' : 'pointer',
                       border: `1.5px solid ${isSelected ? accent : 'rgba(120,80,40,0.22)'}`,
                       background: isSelected ? `${accent}14` : 'rgba(255,250,242,0.9)',
                       boxShadow: isSelected ? `0 0 0 2px ${accent}28` : 'none',
@@ -959,21 +959,21 @@ export default function TravelScreen() {
                     <span style={{ fontSize: 'clamp(18px, 2vw, 22px)', flexShrink: 0 }}>{c.emoji}</span>
                     <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                       <div style={{
-                        fontSize: 'clamp(13px, 1.4vw, 16px)', fontWeight: 700, color: 'var(--ink)',
+                        fontSize: 'clamp(15px, 1.5vw, 18px)', fontWeight: 700, color: 'var(--ink)',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}>
                         {c.label}
                       </div>
                       {isDesktop && c.sub && (
                         <div style={{
-                          fontSize: 'clamp(10px, 1vw, 12px)', color: 'var(--ink-lt)', opacity: 0.75,
+                          fontSize: 'clamp(12px, 1.1vw, 14px)', color: 'var(--ink-lt)', opacity: 0.75,
                           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                         }}>
                           {c.sub}
                         </div>
                       )}
                     </div>
-                    <span style={{ fontSize: '20px', color: accent, flexShrink: 0 }}>{'\u203A'}</span>
+                    <span style={{ fontSize: '20px', color: accent, flexShrink: 0 }}>›</span>
                   </button>
                 );
               })}
@@ -983,20 +983,20 @@ export default function TravelScreen() {
             <div style={{ flexShrink: 0, display: 'flex', gap: '6px', marginTop: '4px', justifyContent: 'flex-end' }}>
               {state.gradeBand !== 'k2' && (
                 <button onClick={() => setShowActivities(!showActivities)} style={{
-                  fontSize: '10px', padding: '3px 8px', borderRadius: '4px',
+                  fontSize: '13px', padding: '5px 12px', borderRadius: '6px',
                   border: '1px solid var(--border)', background: 'rgba(255,250,242,0.8)',
                   color: 'var(--ink-lt)', cursor: 'pointer', fontFamily: 'var(--font-body)',
                 }}>
-                  {'\u2699\uFE0F'} Activities
+                  ⚙️ Activities
                 </button>
               )}
               {state.sessionSettings?.historian_enabled && (
                 <button onClick={() => dispatch({ type: 'TOGGLE_HISTORIAN' })} style={{
-                  fontSize: '10px', padding: '3px 8px', borderRadius: '4px',
+                  fontSize: '13px', padding: '5px 12px', borderRadius: '6px',
                   border: '1px solid var(--border)', background: 'rgba(255,250,242,0.8)',
                   color: 'var(--ink-lt)', cursor: 'pointer', fontFamily: 'var(--font-body)',
                 }}>
-                  {'\uD83D\uDCD6'} Journal
+                  📖 Journal
                 </button>
               )}
             </div>
@@ -1012,7 +1012,7 @@ export default function TravelScreen() {
           <div className="w-[400px] max-h-[70vh] overflow-auto bg-white rounded-lg shadow-2xl border-2 border-trail-tan p-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-game-ink">Camp Activities</h3>
-              <button onClick={() => setShowActivities(false)} className="text-lg px-2">{'\u00D7'}</button>
+              <button onClick={() => setShowActivities(false)} className="text-lg px-2">×</button>
             </div>
             <CampActivitiesPanel onActivityComplete={r => { if (r.timeCost > 0) { dispatch({ type: 'INCREMENT_STATIONARY' }); dispatch({ type: 'ADVANCE_DAY', distanceTraveled: 0 }); } setTravelMessage(r.message); setShowActivities(false); }} />
           </div>
@@ -1024,8 +1024,8 @@ export default function TravelScreen() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowFullMap(false)}>
           <div className="w-[90vw] h-[80vh] bg-white rounded-lg shadow-2xl border-2 overflow-hidden" style={{ borderColor: 'var(--amber)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-2" style={{ background: 'var(--hdr)', color: 'var(--parchment)' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 500 }}>Oregon Trail \u2014 1848</span>
-              <button onClick={() => setShowFullMap(false)} className="hover:text-white text-lg px-2" style={{ color: 'rgba(245,234,216,0.8)' }}>{'\u00D7'}</button>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 500 }}>Oregon Trail — 1848</span>
+              <button onClick={() => setShowFullMap(false)} className="hover:text-white text-lg px-2" style={{ color: 'rgba(245,234,216,0.8)' }}>×</button>
             </div>
             <div className="h-[calc(100%-2.5rem)]"><OregonTrailMap landmarks={landmarks} currentIndex={state.currentLandmarkIndex} distanceToNext={state.distanceToNextLandmark} /></div>
           </div>
@@ -1051,10 +1051,10 @@ function Chip({ children, style = {} }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',
-      borderRadius: '20px', padding: '3px 10px',
+      borderRadius: '20px', padding: '4px 12px',
       background: 'rgba(255,255,255,0.08)',
       border: '1px solid rgba(255,255,255,0.12)',
-      fontSize: '11px', color: 'rgba(245,234,216,0.85)',
+      fontSize: '13px', color: 'rgba(245,234,216,0.9)',
       whiteSpace: 'nowrap', fontFamily: 'var(--font-body)',
       ...style,
     }}>
