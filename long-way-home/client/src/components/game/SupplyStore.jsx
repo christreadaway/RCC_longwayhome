@@ -2,32 +2,31 @@ import { useState, useMemo } from 'react';
 import { useGameState, useGameDispatch } from '../../store/GameContext';
 import { STORE_BOOKS, STORE_TOOLS, STORE_BIBLE, MEDICINE_CONFIG, GRADE_35_PRELOADED_SUPPLIES } from '@shared/types';
 
-/** Main supply items — shown as full rows */
+/** Main supply items with emoji icons */
 const MAIN_ITEMS = {
-  oxenYokes: { name: 'Oxen', price: 40, min: 1, max: 9, unit: 'yoke', desc: 'Need at least 1 yoke to move.' },
-  foodLbs: { name: 'Food', price: 0.20, min: 0, max: 2000, step: 50, unit: 'lbs', desc: 'Each person eats 2-3 lbs/day.' },
-  waterGallons: { name: 'Water', price: 0.05, min: 0, max: 300, step: 25, unit: 'gal', desc: 'Refill at rivers and forts.' },
-  clothingSets: { name: 'Clothing', price: 10, min: 0, max: 10, unit: 'sets', desc: 'Protects against cold.' },
-  ammoBoxes: { name: 'Ammo', price: 2, min: 0, max: 99, unit: 'boxes', desc: '20 rounds per box.' },
-  medicineDoses: { name: 'Medicine', price: MEDICINE_CONFIG.price, min: 0, max: MEDICINE_CONFIG.maxDoses, unit: 'doses', desc: '60% cure chance per dose.' }
+  oxenYokes:    { name: 'Oxen',     icon: '🐂', price: 40,   min: 1, max: 9,    unit: 'yoke', desc: 'Need at least 1 yoke' },
+  foodLbs:      { name: 'Food',     icon: '🌾', price: 0.20, min: 0, max: 2000, step: 50, unit: 'lbs', desc: '2–3 lbs/person/day' },
+  waterGallons: { name: 'Water',    icon: '💧', price: 0.05, min: 0, max: 300,  step: 25, unit: 'gal', desc: 'Refill at rivers & forts' },
+  clothingSets: { name: 'Clothing', icon: '🧥', price: 10,   min: 0, max: 10,   unit: 'sets', desc: 'Protects against cold' },
+  ammoBoxes:    { name: 'Ammo',     icon: '🔫', price: 2,    min: 0, max: 99,   unit: 'boxes', desc: '20 rounds per box' },
+  medicineDoses:{ name: 'Medicine', icon: '💊', price: MEDICINE_CONFIG.price, min: 0, max: MEDICINE_CONFIG.maxDoses, unit: 'doses', desc: '60% cure chance' }
 };
 
-/** Spare parts — shown in a compact 3-col row */
+/** Spare parts */
 const SPARE_PARTS = {
-  wheels: { name: 'Wheels', price: 10, min: 0, max: 3, unit: '' },
-  axles: { name: 'Axles', price: 10, min: 0, max: 3, unit: '' },
-  tongues: { name: 'Tongues', price: 10, min: 0, max: 3, unit: '' },
+  wheels:  { name: 'Wheels',  icon: '☸', price: 10, min: 0, max: 3, unit: '' },
+  axles:   { name: 'Axles',   icon: '⚙', price: 10, min: 0, max: 3, unit: '' },
+  tongues: { name: 'Tongues', icon: '🪵', price: 10, min: 0, max: 3, unit: '' },
 };
 
-/** Combined for cost calculation */
 const ALL_ITEMS = { ...MAIN_ITEMS, ...SPARE_PARTS };
 
-/** Toggle items (books, tools, Bible) — one-time purchases, not quantities */
+/** Toggle items */
 const TOGGLE_ITEMS = {
-  bible: { ...STORE_BIBLE, stateKey: 'hasBible' },
-  farmers_almanac: { ...STORE_BOOKS.farmers_almanac, stateKey: 'hasFarmersAlmanac' },
-  trail_guide: { ...STORE_BOOKS.trail_guide, stateKey: 'hasTrailGuide' },
-  tool_set: { ...STORE_TOOLS.tool_set, stateKey: 'hasToolSet' }
+  bible:           { ...STORE_BIBLE, icon: '✝', stateKey: 'hasBible' },
+  farmers_almanac: { ...STORE_BOOKS.farmers_almanac, icon: '📅', stateKey: 'hasFarmersAlmanac' },
+  trail_guide:     { ...STORE_BOOKS.trail_guide, icon: '🗺', stateKey: 'hasTrailGuide' },
+  tool_set:        { ...STORE_TOOLS.tool_set, icon: '🔧', stateKey: 'hasToolSet' }
 };
 
 export default function SupplyStore() {
@@ -37,7 +36,6 @@ export default function SupplyStore() {
   const is68 = state.gradeBand === '6_8';
   const is35 = state.gradeBand === '3_5';
 
-  // 3-5 gets pre-loaded supplies (free); 6-8 starts from scratch
   const preloaded = is35 ? GRADE_35_PRELOADED_SUPPLIES : null;
 
   const [quantities, setQuantities] = useState({
@@ -52,7 +50,6 @@ export default function SupplyStore() {
     medicineDoses: 5
   });
 
-  // Toggle items only available for 6-8 (and 3-5 for some)
   const [toggles, setToggles] = useState({
     bible: false,
     farmers_almanac: false,
@@ -117,119 +114,239 @@ export default function SupplyStore() {
     dispatch({ type: 'SET_PHASE', phase: 'TRAVELING' });
   }
 
+  const budgetPct = Math.max(0, Math.min(100, (remaining / startingCash) * 100));
+
   return (
-    <div className="h-screen bg-gradient-to-b from-trail-cream to-trail-parchment flex items-center justify-center px-4 py-2">
-      <div className="card max-w-2xl w-full max-h-[96vh] overflow-y-auto">
-        {/* Header with budget — compact */}
-        <div className="flex items-baseline justify-between mb-3">
+    <div style={{
+      height: '100vh', display: 'flex', flexDirection: 'column',
+      background: 'linear-gradient(180deg, #f5ead8 0%, #ecdabc 100%)',
+      fontFamily: 'var(--font-body)',
+    }}>
+      {/* ═══ HEADER — Store name + budget bar ═══ */}
+      <div style={{
+        flexShrink: 0, padding: '16px 24px 12px',
+        borderBottom: '2px solid rgba(120,80,40,0.2)',
+        background: 'rgba(44,31,20,0.04)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '10px' }}>
           <div>
-            <h1 className="text-2xl font-bold text-trail-darkBrown">Matt's General Store</h1>
-            <p className="text-sm text-trail-brown">Independence, Missouri</p>
+            <h1 style={{
+              fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 700,
+              color: '#2c1f14', margin: 0, lineHeight: 1.1,
+            }}>
+              Matt's General Store
+            </h1>
+            <p style={{ fontSize: '15px', color: '#5a4030', margin: '2px 0 0' }}>Independence, Missouri — 1848</p>
           </div>
-          <div className="text-right">
-            <div className={`text-xl font-bold ${!canAfford ? 'text-trail-red' : 'text-trail-blue'}`}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{
+              fontSize: '32px', fontWeight: 800, lineHeight: 1,
+              fontFamily: 'var(--font-display)',
+              color: !canAfford ? '#b94040' : '#4a6890',
+            }}>
               ${remaining.toFixed(2)}
             </div>
-            <div className="text-xs text-trail-brown">of ${startingCash.toFixed(2)}</div>
+            <div style={{ fontSize: '13px', color: '#5a4030', marginTop: '2px' }}>
+              of ${startingCash.toFixed(2)} budget
+            </div>
           </div>
         </div>
+        {/* Budget bar */}
+        <div style={{
+          height: '8px', borderRadius: '4px',
+          background: 'rgba(120,80,40,0.12)', overflow: 'hidden',
+        }}>
+          <div style={{
+            height: '100%', borderRadius: '4px',
+            width: `${budgetPct}%`,
+            background: !canAfford ? '#b94040' : budgetPct < 25 ? '#c2873a' : '#4a7c59',
+            transition: 'width 0.3s, background 0.3s',
+          }} />
+        </div>
+      </div>
 
-        {is35 && (
-          <p className="text-xs text-trail-brown mb-2 bg-green-50 px-2 py-1 rounded">
-            Your wagon already has basics loaded. Buy what else you need!
-          </p>
-        )}
+      {is35 && (
+        <div style={{
+          flexShrink: 0, padding: '6px 24px',
+          background: 'rgba(74,124,89,0.08)', fontSize: '14px', color: '#4a7c59',
+          borderBottom: '1px solid rgba(74,124,89,0.15)',
+        }}>
+          ✅ Your wagon already has basics loaded. Buy what else you need!
+        </div>
+      )}
 
-        {/* ═══ Main Supplies ═══ */}
-        <div className="space-y-1">
-          {Object.entries(MAIN_ITEMS).map(([key, item]) => (
-            <div key={key} className="flex items-center justify-between py-1.5 px-2 bg-trail-parchment/50 rounded">
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-trail-darkBrown text-sm leading-tight">
-                  {item.name}
-                  {preloaded?.[key] > 0 && (
-                    <span className="ml-1 text-[10px] font-bold text-green-700 bg-green-50 px-1 py-0.5 rounded-full">
-                      {preloaded[key]} free
+      {/* ═══ SCROLLABLE CONTENT ═══ */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 24px 0' }}>
+
+        {/* ═══ Main Supplies — 2-column grid ═══ */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px',
+        }}>
+          {Object.entries(MAIN_ITEMS).map(([key, item]) => {
+            const cost = item.price * Math.max(0, quantities[key] - (preloaded?.[key] || 0));
+            return (
+              <div key={key} style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 12px', borderRadius: '10px',
+                background: 'rgba(255,252,245,0.85)',
+                border: '1px solid rgba(120,80,40,0.15)',
+              }}>
+                <span style={{ fontSize: '28px', flexShrink: 0 }}>{item.icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#2c1f14' }}>
+                      {item.name}
                     </span>
-                  )}
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#4a6890' }}>
+                      ${cost.toFixed(2)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#5a4030', opacity: 0.7, marginTop: '1px' }}>
+                    {item.desc}
+                    {preloaded?.[key] > 0 && (
+                      <span style={{ marginLeft: '4px', color: '#4a7c59', fontWeight: 600 }}>
+                        ({preloaded[key]} free)
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                    <button onClick={() => updateQuantity(key, -1)} style={{
+                      width: '32px', height: '28px', borderRadius: '6px', border: '1px solid rgba(120,80,40,0.25)',
+                      background: 'rgba(120,80,40,0.08)', cursor: 'pointer',
+                      fontSize: '18px', fontWeight: 700, color: '#5a4030',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>−</button>
+                    <span style={{
+                      minWidth: '70px', textAlign: 'center',
+                      fontSize: '16px', fontWeight: 700, color: '#2c1f14',
+                    }}>
+                      {quantities[key]}{item.unit ? ` ${item.unit}` : ''}
+                    </span>
+                    <button onClick={() => updateQuantity(key, 1)} style={{
+                      width: '32px', height: '28px', borderRadius: '6px', border: '1px solid rgba(120,80,40,0.25)',
+                      background: 'rgba(120,80,40,0.08)', cursor: 'pointer',
+                      fontSize: '18px', fontWeight: 700, color: '#5a4030',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>+</button>
+                  </div>
                 </div>
-                <div className="text-[10px] text-trail-brown leading-tight">{item.desc}</div>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="text-xs text-trail-brown w-14 text-right">
-                  ${(item.price * Math.max(0, quantities[key] - (preloaded?.[key] || 0))).toFixed(2)}
-                </span>
-                <button onClick={() => updateQuantity(key, -1)}
-                  className="w-6 h-6 rounded-full bg-trail-brown/20 hover:bg-trail-brown/40 flex items-center justify-center font-bold text-xs">-</button>
-                <span className="w-14 text-center font-semibold text-xs">
-                  {quantities[key]}{item.unit ? ` ${item.unit}` : ''}
-                </span>
-                <button onClick={() => updateQuantity(key, 1)}
-                  className="w-6 h-6 rounded-full bg-trail-brown/20 hover:bg-trail-brown/40 flex items-center justify-center font-bold text-xs">+</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* ═══ Spare Parts — compact 3-col grid ═══ */}
-        <div className="mt-2">
-          <div className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1">Spare Parts ($10 each)</div>
-          <div className="grid grid-cols-3 gap-1.5">
+        {/* ═══ Spare Parts — inline 3-col ═══ */}
+        <div style={{ marginTop: '12px' }}>
+          <div style={{
+            fontSize: '13px', fontWeight: 700, color: '#2c1f14',
+            textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px',
+          }}>
+            Spare Parts — $10 each
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
             {Object.entries(SPARE_PARTS).map(([key, item]) => (
-              <div key={key} className="flex items-center justify-between py-1.5 px-2 bg-trail-parchment/50 rounded">
-                <span className="text-xs font-semibold text-trail-darkBrown">{item.name}</span>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => updateQuantity(key, -1)}
-                    className="w-5 h-5 rounded-full bg-trail-brown/20 hover:bg-trail-brown/40 flex items-center justify-center font-bold text-[10px]">-</button>
-                  <span className="w-4 text-center font-semibold text-xs">{quantities[key]}</span>
-                  <button onClick={() => updateQuantity(key, 1)}
-                    className="w-5 h-5 rounded-full bg-trail-brown/20 hover:bg-trail-brown/40 flex items-center justify-center font-bold text-[10px]">+</button>
+              <div key={key} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 12px', borderRadius: '10px',
+                background: 'rgba(255,252,245,0.85)',
+                border: '1px solid rgba(120,80,40,0.15)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '20px' }}>{item.icon}</span>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#2c1f14' }}>{item.name}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button onClick={() => updateQuantity(key, -1)} style={{
+                    width: '26px', height: '24px', borderRadius: '5px', border: '1px solid rgba(120,80,40,0.25)',
+                    background: 'rgba(120,80,40,0.08)', cursor: 'pointer',
+                    fontSize: '16px', fontWeight: 700, color: '#5a4030',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>−</button>
+                  <span style={{ width: '24px', textAlign: 'center', fontSize: '16px', fontWeight: 700, color: '#2c1f14' }}>
+                    {quantities[key]}
+                  </span>
+                  <button onClick={() => updateQuantity(key, 1)} style={{
+                    width: '26px', height: '24px', borderRadius: '5px', border: '1px solid rgba(120,80,40,0.25)',
+                    background: 'rgba(120,80,40,0.08)', cursor: 'pointer',
+                    fontSize: '16px', fontWeight: 700, color: '#5a4030',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>+</button>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ═══ Books & Tools (6-8 and 3-5 only) ═══ */}
-        {(is68 || state.gradeBand === '3_5') && (
-          <div className="mt-2">
-            <div className="text-xs font-bold text-trail-darkBrown uppercase tracking-wider mb-1">Books & Equipment</div>
-            <div className="grid grid-cols-2 gap-1.5">
+        {/* ═══ Books & Equipment (6-8 and 3-5) ═══ */}
+        {(is68 || is35) && (
+          <div style={{ marginTop: '12px' }}>
+            <div style={{
+              fontSize: '13px', fontWeight: 700, color: '#2c1f14',
+              textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px',
+            }}>
+              Books & Equipment
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {Object.entries(TOGGLE_ITEMS).map(([key, item]) => (
                 <div key={key}
-                  className={`py-1.5 px-2 rounded border cursor-pointer transition-all ${
-                    toggles[key]
-                      ? 'border-trail-blue bg-trail-blue/10'
-                      : 'border-trail-tan/50 bg-trail-parchment/30 hover:border-trail-blue/40'
-                  }`}
                   onClick={() => toggleItem(key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 12px', borderRadius: '10px', cursor: 'pointer',
+                    border: `2px solid ${toggles[key] ? '#4a6890' : 'rgba(120,80,40,0.15)'}`,
+                    background: toggles[key] ? 'rgba(74,104,144,0.08)' : 'rgba(255,252,245,0.85)',
+                    transition: 'all 0.15s',
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <input type="checkbox" checked={toggles[key]} onChange={() => toggleItem(key)}
-                        className="w-3.5 h-3.5 text-trail-blue rounded" onClick={e => e.stopPropagation()} />
-                      <span className="font-semibold text-trail-darkBrown text-xs">{item.name}</span>
+                  <span style={{ fontSize: '22px', flexShrink: 0 }}>{item.icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#2c1f14' }}>{item.name}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#4a6890' }}>${item.price}</span>
                     </div>
-                    <span className="font-bold text-trail-blue text-xs">${item.price}</span>
+                    <div style={{ fontSize: '12px', color: '#5a4030', opacity: 0.7, marginTop: '1px' }}>
+                      {item.description}
+                    </div>
                   </div>
-                  <p className="text-[10px] text-trail-brown mt-0.5 ml-5 leading-tight">{item.description}</p>
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '5px', flexShrink: 0,
+                    border: `2px solid ${toggles[key] ? '#4a6890' : 'rgba(120,80,40,0.3)'}`,
+                    background: toggles[key] ? '#4a6890' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', fontSize: '14px', fontWeight: 700,
+                  }}>
+                    {toggles[key] && '✓'}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+      </div>
 
-        {/* ═══ Purchase ═══ */}
+      {/* ═══ FOOTER — Purchase button (always visible) ═══ */}
+      <div style={{
+        flexShrink: 0, padding: '12px 24px 16px',
+        borderTop: '2px solid rgba(120,80,40,0.15)',
+        background: 'rgba(255,252,245,0.95)',
+      }}>
         <button
           onClick={handlePurchase}
           disabled={!canAfford || quantities.oxenYokes < 1}
-          className={`mt-3 w-full text-lg py-2.5 rounded-lg font-semibold transition-colors shadow-md ${
-            canAfford && quantities.oxenYokes >= 1
-              ? 'bg-trail-brown text-white hover:bg-trail-darkBrown'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
+          style={{
+            width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+            fontSize: '20px', fontWeight: 700, cursor: canAfford && quantities.oxenYokes >= 1 ? 'pointer' : 'not-allowed',
+            fontFamily: 'var(--font-display)',
+            background: canAfford && quantities.oxenYokes >= 1
+              ? 'linear-gradient(135deg, #5a4030 0%, #2c1f14 100%)'
+              : '#ccc',
+            color: canAfford && quantities.oxenYokes >= 1 ? '#f5ead8' : '#888',
+            boxShadow: canAfford && quantities.oxenYokes >= 1
+              ? '0 4px 12px rgba(44,31,20,0.3)' : 'none',
+            transition: 'all 0.2s',
+          }}
         >
-          {!canAfford ? 'Over Budget!' : quantities.oxenYokes < 1 ? 'Need at least 1 yoke of oxen' : 'Head West!'}
+          {!canAfford ? '💸 Over Budget!' : quantities.oxenYokes < 1 ? '🐂 Need at least 1 yoke of oxen' : '🚀 Head West!'}
         </button>
       </div>
     </div>
