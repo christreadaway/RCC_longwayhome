@@ -1,18 +1,18 @@
-# CLAUDE.md — The Long Way Home
+# CLAUDE.md — Pioneer Trail
 *Project context for Claude Code. Read this first before any build session.*
 
 ---
 
 ## What This Project Is
 
-**The Long Way Home** is a browser-based educational game — a from-scratch rebuild of Oregon Trail mechanics for Catholic classroom use (K-2, 3-5, 6-8). It is not a clone; it uses no original MECC/HMH code or assets. All content is original.
+**Pioneer Trail** is a browser-based educational game — a from-scratch rebuild of Oregon Trail mechanics for Catholic middle school classroom use. It is not a clone; it uses no original MECC/HMH code or assets. All content is original.
 
 The game has three distinct surfaces:
 1. **Student game** — the main gameplay experience
 2. **Teacher dashboard** — real-time monitoring of all student sessions
 3. **Node.js backend** — session state, AI proxy, Historian logging
 
-Full requirements: `the-long-way-home-requirements.md`  
+Full requirements: `pioneer-trail-requirements.md`  
 Catholic design framework: `catholic.md`
 
 ---
@@ -54,42 +54,57 @@ If you can't add a second game by just swapping the `content/` folder and `game.
 ## Project Structure
 
 ```
-long-way-home/
-├── client/                    # React frontend (Vite)
-│   ├── src/
-│   │   ├── game/              # Core game logic
-│   │   │   ├── engine.js      # Game state machine
-│   │   │   ├── events.js      # Event system (random + triggered)
-│   │   │   ├── grace.js       # Grace meter logic
-│   │   │   ├── cwm.js         # Corporal Works of Mercy + deceptive charity
-│   │   │   ├── reciprocity.js # Stranger Returns system
-│   │   │   ├── reconciliation.js  # Make It Right events (3-5 and 6-8)
-│   │   │   ├── morallabels.js # Label generation by grade band + mode
-│   │   │   ├── gradeband.js   # Grade band feature flags
-│   │   │   └── probability.js # All probability calculations
-│   │   ├── scenes/            # Pixi.js visual scenes
-│   │   ├── components/
-│   │   │   ├── game/          # Student-facing game UI
-│   │   │   │   ├── k2/        # K–2 variant components (simplified trail, guardian angel)
-│   │   │   │   ├── shared/    # Shared across grade bands
-│   │   │   │   └── MoralLabel.jsx   # Dismissible label card
-│   │   │   ├── dashboard/     # Teacher dashboard
-│   │   │   └── shared/
-│   │   ├── data/
-│   │   │   ├── knowledge-panel.json
-│   │   │   ├── knowledge-panel-3-5.json  # Simplified cards for 3-5
-│   │   │   ├── events.json
-│   │   │   ├── events-k2.json            # Simplified K-2 event set
-│   │   │   ├── moral-labels.json         # All label text by grade band + event type
-│   │   │   ├── landmarks.json
-│   │   │   ├── landmarks-k2.json         # 5-stop K-2 trail
-│   │   │   ├── catholic-curriculum.json  # CWM names, Commandments, Beatitudes for labels
-│   │   │   └── illness.json
-│   │   ├── hooks/
-│   │   ├── store/
-│   │   └── utils/
-│   │       └── logger.js
-├── server/
+long-way-home/                 # Monorepo — engine + first game
+│
+├── engine/                    # ⚙️ GAME ENGINE — no game-specific content, ever
+│   ├── core/
+│   │   ├── game-loop.js       # State machine (SETUP→TRAVELING→EVENT→LANDMARK→END)
+│   │   ├── probability.js     # All probability calculations
+│   │   └── gradeband.js       # Grade band feature flag system
+│   ├── systems/
+│   │   ├── grace.js           # Grace meter (generic — no Catholic-specific text)
+│   │   ├── personality.js     # Working Genius + MBTI system
+│   │   ├── events.js          # Event firing + cascade flag engine
+│   │   ├── reconciliation.js  # Make It Right system
+│   │   ├── reciprocity.js     # Stranger Returns system
+│   │   ├── morallabels.js     # Label rendering (text comes from content/)
+│   │   └── achievements.js    # Hidden achievement evaluation
+│   ├── ai/
+│   │   ├── proxy.js           # Anthropic API wrapper (generic)
+│   │   └── prompts.js         # Prompt templates with {placeholders}
+│   ├── dashboard/             # Teacher dashboard (generic — no game-specific UI)
+│   └── utils/
+│       └── logger.js
+│
+├── games/
+│   └── long-way-home/         # 🎮 FIRST GAME — content only
+│       ├── content/
+│       │   ├── events.json          # All Oregon Trail events
+│       │   ├── events-k2.json       # K–2 simplified event set
+│       │   ├── landmarks.json       # Trail landmarks + distances
+│       │   ├── landmarks-k2.json    # 5-stop K–2 trail
+│       │   ├── routes.json          # Main Trail, Southern Cutoff, Northern Mountain
+│       │   ├── npcs.json            # De Smet, Whitman, Bridger, etc.
+│       │   ├── moral-labels.json    # Label text by event + grade band
+│       │   ├── knowledge-panel.json # Historical knowledge cards
+│       │   ├── illness.json         # Disease progression tables
+│       │   └── catholic-curriculum.json  # CWM names, Commandments, Beatitudes
+│       ├── components/
+│       │   ├── scenes/              # Pixi.js visual scenes (Oregon Trail-specific)
+│       │   ├── k2/                  # K–2 UI variant components
+│       │   └── MoralLabel.jsx       # Game-specific label card styling
+│       └── game.config.js           # ← THE BOUNDARY
+│           /*
+│             era: '1848',
+│             setting: 'american_frontier',
+│             defaultRoute: 'main_trail',
+│             catholicAnchor: 'jesuit_frontier',
+│             gradeBands: ['k2', '3_5', '6_8'],
+│             aiPersona: 'trail_historian',
+│             ...
+│           */
+│
+├── server/                    # Node.js backend
 │   ├── routes/
 │   │   ├── session.js
 │   │   ├── historian.js
@@ -103,8 +118,9 @@ long-way-home/
 │   └── types.js               # Shared data structures
 │
 ├── .env.example
-├── CLAUDE.md
+├── CLAUDE.md                  # This file
 ├── the-long-way-home-requirements.md
+├── lwyh-enhancements-requirements.md
 └── catholic.md
 ```
 
@@ -350,7 +366,7 @@ Trail segment definitions: start, end, distance_miles, terrain_type, hazard_mult
 
 ```bash
 # Install dependencies
-cd /Users/christreadaway/long-way-home
+cd /Users/christreadaway/pioneer-trail
 npm install
 
 # Set up environment
@@ -397,9 +413,9 @@ npm run dev
 
 ## Open Questions for Chris Before Build
 
-See `the-long-way-home-requirements.md` Section 9 for full list. Blockers before first Claude Code session:
+See `pioneer-trail-requirements.md` Section 9 for full list. Blockers before first Claude Code session:
 
-1. **Game name confirmed?** (Confirmed: "The Long Way Home")
+1. **Game name confirmed?** (Default: "Pioneer Trail")
 2. **Art style decided?** (Default: illustrated storybook / warm palette)
 3. **Target device?** (Default: Chromebook landscape 1366×768)
 4. **Which grade band to build first?** (Recommend 6–8 as the full variant; K–2 and 3–5 can follow as simplifications)
