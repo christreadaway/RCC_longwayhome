@@ -12,7 +12,7 @@ The game has three distinct surfaces:
 2. **Teacher dashboard** — real-time monitoring of all student sessions
 3. **Node.js backend** — session state, AI proxy, Historian logging
 
-Full requirements: `pioneer-trail-requirements.md`  
+Full requirements: `the-long-way-home-requirements.md`
 Catholic design framework: `catholic.md`
 
 ---
@@ -28,120 +28,114 @@ Catholic design framework: `catholic.md`
 | Real-time sync | Polling (10s intervals) — WebSocket in v2 |
 | AI features | Anthropic API (claude-haiku-4-5 default) via server-side proxy |
 | Database | None (MVP) — in-memory server state + localStorage |
-| Deployment | Not specified yet |
+| Deployment | Render (server) + Netlify (client) |
 
 ---
-
-## Architecture — Engine vs. Game Content
-
-**Critical design principle:** The engine must never contain game-specific content. Oregon Trail, 1848, Jesuit missions, specific diseases — none of that lives in the engine. It lives in the game's `content/` folder. This keeps the engine extractable for future games (Journey of Paul, Mayflower, etc.) without refactoring.
-
-```
-Engine knows about:          Game content provides:
-─────────────────────        ──────────────────────────
-- Trail/journey progression  - Specific landmarks + distances
-- Grace meter                - Era-appropriate event text
-- Personality system         - NPC characters + dialogue
-- Event firing framework     - Moral label copy
-- Moral label system         - Knowledge panel cards
-- Teacher dashboard          - Catholic curriculum references
-- AI proxy                   - Route definitions
-- Grade band flags           - Illness/hazard tables
-```
-
-If you can't add a second game by just swapping the `content/` folder and `game.config.js`, the engine boundary has been violated. Claude Code should enforce this strictly.
 
 ## Project Structure
 
 ```
-long-way-home/                 # Monorepo — engine + first game
+long-way-home/
+├── client/                    # React frontend (Vite)
+│   ├── src/
+│   │   ├── game/              # Core game logic — NO UI here
+│   │   │   ├── engine.js      # Game state machine
+│   │   │   ├── events.js      # Event system (random + triggered)
+│   │   │   ├── grace.js       # Grace meter logic
+│   │   │   ├── cwm.js         # Corporal Works of Mercy + deceptive charity
+│   │   │   ├── reciprocity.js # Stranger Returns system
+│   │   │   ├── reconciliation.js  # Make It Right events (3-5 and 6-8)
+│   │   │   ├── morallabels.js # Label generation by grade band + mode
+│   │   │   ├── gradeband.js   # Grade band feature flags
+│   │   │   ├── probability.js # All probability calculations
+│   │   │   ├── weather.js     # Weather system
+│   │   │   ├── campActivities.js  # Camp rest activities
+│   │   │   └── tripReport.js  # End-of-game trip report generation
+│   │   ├── components/
+│   │   │   ├── game/          # Student-facing game UI
+│   │   │   │   ├── TitleScreen.jsx
+│   │   │   │   ├── SetupScreen.jsx
+│   │   │   │   ├── SupplyStore.jsx
+│   │   │   │   ├── TravelScreen.jsx
+│   │   │   │   ├── EventScreen.jsx
+│   │   │   │   ├── LandmarkScreen.jsx
+│   │   │   │   ├── GameOverScreen.jsx
+│   │   │   │   └── shared/    # Shared game components
+│   │   │   │       ├── CampActivitiesPanel.jsx
+│   │   │   │       ├── CharacterFace.jsx
+│   │   │   │       ├── HistorianPanel.jsx
+│   │   │   │       ├── HuntingMinigame.jsx
+│   │   │   │       ├── KnowledgePanel.jsx
+│   │   │   │       ├── MoralLabel.jsx
+│   │   │   │       ├── OregonTrailMap.jsx
+│   │   │   │       ├── PartyStatus.jsx
+│   │   │   │       ├── PauseOverlay.jsx
+│   │   │   │       ├── SundayRestPrompt.jsx
+│   │   │   │       ├── TerrainScene.jsx
+│   │   │   │       ├── TrailMap.jsx
+│   │   │   │       ├── TrailProgressBar.jsx
+│   │   │   │       ├── TrailSceneCSS.jsx
+│   │   │   │       └── WeatherBox.jsx
+│   │   │   └── dashboard/     # Teacher dashboard
+│   │   │       ├── TeacherDashboard.jsx
+│   │   │       ├── DashboardMain.jsx
+│   │   │       ├── DashboardCharts.jsx
+│   │   │       ├── SessionSetup.jsx
+│   │   │       ├── SettingsPanel.jsx
+│   │   │       ├── StudentCard.jsx
+│   │   │       └── TranscriptViewer.jsx
+│   │   ├── data/
+│   │   │   ├── events.json
+│   │   │   ├── events-k2.json            # Simplified K-2 event set
+│   │   │   ├── landmarks.json
+│   │   │   ├── landmarks-k2.json         # 5-stop K-2 trail
+│   │   │   ├── moral-labels.json         # All label text by grade band + event type
+│   │   │   ├── knowledge-panel.json
+│   │   │   ├── knowledge-panel-3-5.json  # Simplified cards for 3-5
+│   │   │   ├── catholic-curriculum.json  # CWM names, Commandments, Beatitudes
+│   │   │   ├── illness.json
+│   │   │   ├── trail-dangers.json
+│   │   │   └── trail-flavor.js
+│   │   ├── hooks/
+│   │   │   └── useWindowWidth.js
+│   │   ├── store/
+│   │   │   └── GameContext.jsx
+│   │   ├── shared/
+│   │   │   └── types.js
+│   │   └── utils/
+│   │       ├── api.js
+│   │       ├── crashLogger.js
+│   │       ├── dateUtils.js
+│   │       └── logger.js
+│   ├── tailwind.config.js
+│   └── vite.config.js
 │
-├── engine/                    # ⚙️ GAME ENGINE — no game-specific content, ever
-│   ├── core/
-│   │   ├── game-loop.js       # State machine (SETUP→TRAVELING→EVENT→LANDMARK→END)
-│   │   ├── probability.js     # All probability calculations
-│   │   └── gradeband.js       # Grade band feature flag system
-│   ├── systems/
-│   │   ├── grace.js           # Grace meter (generic — no Catholic-specific text)
-│   │   ├── personality.js     # Working Genius + MBTI system
-│   │   ├── events.js          # Event firing + cascade flag engine
-│   │   ├── reconciliation.js  # Make It Right system
-│   │   ├── reciprocity.js     # Stranger Returns system
-│   │   ├── morallabels.js     # Label rendering (text comes from content/)
-│   │   └── achievements.js    # Hidden achievement evaluation
+├── server/
+│   ├── index.js
+│   ├── logger.js
 │   ├── ai/
-│   │   ├── proxy.js           # Anthropic API wrapper (generic)
+│   │   ├── proxy.js           # Anthropic API wrapper
 │   │   └── prompts.js         # Prompt templates with {placeholders}
-│   ├── dashboard/             # Teacher dashboard (generic — no game-specific UI)
-│   └── utils/
-│       └── logger.js
-│
-├── games/
-│   └── long-way-home/         # 🎮 FIRST GAME — content only
-│       ├── content/
-│       │   ├── events.json          # All Oregon Trail events
-│       │   ├── events-k2.json       # K–2 simplified event set
-│       │   ├── landmarks.json       # Trail landmarks + distances
-│       │   ├── landmarks-k2.json    # 5-stop K–2 trail
-│       │   ├── routes.json          # Main Trail, Southern Cutoff, Northern Mountain
-│       │   ├── npcs.json            # De Smet, Whitman, Bridger, etc.
-│       │   ├── moral-labels.json    # Label text by event + grade band
-│       │   ├── knowledge-panel.json # Historical knowledge cards
-│       │   ├── illness.json         # Disease progression tables
-│       │   └── catholic-curriculum.json  # CWM names, Commandments, Beatitudes
-│       ├── components/
-│       │   ├── scenes/              # Pixi.js visual scenes (Oregon Trail-specific)
-│       │   ├── k2/                  # K–2 UI variant components
-│       │   └── MoralLabel.jsx       # Game-specific label card styling
-│       └── game.config.js           # ← THE BOUNDARY
-│           /*
-│             era: '1848',
-│             setting: 'american_frontier',
-│             defaultRoute: 'main_trail',
-│             catholicAnchor: 'jesuit_frontier',
-│             gradeBands: ['k2', '3_5', '6_8'],
-│             aiPersona: 'trail_historian',
-│             ...
-│           */
-│
-├── server/                    # Node.js backend
 │   ├── routes/
 │   │   ├── session.js
 │   │   ├── historian.js
 │   │   ├── npc.js
 │   │   ├── insights.js
-│   │   └── export.js
-│   ├── state/store.js
-│   └── logger.js
+│   │   ├── export.js
+│   │   └── crashReport.js
+│   └── state/store.js
 │
 ├── shared/
 │   └── types.js               # Shared data structures
 │
+├── netlify.toml               # Netlify deploy config
+├── netlify/functions/api.js   # Serverless function wrapper
+├── render.yaml                # Render deploy config
+├── Dockerfile
+├── Procfile
 ├── .env.example
-├── CLAUDE.md                  # This file
-├── the-long-way-home-requirements.md
-├── lwyh-enhancements-requirements.md
-└── catholic.md
+└── product_spec.md
 ```
-
-## Future Games (same engine, different content/)
-
-When Journey of Paul is ready:
-```
-games/
-├── long-way-home/       ← Oregon Trail, 1848
-├── journey-of-paul/     ← Mediterranean, 50 AD, Acts of the Apostles
-│   ├── content/
-│   │   ├── events.json         # Shipwrecks, imprisonments, conversions
-│   │   ├── landmarks.json      # Damascus→Jerusalem→Antioch→Corinth→Rome
-│   │   ├── npcs.json           # Barnabas, Luke, Timothy, Silas, Lydia
-│   │   └── moral-labels.json   # Early Church framework
-│   └── game.config.js
-├── mayflower/           ← Atlantic crossing, 1620
-└── the-crusades/        ← Europe to Holy Land, 1095+ (complex moral terrain)
-```
-
-The engine extraction step happens naturally when game #2 is started. Don't extract prematurely — build Long Way Home first, then extract the engine when Journey of Paul begins. You'll know exactly what's shared by then.
 
 ---
 
@@ -226,7 +220,7 @@ const flags = getFeatureFlags('k2')
 `life_in_oregon_narrative` is generated at game completion based on Grace range. For 6–8 with AI Exam of Conscience enabled, this is AI-generated from the event log. For 3–5 and K–2, it's a templated narrative selected by Grace range from `moral-labels.json`. The narrative is stored on the student state object so the teacher can read it in the dashboard.
 
 ### Grace Meter
-(unchanged from prior version — see above)
+Grace is the core moral metric. It increases with virtuous choices (CWM events, reconciliation) and decreases with sinful ones. Range: 0–100, starting at 50. Grace drives the end-of-game narrative and teacher dashboard insights.
 
 ### Corporal Works of Mercy + Deceptive Charity
 - Events defined in `cwm.js` and `events.json`
@@ -323,10 +317,10 @@ All game state mutations go through the state machine. No direct state mutations
 
 All prompts live in `server/ai/prompts.js`. Never hardcode prompts in route handlers.
 
-**Historian system prompt key:** `HISTORIAN_SYSTEM`  
-**NPC encounter prompts key:** `NPC_[CHARACTER_KEY]` (e.g., `NPC_DESMET`, `NPC_WHITMAN`)  
-**Examination of Conscience key:** `EXAM_CONSCIENCE`  
-**Teacher Insight Generator key:** `TEACHER_INSIGHTS`  
+**Historian system prompt key:** `HISTORIAN_SYSTEM`
+**NPC encounter prompts key:** `NPC_[CHARACTER_KEY]` (e.g., `NPC_DESMET`, `NPC_WHITMAN`)
+**Examination of Conscience key:** `EXAM_CONSCIENCE`
+**Teacher Insight Generator key:** `TEACHER_INSIGHTS`
 
 Context injection pattern (all prompts use template literals):
 ```javascript
@@ -366,12 +360,12 @@ Trail segment definitions: start, end, distance_miles, terrain_type, hazard_mult
 
 ```bash
 # Install dependencies
-cd /Users/christreadaway/pioneer-trail
+cd long-way-home
 npm install
+cd client && npm install && cd ..
 
 # Set up environment
 cp .env.example .env
-# Edit .env — add VITE_FEEDBACK_FORM_URL if available
 
 # Run dev (starts both client and server with concurrently)
 npm run dev
@@ -399,7 +393,7 @@ npm run dev
 
 ---
 
-## What NOT to Build in This Session (Out of Scope)
+## What NOT to Build (Out of Scope for MVP)
 
 - User accounts or persistent login
 - Long-term database storage
@@ -408,20 +402,6 @@ npm run dev
 - LMS integration
 - Full accessibility compliance
 - Leaderboard persistence across sessions
-
----
-
-## Open Questions for Chris Before Build
-
-See `pioneer-trail-requirements.md` Section 9 for full list. Blockers before first Claude Code session:
-
-1. **Game name confirmed?** (Default: "Pioneer Trail")
-2. **Art style decided?** (Default: illustrated storybook / warm palette)
-3. **Target device?** (Default: Chromebook landscape 1366×768)
-4. **Which grade band to build first?** (Recommend 6–8 as the full variant; K–2 and 3–5 can follow as simplifications)
-5. **Google Form URL for feedback?** (Hide button if env var missing — not a blocker)
-6. **Who provides the API key in production?** (Default: teacher enters at session setup)
-7. **K–2 guardian angel character** — named character or ambient presence? This affects asset scope.
 
 ---
 
