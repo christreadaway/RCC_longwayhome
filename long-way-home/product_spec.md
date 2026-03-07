@@ -8,7 +8,7 @@
 - **Type:** Browser-based educational game (Oregon Trail mechanics, Catholic curriculum)
 - **Grade Bands:** K-2, 3-5, 6-8
 - **Tech Stack:** React + Vite (client), Node.js + Express (server), Tailwind CSS, Framer Motion
-- **Version:** 1.0.0 (MVP)
+- **Version:** 1.0.12 (MVP)
 
 ---
 
@@ -19,10 +19,10 @@
 client/src/
 ├── App.jsx                    # Main app shell, phase-based rendering
 ├── main.jsx                   # Entry point, React Router setup
-├── index.css                  # Tailwind + custom animations
+├── index.css                  # Tailwind + custom animations + no-scroll enforcement
 ├── store/GameContext.jsx       # Global state via useReducer + Context
 ├── game/                      # Pure JS game logic (no React)
-│   ├── engine.js              # State machine, score calc, narratives
+│   ├── engine.js              # State machine, score calc, age-based food/pace
 │   ├── events.js              # Event system (random + triggered)
 │   ├── grace.js               # Grace meter logic
 │   ├── gradeband.js           # Feature flags by grade band
@@ -30,31 +30,40 @@ client/src/
 │   ├── reciprocity.js         # Stranger Returns system
 │   ├── reconciliation.js      # Make It Right events
 │   ├── morallabels.js         # Label generation
-│   └── probability.js         # All probability calculations
+│   ├── probability.js         # All probability calculations (age-modified)
+│   ├── weather.js             # Historically accurate 1848 weather generation
+│   ├── campActivities.js      # Camp activities system (11 activities)
+│   └── tripReport.js          # End-of-trip difficulty index generator
 ├── components/
 │   ├── game/                  # Student-facing game screens
 │   │   ├── TitleScreen.jsx    # Title, join session, offline play
-│   │   ├── SetupScreen.jsx    # Name, profession, party, chaplain
-│   │   ├── SupplyStore.jsx    # Independence supply purchase
-│   │   ├── TravelScreen.jsx   # Main travel loop with map, events
-│   │   ├── LandmarkScreen.jsx # Fort/mission arrival, CWM, resupply
-│   │   ├── EventScreen.jsx    # Event resolution with choices
+│   │   ├── SetupScreen.jsx    # Name, profession, party (age/gender), chaplain
+│   │   ├── SupplyStore.jsx    # Supply purchase with emoji visuals
+│   │   ├── TravelScreen.jsx   # Main travel loop — no-scroll viewport layout
+│   │   ├── LandmarkScreen.jsx # Fort/mission arrival, rest & recover, medicine
+│   │   ├── EventScreen.jsx    # Event resolution with SVG category icons
 │   │   ├── GameOverScreen.jsx # Score, narrative, exam of conscience
 │   │   └── shared/            # Reusable game UI components
 │   │       ├── MoralLabel.jsx       # Centered pop-in moral label (green/red)
 │   │       ├── PauseOverlay.jsx     # Teacher-paused overlay
 │   │       ├── TrailMap.jsx         # Trail progress visualization
+│   │       ├── TrailProgressBar.jsx # Dark trail bar with landmark markers + gold fill
+│   │       ├── TrailSceneCSS.jsx    # Pure CSS trail scene with weather overlays
 │   │       ├── OregonTrailMap.jsx   # SVG map with 1848 boundaries, zoom/pan
-│   │       ├── TerrainScene.jsx     # Dynamic terrain (plains/hills/mountains/river)
+│   │       ├── TerrainScene.jsx     # Animated terrain with walking family figures
+│   │       ├── CharacterFace.jsx    # Procedural SVG faces (role, mood, health, age)
 │   │       ├── PartyStatus.jsx      # Party health/supplies
 │   │       ├── SundayRestPrompt.jsx # Sunday rest decision
 │   │       ├── HuntingMinigame.jsx  # Click-based hunting with hit feedback
 │   │       ├── HistorianPanel.jsx   # AI Trail Historian chat
-│   │       └── KnowledgePanel.jsx   # Historical knowledge cards
+│   │       ├── KnowledgePanel.jsx   # Historical knowledge cards
+│   │       ├── CampActivitiesPanel.jsx # Camp activities with 1848 dialogue
+│   │       └── WeatherBox.jsx       # Temperature, wind, condition, ground
 │   └── dashboard/             # Teacher dashboard
 │       ├── TeacherDashboard.jsx  # Router wrapper
 │       ├── SessionSetup.jsx      # Create/join session
 │       ├── DashboardMain.jsx     # Student grid, controls, insights
+│       ├── DashboardCharts.jsx   # Class-level analytics
 │       ├── StudentCard.jsx       # Individual student card
 │       ├── SettingsPanel.jsx     # Live session settings
 │       └── TranscriptViewer.jsx  # AI transcript viewer
@@ -63,21 +72,17 @@ client/src/
 │   ├── landmarks-k2.json      # 5-stop trail for K-2
 │   ├── events.json            # 50 events across 12 categories
 │   ├── events-k2.json         # 8 simplified K-2 events
-│   ├── illness.json           # 7 illness types with tiers
+│   ├── illness.json           # 7 illness types with tiers + age vulnerability
 │   ├── knowledge-panel.json   # 12 historical cards for 6-8
 │   ├── knowledge-panel-3-5.json # 5 cards for 3-5
 │   ├── moral-labels.json      # 22 label groups x 3 grade bands
 │   ├── catholic-curriculum.json # CWM, Commandments, Beatitudes
 │   ├── trail-flavor.js        # 300+ ambient narrative messages (14 categories)
 │   └── trail-dangers.json     # 30+ trail dangers + 13 positive encounters
-├── game/
-│   ├── __tests__/             # Test suite (Node-runnable ESM)
-│   │   ├── weather.test.js    # 12 weather system tests
-│   │   ├── campActivities.test.js # 12 camp activities tests
-│   │   └── loader.mjs         # Custom ESM loader for Vite aliases
-│   ├── weather.js             # Historically accurate 1848 weather generation
-│   ├── campActivities.js      # Camp activities system (11 activities)
-│   └── tripReport.js          # End-of-trip difficulty index generator
+├── hooks/
+│   └── useWindowWidth.js      # Responsive breakpoint hook (desktop/tablet/mobile)
+├── shared/
+│   └── types.js               # Shared data structures, constants, age modifiers
 └── utils/
     ├── logger.js              # Client-side logger with buffer
     ├── api.js                 # API client wrapper
@@ -109,11 +114,12 @@ server/
 
 ### Core Game Loop
 - [x] State machine: TITLE → SETUP → SUPPLY_PURCHASE → TRAVELING → REST_POINT → EVENT_RESOLUTION → LANDMARK → GAME_OVER
+- [x] K-2 shortcut: SETUP → TRAVELING (skip profession/store)
 - [x] Date system starting April 1, 1848
-- [x] Daily food consumption by rations setting
+- [x] Daily food consumption by rations setting (cold weather multiplier: 1.2x below 50F, 1.4x below 32F)
 - [x] Pace system (steady/strenuous/grueling) affecting distance and illness
 - [x] Party health progression: good → fair → poor → critical → dead
-- [x] Death checks for critical members
+- [x] Death checks for critical members (age-modified)
 - [x] Mountain pass deadline (Oct 15) with blizzard risk
 - [x] Win condition: reach Willamette Valley before Dec 31, 1848
 - [x] Score calculation with Grace multiplier
@@ -121,11 +127,25 @@ server/
 - [x] Server state sync (10-second polling)
 
 ### Grade Band System
-- [x] K-2: 5-stop trail, no supplies, 2 companions, guardian angel, immediate labels
-- [x] 3-5: Full trail, basic supplies, 2-tier illness, reconciliation events
-- [x] 6-8: Full game with all features enabled
+- [x] K-2: 5-stop trail, no supply store, auto-provisioned wagon, 2 companions, guardian angel, immediate labels
+- [x] 3-5: Full trail, pre-loaded supply "care package" (1 oxen yoke, 200 lbs food, 100 gal water), reduced budgets, 2-tier illness, reconciliation events
+- [x] 6-8: Full game — tight budgets force real trade-offs, all features enabled
 - [x] Feature flags via `getFeatureFlags(gradeBand)`
 - [x] Session-level grade band (locked at creation)
+- [x] Grade-specific profession cash: K-2 none, 3-5 ($500/$400/$300), 6-8 ($800/$600/$400)
+
+### Party Member System
+- [x] Per-member age selection: Child (0-12), Teen (13-17), Adult (18-54), Elder (55-65)
+- [x] Per-member gender selection (male/female)
+- [x] Age-based gameplay modifiers:
+  - Child: higher illness (+4%), less food (0.6x), can't hunt/repair, slower pace (0.85x)
+  - Teen: lower illness (-2%), slight morale bonus, faster pace (1.05x)
+  - Adult: baseline
+  - Elder: highest illness (+5%) and death (+3%) risk, less food (0.8x), slower pace (0.9x)
+- [x] Party travel speed limited by slowest member's age pace modifier
+- [x] Age vulnerability multipliers on all 7 illnesses (measles hits kids, exhaustion hits elders)
+- [x] Per-member morale tracking with Talk to Family interaction
+- [x] CharacterFace.jsx: procedural SVG faces differentiated by age (freckles for kids, wrinkles for elders)
 
 ### Catholic Content Systems
 - [x] Grace Meter (0-100, invisible to students, visible to teacher)
@@ -143,6 +163,7 @@ server/
 - [x] Examination of Conscience (templated + AI option)
 - [x] Arrival narrative by Grace range (4 variants)
 - [x] "Life in Oregon" epilogue (6-8 only, 4 variants)
+- [x] Holy Bible (Douay-Rheims, $25) with prayer/morale/grace bonuses
 
 ### AI Features
 - [x] Trail Historian (context-aware Q&A, post-event or free access)
@@ -156,15 +177,15 @@ server/
 - [x] Takoda (Pawnee Scout) at Fort Kearney — Pawnee territory
 - [x] Washakie (Shoshone Guide) at Fort Bridger — Shoshone territory
 - [x] Taghee (Bannock Guide) at Fort Hall — Bannock territory
-- [x] Hímiin Maqsmáqs (Nez Perce Scout) at Fort Boise — Nez Perce territory
+- [x] Himiin Maqsmaqs (Nez Perce Scout) at Fort Boise — Nez Perce territory
 - [x] Each scout provides regionally accurate dialogue with gameplay tips
 - [x] Preloaded suggested questions with hardcoded answers (no AI dependency)
 
 ### Trail Flavor Text System
 - [x] 300+ ambient narrative messages across 14 categories
 - [x] Categories: terrain (4 types), weather, wildlife, camp life, humanity, children, faith, hardship, wagon train, night sky, food, water, seasonal, milestone
-- [x] Weighted random selection based on game context (low food → more hardship messages, etc.)
-- [x] Historical humanity touches: singing "Oh! Susanna", fiddle playing, reading Pilgrim's Progress, journal writing, James Fenimore Cooper, harmonica playing "Amazing Grace"
+- [x] Weighted random selection based on game context
+- [x] Historical humanity touches: singing, fiddle, harmonica, books, journal writing
 
 ### Difficulty Tuning
 - [x] Base illness rate doubled (3% → 6%) with terrain/seasonal modifiers
@@ -175,6 +196,31 @@ server/
 - [x] Terrain-adaptive difficulty: plains quieter, mountains harder
 - [x] Weather compounds terrain difficulty
 - [x] Late-season danger escalation (after Sep 15 and Nov 1)
+- [x] Age-modified illness and death probabilities
+
+### Chaplain & Clergy System
+- [x] Chaplain with random age (28-55) and random skill (7 skills)
+- [x] Skills: Banker, Carpenter, Blacksmith, Doctor, Scout, Teacher, Tradesman
+- [x] Each skill provides specific gameplay bonuses
+- [x] Chaplain costs: extra food, clothing wear, oxen strain, wagon fragility
+- [x] Chaplain enables: prayer, last rites, Mass attendance, confession
+
+### Resource Management
+- [x] Water rationing (full/moderate/minimal) with heat multiplier (1.25x at 80F, 1.5x at 90F, 1.8x at 100F)
+- [x] Firewood resource for cold weather survival (1 bundle/night below 50F, 2 below 32F)
+- [x] Cold-without-fire penalty: morale drops, sleep recovery negated
+- [x] Cold weather food consumption increase
+- [x] Sleep schedule (short/normal/long) affecting travel, health, morale
+- [x] Gather Firewood and Find Water actions
+- [x] Medicine supply with USE_MEDICINE reducer
+- [x] Item loss mechanics (12% chance during river crossings, theft, fire, storms)
+- [x] Purchasable books (Farmer's Almanac $75, Trail Guide $90), tools ($50), Bible ($25)
+
+### Landmark Rest & Recovery
+- [x] Rest & recover mechanic (1-3 days) at landmarks
+- [x] Heals party, boosts morale, refills water
+- [x] Medicine button for sick members
+- [x] Enhanced party status display with morale bars
 
 ### Teacher Dashboard
 - [x] Session creation with code, password, grade band, settings
@@ -190,6 +236,7 @@ server/
 - [x] Debug panel (Ctrl+Shift+D)
 - [x] CSV session export (26 columns)
 - [x] Class Insights generation button
+- [x] Dashboard charts / analytics
 - [x] Feedback link (Google Form pre-populated)
 
 ### Historical Knowledge Panel
@@ -201,91 +248,70 @@ server/
 
 ### Weather System
 - [x] Historically accurate 1848 weather generation based on month, terrain, and region
-- [x] Temperature (Fahrenheit), wind speed/direction, 16 condition types (sunny, cloudy, rain, snow, dust storm, etc.)
-- [x] Deterministic via seeded PRNG — same date always produces same weather
+- [x] Temperature (Fahrenheit), wind speed/direction, 16 condition types
+- [x] Deterministic via seeded PRNG
 - [x] Ground conditions: firm, dry, damp, wet, muddy, sloshy, icy, snowpack
-- [x] Ground moisture accumulates from recent weather history (last 5 days) and dries with sun/wind
+- [x] Ground moisture accumulates from recent weather history (last 5 days)
 - [x] Terrain weather shifts: mountains boost snow, rivers boost fog/rain, desert boosts dust storms
-- [x] Weather affects travel speed via per-condition travel modifiers
-- [x] Weather affects illness probability (cold + wet = higher illness chance)
-- [x] WeatherBox UI component: temperature, wind, condition, ground, travel impact (color-coded)
-- [x] Monthly temperature ranges calibrated to 1848 Great Plains/Rocky Mountain data
+- [x] Weather affects travel speed and illness probability
+- [x] WeatherBox UI with temperature, wind, condition, ground, travel impact
 
 ### Camp Activities System
-- [x] 11 activities: talk with family, tend oxen, cook a proper meal, check provisions, wash up, pray, attend Mass, confession, let children play, mend wagon, help fellow emigrants
-- [x] All activities use 1848-appropriate language (johnnycakes, buffalo chips, mumblety-peg, tallow, felloe, hardtack)
-- [x] Time cost per activity (portion of a travel day)
-- [x] Cooldown system (day-based, prevents spam)
-- [x] Grade band filtering (K-2 gets simplified subset, 6-8 gets all activities)
-- [x] Mission-only activities: attend Mass, confession (only at landmarks with type: mission)
-- [x] Rich family dialogue system with 40+ lines across morale states (high, moderate, low, critical)
-- [x] Conditional dialogue: hungry, sick member by name, bad weather, death occurred, lingering too long
-- [x] Family suggestions system providing actionable hints based on game state
-- [x] Activity effects: morale boost, grace increase, health recovery, food cost, travel bonus, reconciliation clear
-- [x] CampActivitiesPanel UI component with activity list → confirmation → result flow
+- [x] 11 activities with 1848-appropriate language
+- [x] Time cost, cooldown system, grade band filtering
+- [x] Mission-only activities: attend Mass, confession
+- [x] Rich family dialogue system with 40+ lines across morale states
+- [x] Family suggestions providing actionable hints based on game state
+- [x] CampActivitiesPanel UI
 
 ### Trail Dangers & Positive Encounters
-- [x] 30+ trail dangers across 9 categories: environmental, mechanical, animal, wildlife, human, health, navigation, social, supply
-- [x] Each danger: difficulty score (0-10), terrain/season/weather filters, probability weight
-- [x] Some dangers have player choices (robbery: comply/resist/negotiate; bad water: drink/boil/search)
-- [x] Lingering danger: theft, robbery, hostile encounters boosted when stationary too long
-- [x] 13 positive encounters including CWM opportunities (sick traveler, struggling family, found lost belongings)
-- [x] Grace-influenced encounter probability: higher grace = more positive encounters, lower grace = more hardship
-- [x] Grace threshold on some encounters (helpful native guide requires grace ≥ 50)
-- [x] Choice-based encounters test greed vs. charity (share food or keep it, return found goods or keep them)
+- [x] 30+ trail dangers across 9 categories
+- [x] Difficulty score (0-10), terrain/season/weather filters
+- [x] Choice-based dangers (robbery, bad water, etc.)
+- [x] Lingering danger: boosted probability when stationary
+- [x] 13 positive encounters including CWM opportunities
+- [x] Grace-influenced encounter probability
 
 ### Trip Management & Miles Calculation
-- [x] Miles driven by pace × weather × ground conditions × oxen care × grace bonus/penalty
-- [x] Oxen checked bonus: +10% travel distance after tending
-- [x] Grace influence: grace ≥ 70 = +5% travel; grace ≤ 20 = -8% travel
-- [x] Lingering danger system: each stationary day increases bandit/robbery probability
-- [x] Warning displayed after 2+ consecutive rest days about lingering danger
-- [x] Daily bonuses (oxen check, wagon maintenance) reset each travel day
-- [x] Water rationing (full/moderate/minimal) with heat multiplier for hot weather
-- [x] Firewood resource for cold weather survival (below 50°F)
-- [x] Cold weather food consumption increase (1.2× below 50°F, 1.4× below 32°F)
-- [x] No-fire penalty: morale drop and negated sleep recovery in cold without firewood
-- [x] Per-member morale tracking with Talk to Family interaction
-- [x] Sleep schedule (short/normal/long) affecting travel, health, and morale
+- [x] Miles driven by pace x weather x ground x oxen care x grace bonus/penalty
+- [x] Oxen check bonus, grace influence on travel
+- [x] Lingering danger system with warning after 2+ rest days
+- [x] Daily bonuses reset each travel day
 
 ### Trip Difficulty Report
-- [x] End-of-trip difficulty index (0-10 scale) with descriptive labels
-- [x] Four weighted categories: weather hardship (25%), trail dangers (35%), party health (25%), supply management (15%)
-- [x] Labels: "Remarkably Easy" through "Nearly Impossible"
-- [x] Grace influence summary text based on final grace score
-- [x] Comprehensive stats: days traveled, bad weather days, dangers encountered, deaths, robberies, breakdowns
+- [x] End-of-trip difficulty index (0-10 scale)
+- [x] Four weighted categories: weather (25%), trail dangers (35%), party health (25%), supply management (15%)
+- [x] Grace influence summary
 
 ### Crash Logging & Error Recovery
 - [x] Client-side crash logger with user action tracking (last 30 actions)
-- [x] Crash reports capture: error + stack, game state snapshot, recent actions, event log, browser info
+- [x] Crash reports: error + stack, game state snapshot, recent actions, browser info
 - [x] Reports stored in localStorage (up to 20) AND sent to server
 - [x] Global error handlers for uncaught exceptions and unhandled promise rejections
-- [x] React Error Boundary integration helper (`logReactError`)
-- [x] Server endpoint: POST `/api/session/crash-report` persists to `crash-reports.log`
-- [x] Server endpoint: GET `/api/session/crash-reports` retrieves last 50 for teacher debug panel
-- [x] Game state sanitizer extracts only essential debugging fields
-
-### Test Suite
-- [x] 12 weather system tests: valid reports, determinism, terrain effects, seasonal temps, travel modifiers, ground conditions
-- [x] 12 camp activities tests: activity structure, grade band filtering, mission requirements, cooldowns, effects, dialogue, anachronism check
-- [x] Custom ESM loader for running tests outside Vite (handles extensionless imports + @shared alias)
-- [x] All 24 tests passing
+- [x] Server endpoint: POST/GET crash reports
 
 ### Visual Design
-- [x] Warm illustrated storybook palette (tan/brown/blue/gold)
-- [x] Animated wagon SVG
-- [x] Parallax trail scene header
-- [x] Health-coded party status bars
-- [x] Grace-colored progress bar (visible on travel screen top bar + teacher dashboard)
-- [x] Pulsing knowledge panel indicators
-- [x] Moral label centered pop-in animation (green for positive, red for negative)
-- [x] Mission vs Fort distinct visual treatment
-- [x] SVG trail map with 1848 state/territory boundaries, topographical features, zoom/pan controls
-- [x] Immersive terrain scene hero visual (800×280 SVG) with detailed wagon, oxen, weather-responsive sky
-- [x] Terrain-specific scenes: plains (buffalo silhouettes, tall grass), hills (rolling hills, scattered trees), mountains (snow-capped peaks, pine forests), river (far bank, water reflections, ripples)
-- [x] Travel screen: hero terrain scene at top → narrative → dashboard (actions/travel plan/supplies left, weather/family/daily log right)
-- [x] Per-member health and morale display with Talk button for troubled family members
-- [x] Mini-map overlay on terrain scene showing next 2-3 landmarks with click-to-expand full map
+- [x] No-scroll viewport-locked layout (html/body/root overflow:hidden)
+- [x] Responsive: side-by-side on desktop (scene 44% / panel 56%), stacked on tablet/mobile
+- [x] Playfair Display for headings, Crimson Pro for body (Google Fonts)
+- [x] Color token system: --parchment, --amber, --ink, --gold, etc.
+- [x] clamp() font sizing for proportional scaling
+- [x] Animated walking family members (gender/age-aware) in terrain scene
+- [x] Chaplain figure with cross, spinning wagon wheels, animated oxen
+- [x] Pure CSS trail scene with weather overlays and travel animation
+- [x] Procedural SVG character faces parameterized by role, mood, health, age
+- [x] SVG trail map with 1848 state/territory boundaries, topographical features, zoom/pan
+- [x] Event screen SVG illustration icons per category
+- [x] Moral label centered pop-in animation (green positive, red negative)
+- [x] SupplyStore with emoji visuals, fits one screen
+- [x] Grace pip meter in header
+
+### Test Suite
+- [x] 12 weather system tests
+- [x] 12 camp activities tests
+- [x] Custom ESM loader for running tests outside Vite
+- [x] Balance playtest script (500-run Monte Carlo)
+- [x] All 24 tests passing
 
 ---
 
@@ -297,6 +323,10 @@ server/
 4. **CWM deceptive flag never in student state serialization to client** — The `recipientGenuine` field is stored in `cwmEvents[]` but the student UI never reads it. Teacher dashboard reads it from server-synced state.
 5. **Separate landmark data files per grade band** — Avoids complex filtering in-game; K-2 has its own trail.
 6. **Moral labels as JSON data** — All label text externalized for easy editing by curriculum reviewers.
+7. **K-2 skips store entirely** — Young children shouldn't make economic decisions. They get a fully provisioned wagon and jump straight to travel.
+8. **Grade-specific budgets** — 3-5 gets a care package plus reduced cash; 6-8 gets tight budgets forcing real trade-offs.
+9. **Age as a gameplay mechanic** — Children are a liability (can't work, get sick easily), elders slow the party. Creates strategic party composition.
+10. **No-scroll UI** — Everything fits in the viewport. No scrolling required. This is critical for Chromebook classroom use.
 
 ---
 
@@ -326,7 +356,7 @@ server/
 - **Any Node.js host:** `npm run build && npm start` serves everything from port 3000
 
 ### Note on Serverless State
-Netlify Functions are stateless — the in-memory session store (`server/state/store.js`) resets between cold starts. This means:
+Netlify Functions are stateless — the in-memory session store resets between cold starts. This means:
 - "Play Offline" works perfectly (no server calls)
 - Classroom sessions (multi-student with teacher dashboard) will lose state between function invocations
 - For persistent classroom use, deploy to a long-running Node.js host (Render, Railway, Docker) or add a database
@@ -346,140 +376,81 @@ Netlify Functions are stateless — the in-memory session store (`server/state/s
 
 ---
 
-## Bug Fix History
+## Version History
+
+### v1.0.0 — Initial Build (2026-03-01)
+- Complete project scaffolding and all core game systems
+- 9 game data files, 9 game logic modules, 7 game screens, 8 shared components
+- Full teacher dashboard with session management
+- AI integration (Historian, NPC, Insights, Exam of Conscience)
 
 ### v1.0.1 — Playtest Bug Fixes (2026-03-01)
-
-**15 bugs found and fixed** across 3 severity levels:
-
-- **Critical (3):** Distance initialization (instant landmark arrival), Sunday rest infinite loop, game win showing failure screen
-- **Medium (5):** Starvation not killing members, stale alive member lists, travel message overwrite, missing rest guards, feast day date offset
-- **Low (7):** Render-time dispatch, confusing hook guard, useMemo with full state dep, stale closure in hunting ammo, nested state update in hunting, unused import, missing useEffect dependency
-
-All fixes verified via clean production build (66 modules, 107KB gzipped).
+- 15 bugs found and fixed (3 critical, 5 medium, 7 low)
+- Critical: distance initialization, Sunday rest infinite loop, game win showing failure
 
 ### v1.0.2 — Deployment Setup (2026-03-02)
+- Netlify deployment support, multi-platform deploy configs
+- Serverless function wrapper for Express app
 
-- Added Netlify deployment support (`netlify.toml`, serverless function wrapper)
-- Added multi-platform deploy configs (Dockerfile, render.yaml, Procfile)
-- Refactored `server/index.js` to guard `app.listen()` behind `require.main === module` for serverless compatibility
-- Added `serverless-http` dependency
-- Updated `package.json` with `postinstall` script, `engines` field (Node 18+), and improved `build` script
-- Production build verified: client serves from single port alongside API
-
-### v1.0.3 — Playtest Feedback Session (2026-03-02)
-
-**Major UI overhaul and bug fixes** from live playtest feedback:
-
-#### Layout & Visual
-- Viewport-fitting layout: entire game above the fold, no scrolling (h-screen flex)
-- 3-column travel screen: left sidebar (terrain/party/supplies), center (map/progress/actions), right (optional historian)
-- SVG trail map with 1848 state/territory boundaries, landmark dots, zoom/pan controls
-- Dynamic terrain scene (plains, hills, mountains, river) based on current geography
-- Grace score visible on travel screen top bar with color-coded progress bar
-
-#### Moral Labels Fix
-- Centered pop-in animation (was sliding from left)
-- Green border/background for positive, red for negative (was inconsistent)
-- **Critical bug fix:** CWM events used diverse choice IDs (share_food, pay_fair_price, forgive, etc.) but label lookup only checked for 'help'/'helped' — ALL CWM events showed negative labels. Fixed by checking `grace_change > 0` to determine helped/declined.
-
-#### Event System Fixes
-- Template placeholders ({member_name}, {student_name}, {party_size}) now properly resolved in event descriptions
-- Effect key mismatches fixed: events.json used `morale_change`/`health_change` but code only checked `morale`/`health_delta` — now handles both
-- Added health_change processing (numeric → tier conversion: each -5 = 1 tier down)
-- Added oxen_loss effect handling
-
-#### Hunting Minigame Fixes
-- Animal sizes increased: squirrel 20→35, rabbit 25→40, deer 40→55, bison 55→70
-- **Critical bug fix:** Food wasn't accumulating due to React state batching — click handler read stale state outside setAnimals callback. Fixed by moving all logic inside functional state updates.
-- Hit radius increased to `size * 0.9` for better click detection
-- Added hit/miss flash feedback
-
-#### NPC Scout System
-- Historically accurate tribal scouts per region (Pawnee, Shoshone, Bannock, Nez Perce)
-- Preloaded dialogue with 4-5 suggested questions per NPC containing gameplay tips
-- Still supports free-form AI-powered questions as fallback
-
-#### Difficulty Increase
-- Base illness rate doubled (3% → 6%) with terrain/seasonal modifiers
-- Weekly trail wear mechanic (health degradation from journey hardship)
-- Morale decay every 5 days without rest
-- Death chance increased at low food levels
-- Event frequency up 40% (threshold 0.75 → 0.60)
-
-#### Trail Flavor Text
-- 300+ ambient narrative messages across 14 categories
-- Context-aware weighted selection (hardship increases when food/morale low, seasonal by game date)
-- Historical humanity: singing, fiddle, harmonica, books, journal writing, cards, dancing
+### v1.0.3 — Playtest Feedback & UI Overhaul (2026-03-02)
+- Layout overhaul (no scrolling), SVG trail map, terrain visualization
+- Moral labels fix (CWM choice detection), event template placeholders
+- Hunting minigame fix (food accumulation), NPC scout system
+- Difficulty increase, 300+ trail flavor text messages
 
 ### v1.0.4 — Weather, Camp Activities, Trail Dangers & Crash Logging (2026-03-02)
-
-- Added historically accurate 1848 weather system with 16 condition types, ground condition tracking, terrain modifiers
-- Added 11 camp activities with 1848-appropriate language, cooldowns, grade band filtering, rich family dialogue
-- Added 30+ trail dangers across 9 categories + 13 positive encounters with grace-influenced probability
-- Added trip difficulty report (0-10 index) with weighted scoring across weather/dangers/health/supplies
-- Added comprehensive crash logging: client action tracking, game state snapshots, server persistence
-- Integrated weather and camp activities into TravelScreen with miles calculation driven by pace, weather, ground, oxen, grace
-- Added lingering danger system (stationary days boost bandit/robbery probability)
-- 24 passing tests (12 weather + 12 camp activities)
-- Production build verified: 76 modules, 455KB JS (140KB gzipped)
+- Weather system (16 conditions, ground tracking, terrain modifiers)
+- Camp activities (11 activities, 1848 language, family dialogue)
+- Trail dangers (30+ dangers, 13 positive encounters, grace-influenced)
+- Trip difficulty report, crash logging
 
 ### v1.0.5 — Bible, Item Loss, Profession Difficulty Tiers (2026-03-02)
+- Holy Bible item with prayer/morale/grace bonuses
+- Item loss mechanics (12% per qualifying danger)
+- Profession cash rebalanced via Monte Carlo simulation
 
-- Added Holy Bible (Douay-Rheims, $25) with prayer/morale/grace bonuses; can be gifted at mission landmarks
-- Items (books, tools, Bible) can now be lost, destroyed, or stolen during river crossings, theft, fire, and storms (12% chance per qualifying danger)
-- `LOSE_ITEM` reducer action for clean item state management
-- Profession cash rebalanced via 500-run Monte Carlo simulation for difficulty tiers:
-  - Tradesman $1,200 (Easy) — 78% arrival, 96%+ repair rate
-  - Farmer $900 (Medium) — 77% arrival, 89% repair rate
-  - Banker $650 (Hard) — 69% arrival, 72% repair rate
-- SetupScreen shows color-coded difficulty badges (Easy/Medium/Hard)
-- Balance playtest script (`balancePlaytest.mjs`) for ongoing tuning
-- Production build verified: 76 modules, 464KB JS (143KB gzipped)
+### v1.0.6 — Resource Management, Per-Member Morale, Terrain-Adaptive Difficulty (2026-03-02)
+- Water rationing, firewood, cold/heat effects, sleep schedule
+- Per-member morale with Talk to Family interaction
+- Terrain-adaptive difficulty scaling
+- Travel screen UI redesign with hero terrain scene
 
-### v1.0.6 — Resource Management, Per-Member Morale, Terrain-Adaptive Difficulty & UI Redesign (2026-03-02)
+### v1.0.7 — Comprehensive UI/UX Overhaul (2026-03-02)
+- TravelScreen: 2/3 terrain + 1/3 weather/log, 4-column dashboard, zero scrollbars
+- TerrainScene: animated walking family (gender/age-aware), chaplain, spinning wheels
+- SetupScreen: age picker (Child/Teen/Adult/Elder) and gender selector
+- EventScreen: SVG illustration icons per event category
+- LandmarkScreen: rest & recover mechanic (1-3 days), medicine button
+- Clergy skills system (7 skills with gameplay effects)
+- Medicine as purchasable supply
 
-#### Resource Management Systems
-- Water rationing (full/moderate/minimal) paralleling food rations, with heat multiplier for hot weather (1.25× at 80°F, 1.5× at 90°F, 1.8× at 100°F)
-- Firewood resource for cold weather survival: 1 bundle/night below 50°F, 2 bundles below 32°F
-- Cold-without-fire penalty: morale drops, sleep recovery negated
-- Cold weather increases food consumption (1.2× below 50°F, 1.4× below 32°F)
-- Sleep schedule (short/normal/long) affecting travel distance, health recovery, and morale
-- Gather Firewood and Find Water actions added to travel screen
+### v1.0.8 — K-2 Simplification & Grade-Band Economics (2026-03-03)
+- K-2 skips profession and store, starts as "settler" with full provisions
+- 3-5 gets pre-loaded care package, reduced budgets
+- 6-8 budgets tightened ($800/$600/$400) for real trade-offs
 
-#### Per-Member Morale System
-- Individual morale tracked per party member (replaces party-wide average)
-- Talk to Family action: contextual dialogue based on health/morale state (critical, poor, low, mid, okay, good)
-- Talk button appears for troubled family members (morale < 50 or health poor/critical)
-- Morale boost scales with need: +12 for morale < 40, +8 for < 60, +5 otherwise
-- Party-wide morale average maintained for backward compatibility
+### v1.0.9 — No-Scroll UI Redesign (2026-03-03)
+- Viewport-locked layout per design spec v2.0
+- New components: CharacterFace, TrailSceneCSS, TrailProgressBar
+- Responsive breakpoints via useWindowWidth hook
+- Playfair Display + Crimson Pro typography, color token system
 
-#### Terrain-Adaptive Difficulty
-- Event/danger/illness/encounter rates now scale with terrain type and landmark hazard_multiplier
-- Plains: fewer events (-6%), less danger (-3%), more positive encounters (+4%)
-- Hills: baseline difficulty
-- Mountains: more events (+6%), more danger (+6%), more illness (+4%), fewer positive encounters (-2%)
-- River: moderate danger (+4%), some illness (+3%), slight encounter bonus (+1%)
-- Weather compounds terrain difficulty (difficultyScore >= 5 adds +5% to events and danger)
-- Late-season escalation: danger increases after Sep 15 and again after Nov 1
-- Trail wear (weekly health degradation) scales with terrain hazard_multiplier
-- Early journey (< 500 miles) has +3% positive encounter chance (more fellow travelers)
+### v1.0.10 — Age-Based Gameplay & Visual Differentiation (2026-03-03)
+- Age modifiers: illness, death, food, hunting, repair, pace per age group
+- Age vulnerability on all 7 illnesses
+- CharacterFace: age-differentiated features (freckles, wrinkles, gray hair)
+- TerrainScene: age-differentiated walking figures with size/speed scaling
 
-#### Travel Screen UI Redesign
-- Hero terrain scene at top (35vh) with immersive 800×280 SVG visualization
-- TerrainScene rewritten: detailed wagon with oxen/wheels/yoke, weather-responsive sky, terrain-specific elements (buffalo, pine forests, water reflections, mountain peaks)
-- Mini-map overlay on terrain scene showing next 2-3 landmarks, click to expand full map
-- Narrative message bar below scene with period-style quoting
-- Dashboard below: actions + travel plan + supplies on left, weather + family + daily log on right
-- "Settings" renamed to "Travel Plan" with pace, rations, water, sleep dropdowns
-- Per-member health + morale display with Talk buttons on right panel
-- Firewood and water supplies shown with warning indicators
-- "Miles today" corrected to "Miles yesterday"
+### v1.0.11 — Unicode Fixes & Font Scaling (2026-03-03–06)
+- Fixed unicode escapes rendering as literal text in JSX
+- Increased font sizes throughout for Chromebook readability
+- TitleScreen scroll fix, SupplyStore compacted for 768px viewport
+- SupplyStore redesigned with bigger visuals and emoji icons
 
-#### WeatherBox Fix
-- Fixed unicode gibberish: `\u00B0` in JSX text renders literally; replaced with `°` character
-
-- Production build verified: 76 modules, 484KB JS (149KB gzipped)
+### v1.0.12 — CLAUDE.md Update (2026-03-07)
+- Updated CLAUDE.md to match actual project structure
+- Removed aspirational engine/games separation
+- Accurate file tree reflecting all current source files
 
 ---
 
