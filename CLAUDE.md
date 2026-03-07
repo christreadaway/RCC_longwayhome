@@ -1,11 +1,11 @@
-# CLAUDE.md — The Long Way Home
+# CLAUDE.md — Pioneer Trail
 *Project context for Claude Code. Read this first before any build session.*
 
 ---
 
 ## What This Project Is
 
-**The Long Way Home** is a browser-based educational game — a from-scratch rebuild of Oregon Trail mechanics for Catholic classroom use (K-2, 3-5, 6-8). It is not a clone; it uses no original MECC/HMH code or assets. All content is original.
+**Pioneer Trail** is a browser-based educational game — a from-scratch rebuild of Oregon Trail mechanics for Catholic middle school classroom use. It is not a clone; it uses no original MECC/HMH code or assets. All content is original.
 
 The game has three distinct surfaces:
 1. **Student game** — the main gameplay experience
