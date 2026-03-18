@@ -12,7 +12,10 @@ The game has three distinct surfaces:
 2. **Teacher dashboard** — real-time monitoring of all student sessions
 3. **Node.js backend** — session state, AI proxy, Historian logging
 
-Full requirements: `the-long-way-home-requirements.md`
+Full requirements (consolidated): `the-long-way-home-requirements.md`
+Product spec (living doc): `long-way-home/product_spec.md`
+Business spec: `long-way-home/business_spec.md`
+Session notes: `long-way-home/session_notes.md`
 Catholic design framework: `catholic.md`
 
 ---
