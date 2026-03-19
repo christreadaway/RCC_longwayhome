@@ -368,6 +368,70 @@ html, body, #root {
   10%  { opacity: 1; }
   100% { transform: translateY(110%) rotate(10deg); opacity: 0.5; }
 }
+@keyframes rainFallAngled {
+  0%   { transform: translateY(-10%) translateX(0) rotate(18deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateY(110%) translateX(30px) rotate(18deg); opacity: 0.5; }
+}
+
+/* ═══════════════════════════════════════════════════
+   Animations — Snow / Hail / Lightning / Wind / Water
+   ═══════════════════════════════════════════════════ */
+
+@keyframes snowFall {
+  0%   { transform: translateY(-5%) translateX(0); opacity: 0; }
+  10%  { opacity: 0.9; }
+  50%  { transform: translateY(50%) translateX(15px); }
+  100% { transform: translateY(115%) translateX(-10px); opacity: 0.3; }
+}
+@keyframes snowFallHorizontal {
+  0%   { transform: translateY(-5%) translateX(0); opacity: 0; }
+  10%  { opacity: 0.8; }
+  50%  { transform: translateY(50%) translateX(60px); }
+  100% { transform: translateY(115%) translateX(100px); opacity: 0.2; }
+}
+@keyframes hailBounce {
+  0%   { transform: translateY(-10%); opacity: 0; }
+  10%  { opacity: 1; }
+  80%  { transform: translateY(105%); opacity: 1; }
+  90%  { transform: translateY(95%); opacity: 0.8; }
+  100% { transform: translateY(110%); opacity: 0; }
+}
+@keyframes lightningFlash {
+  0%, 100% { opacity: 0; }
+  5%       { opacity: 0.9; }
+  10%      { opacity: 0; }
+  12%      { opacity: 0.6; }
+  15%      { opacity: 0; }
+}
+@keyframes grassSway {
+  0%, 100% { transform: skewX(0deg); }
+  50%      { transform: skewX(3deg); }
+}
+@keyframes grassSwayStrong {
+  0%, 100% { transform: skewX(-5deg); }
+  50%      { transform: skewX(8deg); }
+}
+@keyframes treeBend {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(3deg); }
+}
+@keyframes treeBendStrong {
+  0%, 100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(6deg); }
+}
+@keyframes heatShimmer {
+  0%, 100% { transform: scaleY(1); opacity: 0.3; }
+  50%      { transform: scaleY(1.02); opacity: 0.5; }
+}
+@keyframes waterRipple {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes dustBlow {
+  0%   { transform: translateX(0); opacity: 0.6; }
+  100% { transform: translateX(120px); opacity: 0; }
+}
 
 
 /* ═══════════════════════════════════════════════════

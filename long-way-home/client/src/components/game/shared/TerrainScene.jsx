@@ -2,16 +2,26 @@
  * TerrainScene — renders an immersive SVG landscape with animated wagon and walking family.
  * Hero visual: 2/3 of screen width.
  * Terrain types: plains, hills, mountains, river
+ * Weather overlays: rain, snow, fog, lightning, dust storm, snow ground
  */
 export default function TerrainScene({ terrainType, landmarkName, weather, partyMembers }) {
-  const skyColors = weather?.condition === 'overcast' || weather?.condition === 'rain'
-    ? { top: '#8a9aaa', bottom: '#a0aab5' }
-    : weather?.condition === 'heavy_rain' || weather?.condition === 'blizzard'
-    ? { top: '#5a6a7a', bottom: '#7a8a95' }
-    : { top: '#5a9fd4', bottom: '#a8d0e8' };
+  const condition = weather?.condition || '';
+  const ground = weather?.ground || '';
+
+  const skyColors = getSkyColors(condition);
 
   const alive = (partyMembers || []).filter(m => m.alive && !m.isChaplain);
   const hasChaplain = (partyMembers || []).some(m => m.isChaplain && m.alive);
+
+  // Determine which weather overlays to show
+  const showRain = condition.includes('rain') || condition === 'thunderstorm' || condition === 'hail';
+  const isHeavyRain = condition === 'heavy_rain' || condition === 'thunderstorm' || condition === 'hail';
+  const showSnow = condition.includes('snow') || condition === 'blizzard';
+  const isHeavySnow = condition === 'blizzard' || condition === 'heavy_snow';
+  const showFog = condition === 'fog';
+  const showLightning = condition === 'thunderstorm';
+  const showDust = condition === 'dust_storm';
+  const showSnowGround = ground === 'snowpack' || ground === 'icy';
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-[#5a9fd4]">
@@ -29,26 +39,40 @@ export default function TerrainScene({ terrainType, landmarkName, weather, party
             <stop offset="0%" stopColor="#9a8060" />
             <stop offset="100%" stopColor="#7a6040" />
           </linearGradient>
+          {/* Fog gradient for bottom-up fade */}
+          <linearGradient id="fogGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="white" stopOpacity="0" />
+            <stop offset="30%" stopColor="white" stopOpacity="0.15" />
+            <stop offset="60%" stopColor="white" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="white" stopOpacity="0.65" />
+          </linearGradient>
         </defs>
 
         <rect width="800" height="280" fill="url(#heroSky)" />
 
-        {/* Animated clouds */}
-        <g opacity="0.6">
-          <ellipse cx="150" cy="40" rx="60" ry="15" fill="white">
-            <animateTransform attributeName="transform" type="translate" values="0,0;15,0;0,0" dur="20s" repeatCount="indefinite" />
-          </ellipse>
-          <ellipse cx="130" cy="38" rx="40" ry="12" fill="white">
-            <animateTransform attributeName="transform" type="translate" values="0,0;12,0;0,0" dur="22s" repeatCount="indefinite" />
-          </ellipse>
-          <ellipse cx="480" cy="30" rx="50" ry="12" fill="white">
-            <animateTransform attributeName="transform" type="translate" values="0,0;-10,0;0,0" dur="25s" repeatCount="indefinite" />
-          </ellipse>
-          <ellipse cx="650" cy="50" rx="45" ry="10" fill="white" opacity="0.5" />
-        </g>
+        {/* Animated clouds — hide during dust storm */}
+        {!showDust && (
+          <g opacity="0.6">
+            <ellipse cx="150" cy="40" rx="60" ry="15" fill="white">
+              <animateTransform attributeName="transform" type="translate" values="0,0;15,0;0,0" dur="20s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="130" cy="38" rx="40" ry="12" fill="white">
+              <animateTransform attributeName="transform" type="translate" values="0,0;12,0;0,0" dur="22s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="480" cy="30" rx="50" ry="12" fill="white">
+              <animateTransform attributeName="transform" type="translate" values="0,0;-10,0;0,0" dur="25s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="650" cy="50" rx="45" ry="10" fill="white" opacity="0.5" />
+          </g>
+        )}
 
-        <circle cx="680" cy="45" r="20" fill="#f4d35e" opacity="0.8" />
-        <circle cx="680" cy="45" r="25" fill="#f4d35e" opacity="0.15" />
+        {/* Sun — hide during heavy weather */}
+        {!showDust && !isHeavyRain && !isHeavySnow && condition !== 'fog' && (
+          <>
+            <circle cx="680" cy="45" r="20" fill="#f4d35e" opacity="0.8" />
+            <circle cx="680" cy="45" r="25" fill="#f4d35e" opacity="0.15" />
+          </>
+        )}
 
         {terrainType === 'plains' && <PlainsScene />}
         {terrainType === 'hills' && <HillsScene />}
@@ -57,6 +81,9 @@ export default function TerrainScene({ terrainType, landmarkName, weather, party
         {!['plains', 'hills', 'mountains', 'river'].includes(terrainType) && <PlainsScene />}
 
         <rect x="0" y="220" width="800" height="60" fill="url(#groundGrad)" />
+
+        {/* Snow ground overlay */}
+        {showSnowGround && <SnowGroundOverlay ground={ground} />}
 
         {/* Trail */}
         <path d="M-20,255 Q100,248 200,252 Q350,258 500,250 Q650,244 820,248" stroke="url(#dirtTrail)" strokeWidth="14" fill="none" strokeLinecap="round" />
@@ -147,11 +174,13 @@ export default function TerrainScene({ terrainType, landmarkName, weather, party
           </g>
         </g>
 
-        {/* Dust */}
-        <g opacity="0.2">
-          <ellipse cx="395" cy="258" rx="12" ry="3" fill="#c4a470"><animate attributeName="opacity" values="0.2;0.08;0.2" dur="1.5s" repeatCount="indefinite" /></ellipse>
-          <ellipse cx="410" cy="260" rx="8" ry="2" fill="#c4a470" />
-        </g>
+        {/* Dust (trail dust — hide during rain/snow) */}
+        {!showRain && !showSnow && (
+          <g opacity="0.2">
+            <ellipse cx="395" cy="258" rx="12" ry="3" fill="#c4a470"><animate attributeName="opacity" values="0.2;0.08;0.2" dur="1.5s" repeatCount="indefinite" /></ellipse>
+            <ellipse cx="410" cy="260" rx="8" ry="2" fill="#c4a470" />
+          </g>
+        )}
 
         {/* Foreground grass */}
         {[20, 80, 160, 250, 450, 560, 640, 720, 780].map(x => (
@@ -161,10 +190,240 @@ export default function TerrainScene({ terrainType, landmarkName, weather, party
             <line x1={x + 5} y1={265} x2={x + 3} y2={259} stroke="#3a5a1a" strokeWidth="0.8" />
           </g>
         ))}
+
+        {/* === WEATHER OVERLAYS === */}
+
+        {/* Rain overlay */}
+        {showRain && <RainOverlay heavy={isHeavyRain} />}
+
+        {/* Snow overlay */}
+        {showSnow && <SnowOverlay heavy={isHeavySnow} />}
+
+        {/* Fog overlay */}
+        {showFog && <FogOverlay />}
+
+        {/* Lightning flash */}
+        {showLightning && <LightningOverlay />}
+
+        {/* Dust storm overlay */}
+        {showDust && <DustStormOverlay />}
       </svg>
 
       {landmarkName && <div className="absolute bottom-1 left-2 text-[10px] text-white/60 font-serif italic">Near {landmarkName}</div>}
     </div>
+  );
+}
+
+/** Determine sky gradient colors based on weather condition */
+function getSkyColors(condition) {
+  if (condition === 'fog') return { top: '#c0c8d0', bottom: '#d8dce0' };
+  if (condition === 'dust_storm') return { top: '#8a7050', bottom: '#a08060' };
+  if (condition === 'thunderstorm') return { top: '#3a3a50', bottom: '#5a5a68' };
+  if (condition === 'blizzard' || condition === 'heavy_snow') return { top: '#8a8e94', bottom: '#a0a4aa' };
+  if (condition === 'light_snow' || condition.includes('snow')) return { top: '#b0b8c0', bottom: '#c8ccd0' };
+  if (condition === 'heavy_rain') return { top: '#5a6a7a', bottom: '#7a8a95' };
+  if (condition === 'overcast' || condition === 'rain' || condition === 'light_rain' || condition === 'hail') return { top: '#8a9aaa', bottom: '#a0aab5' };
+  return { top: '#5a9fd4', bottom: '#a8d0e8' };
+}
+
+/** Rain — angled SVG lines falling from top */
+function RainOverlay({ heavy }) {
+  const color = heavy ? 'rgba(180,200,220,0.5)' : 'rgba(140,170,200,0.4)';
+  const strokeWidth = heavy ? 1.2 : 0.8;
+  const count = heavy ? 40 : 22;
+
+  // Generate deterministic rain drop positions
+  const drops = [];
+  for (let i = 0; i < count; i++) {
+    const x = (i * 53 + 17) % 800;
+    const y = (i * 37 + 11) % 200;
+    const len = heavy ? 18 + (i % 8) : 12 + (i % 6);
+    const delay = `${(i * 0.13) % 1.2}s`;
+    drops.push({ x, y, len, delay });
+  }
+
+  return (
+    <g>
+      {drops.map((d, i) => (
+        <line
+          key={i}
+          x1={d.x}
+          y1={d.y}
+          x2={d.x - 4}
+          y2={d.y + d.len}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        >
+          <animate
+            attributeName="y1"
+            values={`${d.y};${d.y + 280};${d.y}`}
+            dur="1.2s"
+            begin={d.delay}
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="y2"
+            values={`${d.y + d.len};${d.y + d.len + 280};${d.y + d.len}`}
+            dur="1.2s"
+            begin={d.delay}
+            repeatCount="indefinite"
+          />
+        </line>
+      ))}
+    </g>
+  );
+}
+
+/** Snow — floating SVG circles */
+function SnowOverlay({ heavy }) {
+  const count = heavy ? 50 : 25;
+  const flakes = [];
+  for (let i = 0; i < count; i++) {
+    const cx = (i * 67 + 23) % 800;
+    const cy = (i * 43 + 7) % 260;
+    const r = 1 + (i % 3);
+    const dur = `${3 + (i % 4)}s`;
+    const delay = `${(i * 0.2) % 3}s`;
+    flakes.push({ cx, cy, r, dur, delay });
+  }
+
+  return (
+    <g>
+      {flakes.map((f, i) => (
+        <circle
+          key={i}
+          cx={f.cx}
+          cy={f.cy}
+          r={f.r}
+          fill="white"
+          opacity={0.6 + (i % 3) * 0.1}
+        >
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values={`0,0;${(i % 2 === 0 ? 10 : -10)},${40 + (i % 20)};${(i % 2 === 0 ? -5 : 5)},${80 + (i % 30)};0,${120 + (i % 40)}`}
+            dur={f.dur}
+            begin={f.delay}
+            repeatCount="indefinite"
+          />
+        </circle>
+      ))}
+    </g>
+  );
+}
+
+/** Fog — semi-transparent white covering bottom 60% with gradient fade */
+function FogOverlay() {
+  return (
+    <g>
+      <rect x="0" y="112" width="800" height="168" fill="url(#fogGrad)" />
+      {/* Drifting fog wisps */}
+      <ellipse cx="200" cy="180" rx="120" ry="20" fill="white" opacity="0.2">
+        <animateTransform attributeName="transform" type="translate" values="0,0;30,0;0,0" dur="12s" repeatCount="indefinite" />
+      </ellipse>
+      <ellipse cx="500" cy="200" rx="100" ry="15" fill="white" opacity="0.18">
+        <animateTransform attributeName="transform" type="translate" values="0,0;-25,0;0,0" dur="15s" repeatCount="indefinite" />
+      </ellipse>
+      <ellipse cx="700" cy="170" rx="80" ry="18" fill="white" opacity="0.15">
+        <animateTransform attributeName="transform" type="translate" values="0,0;20,0;0,0" dur="10s" repeatCount="indefinite" />
+      </ellipse>
+    </g>
+  );
+}
+
+/** Lightning — zigzag bolt that flashes rapidly */
+function LightningOverlay() {
+  return (
+    <g>
+      <path
+        d="M320,20 L310,60 L325,58 L305,110 L322,105 L295,160"
+        stroke="#f0e8c0"
+        strokeWidth="2.5"
+        fill="none"
+        opacity="0"
+        strokeLinejoin="round"
+      >
+        <animate
+          attributeName="opacity"
+          values="0;0;0;1;0;0.6;0;0;0;0;0;0;0;0;0"
+          dur="4s"
+          repeatCount="indefinite"
+        />
+      </path>
+      {/* Screen flash effect */}
+      <rect width="800" height="280" fill="white" opacity="0">
+        <animate
+          attributeName="opacity"
+          values="0;0;0;0.15;0;0.08;0;0;0;0;0;0;0;0;0"
+          dur="4s"
+          repeatCount="indefinite"
+        />
+      </rect>
+    </g>
+  );
+}
+
+/** Dust storm — orange-brown overlay with horizontal particles */
+function DustStormOverlay() {
+  const particles = [];
+  for (let i = 0; i < 30; i++) {
+    const y = 40 + (i * 31 + 13) % 220;
+    const startX = -20 - (i * 47) % 200;
+    const w = 15 + (i % 10) * 3;
+    const h = 1 + (i % 3);
+    const dur = `${1.5 + (i % 5) * 0.3}s`;
+    const delay = `${(i * 0.15) % 2}s`;
+    particles.push({ y, startX, w, h, dur, delay });
+  }
+
+  return (
+    <g>
+      {/* Overall dust tint */}
+      <rect width="800" height="280" fill="rgba(140,110,70,0.3)" />
+      {/* Horizontal streaking particles */}
+      {particles.map((p, i) => (
+        <rect
+          key={i}
+          x={p.startX}
+          y={p.y}
+          width={p.w}
+          height={p.h}
+          rx={p.h / 2}
+          fill="rgba(160,120,60,0.4)"
+          opacity="0.5"
+        >
+          <animate
+            attributeName="x"
+            values={`${p.startX};820`}
+            dur={p.dur}
+            begin={p.delay}
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="opacity"
+            values="0;0.5;0.4;0"
+            dur={p.dur}
+            begin={p.delay}
+            repeatCount="indefinite"
+          />
+        </rect>
+      ))}
+    </g>
+  );
+}
+
+/** Snow/ice ground — white/blue-white rect over ground area */
+function SnowGroundOverlay({ ground }) {
+  const color = ground === 'icy' ? 'rgba(200,220,240,0.55)' : 'rgba(240,245,250,0.6)';
+  return (
+    <g>
+      <rect x="0" y="220" width="800" height="60" fill={color} />
+      {/* Subtle snow texture dots */}
+      {[30, 90, 170, 260, 350, 440, 530, 610, 700, 770].map(x => (
+        <circle key={x} cx={x} cy={235 + (x % 7)} r={1.5} fill="white" opacity="0.4" />
+      ))}
+    </g>
   );
 }
 

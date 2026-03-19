@@ -771,7 +771,7 @@ export default function TravelScreen() {
         }}>
           {/* Trail Scene */}
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} onClick={() => setShowFullMap(true)}>
-            <TrailSceneCSS weather={state.currentWeather} isTraveling={isTraveling} />
+            <TrailSceneCSS weather={state.currentWeather} isTraveling={isTraveling} terrainType={terrainType} />
           </div>
           {/* Trail Progress Bar */}
           <TrailProgressBar
