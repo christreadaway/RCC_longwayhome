@@ -2,117 +2,289 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══ Design System Tokens ═══ */
-:root {
-  --parchment:  #f5ead8;
-  --parch-dark: #ecdabc;
-  --amber:      #c2873a;
-  --amber-dk:   #9a6828;
-  --green:      #4a7c59;
-  --red:        #b94040;
-  --blue:       #4a6890;
-  --gold:       #c2a84f;
-  --ink:        #2c1f14;
-  --ink-lt:     #5a4030;
-  --hdr:        #2c1f14;
-  --border:     rgba(120,80,40,0.18);
+/* ═══════════════════════════════════════════════════
+   Design System Tokens — Pioneer Trail
+   Material Design 3 palette with period-document aesthetic
+   ═══════════════════════════════════════════════════ */
 
+:root {
+  /* ── Core Palette ── */
+  --primary:               #4A5D23;
+  --primary-dim:           #46591f;
+  --primary-container:     #d4eca2;
+  --on-primary:            #edffc4;
+  --on-primary-container:  #45581f;
+
+  --secondary:             #81552c;
+  --secondary-dim:         #734a22;
+  --secondary-container:   #ffdcc1;
+  --on-secondary:          #fff7f4;
+  --on-secondary-container:#724820;
+
+  --tertiary:              #52616a;
+  --tertiary-container:    #e0f0fb;
+
+  --error:                 #9e422c;
+  --error-dim:             #5c1202;
+  --error-container:       #fe8b70;
+  --on-error:              #fff7f6;
+  --on-error-container:    #742410;
+
+  /* ── Surfaces ── */
+  --background:            #fff9ed;
+  --on-background:         #3b3205;
+  --surface:               #fff9ed;
+  --surface-dim:           #f2e9c7;
+  --surface-variant:       #f4ebd0;
+  --surface-container-lowest:  #ffffff;
+  --surface-container-low:     #faf4e0;
+  --surface-container:         #faeec1;
+  --surface-container-high:    #f5eed3;
+  --surface-container-highest: #f2e3a5;
+  --on-surface:            #3b3205;
+  --on-surface-variant:    #6a5f2e;
+
+  --outline:               #867b47;
+  --outline-variant:       #c0b279;
+
+  /* ── Layout ── */
   --hdr-h: 48px;
   --res-h: 44px;
 
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'Crimson Pro', Georgia, serif;
+  /* ── Typography ── */
+  --font-headline: 'Newsreader', serif;
+  --font-body:     'Noto Serif', serif;
+  --font-label:    'Work Sans', sans-serif;
+
+  /* ── Legacy aliases ── */
+  --parchment:  #faf4e0;
+  --parch-dark: #f5eed3;
+  --amber:      #81552c;
+  --amber-dk:   #5c3610;
+  --green:      #4A5D23;
+  --red:        #9e422c;
+  --blue:       #52616a;
+  --gold:       #c0b279;
+  --ink:        #3b3205;
+  --ink-lt:     #6a5f2e;
+  --hdr:        #3b3205;
+  --border:     rgba(192, 178, 121, 0.30);
 }
 
-/* ═══ Structural rules ═══ */
+
+/* ═══════════════════════════════════════════════════
+   Base Layer
+   ═══════════════════════════════════════════════════ */
+
 html, body, #root {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   margin: 0;
   padding: 0;
-}
-
-.game-root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--parchment);
 }
 
 @layer base {
   body {
     font-family: var(--font-body);
-    color: var(--ink);
-    background: var(--parchment);
+    color: var(--on-surface);
+    background: var(--background);
+    overflow: hidden;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════
+   Component Layer
+   ═══════════════════════════════════════════════════ */
 
 @layer components {
+
+  /* ── Game Root ── */
+  .game-root {
+    @apply w-full h-full flex flex-col overflow-hidden;
+    background: var(--background);
+  }
+
+  /* ── Buttons ── */
   .btn-primary {
-    @apply bg-trail-brown text-white px-6 py-2 rounded-lg font-semibold
-           hover:bg-trail-darkBrown transition-colors shadow-md;
+    @apply bg-primary text-on-primary px-6 py-2 font-semibold
+           hover:brightness-110 transition-all shadow-md active:scale-[0.98];
+    font-family: var(--font-headline);
   }
   .btn-secondary {
-    @apply bg-trail-blue text-white px-6 py-2 rounded-lg font-semibold
-           hover:bg-trail-darkBlue transition-colors shadow-md;
+    @apply bg-white px-6 py-2 font-semibold border border-outline-variant/40
+           hover:bg-surface-variant transition-all active:scale-[0.98];
+    color: var(--on-surface);
+    font-family: var(--font-headline);
   }
   .btn-danger {
-    @apply bg-trail-red text-white px-6 py-2 rounded-lg font-semibold
-           hover:bg-red-800 transition-colors shadow-md;
+    @apply bg-error text-on-error px-6 py-2 font-semibold
+           hover:brightness-110 transition-all shadow-md active:scale-[0.98];
+    font-family: var(--font-headline);
   }
+
+  /* ── Decision Buttons (Event Screen) ── */
+  .btn-decision-positive {
+    @apply bg-primary text-on-primary py-6 px-6 shadow-md
+           hover:brightness-110 active:scale-[0.98] text-left
+           flex justify-between items-center transition-all;
+    font-family: var(--font-headline);
+  }
+  .btn-decision-neutral {
+    @apply bg-white py-6 px-6 border border-outline-variant/40
+           hover:bg-surface-variant active:scale-[0.98] text-left
+           flex justify-between items-center transition-all;
+    color: var(--on-surface);
+    font-family: var(--font-headline);
+  }
+
+  /* ── Cards ── */
   .card {
-    @apply bg-white rounded-xl shadow-lg p-6 border border-trail-tan/30;
+    @apply bg-white shadow-lg p-6 border border-outline-variant/30;
   }
   .card-parchment {
-    @apply bg-trail-parchment rounded-xl shadow-lg p-6 border border-trail-tan;
+    @apply p-6 border border-outline-variant/30 shadow-sm;
+    background: linear-gradient(135deg, #fdfbf7 0%, #f5eed3 100%);
   }
+
+  /* ── Parchment Surfaces ── */
+  .parchment-soft {
+    background: linear-gradient(135deg, #fdfbf7 0%, #f5eed3 100%);
+  }
+
+  /* ── Forms ── */
   .input-field {
-    @apply w-full px-4 py-2 border border-trail-tan rounded-lg bg-white
-           focus:outline-none focus:ring-2 focus:ring-trail-blue/50;
+    @apply w-full px-4 py-2 border border-outline-variant bg-white
+           focus:outline-none focus:ring-2 focus:ring-primary/30;
+    font-family: var(--font-body);
   }
   .select-field {
-    @apply w-full px-4 py-2 border border-trail-tan rounded-lg bg-white
-           focus:outline-none focus:ring-2 focus:ring-trail-blue/50 appearance-none;
+    @apply w-full px-4 py-2 border border-outline-variant bg-white
+           focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none;
+    font-family: var(--font-body);
   }
 
+  /* ── Trail Progress ── */
   .trail-progress-bar {
-    @apply h-3 rounded-full overflow-hidden bg-gray-200;
+    @apply h-[2px] w-full overflow-hidden;
+    background: rgba(255, 255, 255, 0.2);
   }
   .trail-progress-fill {
-    @apply h-full rounded-full transition-all duration-500;
+    @apply h-full transition-all duration-500;
+    background: var(--primary-container);
+    box-shadow: 0 0 8px rgba(212, 236, 162, 0.6);
   }
 
-  .health-good { @apply text-green-600; }
-  .health-fair { @apply text-yellow-600; }
-  .health-poor { @apply text-orange-600; }
-  .health-critical { @apply text-red-600 font-bold; }
-  .health-dead { @apply text-gray-500 line-through; }
+  /* ── Health Status ── */
+  .health-good     { color: var(--primary); }
+  .health-fair     { color: var(--secondary); }
+  .health-poor     { color: var(--error); opacity: 0.8; }
+  .health-critical { color: var(--error); font-weight: 700; }
+  .health-dead     { @apply line-through; color: var(--on-surface-variant); opacity: 0.5; }
 
-  .grace-high { @apply text-yellow-500; }
-  .grace-moderate { @apply text-gray-500; }
-  .grace-low { @apply text-orange-500; }
-  .grace-depleted { @apply text-red-600; }
+  /* ── Grace Status ── */
+  .grace-high     { color: var(--primary); }
+  .grace-moderate { color: var(--on-surface-variant); }
+  .grace-low      { color: var(--secondary); }
+  .grace-depleted { color: var(--error); }
 
+  /* ── Scene Card ── */
   .scene-card {
-    @apply rounded-2xl overflow-hidden shadow-xl border-2 border-trail-tan;
+    @apply overflow-hidden shadow-xl border-2;
+    border-color: var(--outline-variant);
+  }
+
+  /* ── Supply Bar Button ── */
+  .supply-btn {
+    @apply flex flex-col items-center justify-center min-w-[100px] h-full
+           transition-all cursor-pointer;
+    border-left: 1px solid rgba(192, 178, 121, 0.1);
+    border-right: 1px solid rgba(192, 178, 121, 0.1);
+  }
+  .supply-btn:hover {
+    background-color: rgba(192, 178, 121, 0.15);
+  }
+
+  /* ── Party Member Card ── */
+  .party-card {
+    @apply p-4 border flex items-center gap-4 shadow-sm cursor-pointer transition-colors;
+    background: linear-gradient(135deg, #fdfbf7 0%, #f5eed3 100%);
+    border-color: rgba(192, 178, 121, 0.3);
+  }
+  .party-card:hover {
+    border-color: rgba(74, 93, 35, 0.5);
+  }
+  .party-card-ill {
+    @apply p-4 flex items-center gap-4 shadow-sm cursor-pointer transition-colors relative;
+    background: linear-gradient(135deg, #fdfbf7 0%, #f5eed3 100%);
+    border: 2px solid rgba(158, 66, 44, 0.2);
+  }
+  .party-card-ill:hover {
+    border-color: rgba(158, 66, 44, 0.5);
+  }
+
+  /* ── Glass Morphism Overlay ── */
+  .glass-morphism {
+    backdrop-filter: blur(8px);
+    background-color: rgba(17, 14, 2, 0.5);
+  }
+
+  /* ── Narrative Overlay ── */
+  .narrative-overlay {
+    @apply absolute bottom-6 left-4 right-4 z-20;
+  }
+  .narrative-card {
+    @apply p-5 border shadow-2xl;
+    background: linear-gradient(135deg, #fdfbf7 0%, #f5eed3 100%);
+    border-color: rgba(192, 178, 121, 0.5);
+  }
+
+  /* ── Top App Bar ── */
+  .app-bar {
+    @apply flex-none w-full z-50 flex justify-between items-center px-6 h-12
+           border-b;
+    background: var(--surface);
+    border-color: rgba(192, 178, 121, 0.3);
+  }
+
+  /* ── Bottom Supply Bar ── */
+  .supply-bar {
+    @apply flex-none relative w-full z-50 flex justify-around items-center px-4 h-16
+           border-t;
+    background: #fef3cf;
+    border-color: rgba(192, 178, 121, 0.3);
   }
 }
 
-/* ═══ Eyebrow label ═══ */
+
+/* ═══════════════════════════════════════════════════
+   Eyebrow Labels
+   ═══════════════════════════════════════════════════ */
+
 .eyebrow {
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--ink-lt);
-  opacity: 0.7;
+  letter-spacing: 0.2em;
+  color: var(--on-surface-variant);
 }
 
-/* ═══ Line clamp utilities ═══ */
+
+/* ═══════════════════════════════════════════════════
+   Material Symbols Configuration
+   ═══════════════════════════════════════════════════ */
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Line Clamp Utilities
+   ═══════════════════════════════════════════════════ */
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -126,7 +298,31 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* ═══ Wagon travel animation ═══ */
+
+/* ═══════════════════════════════════════════════════
+   Vignette Overlay (Trail Scene)
+   ═══════════════════════════════════════════════════ */
+
+.vignette {
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Scene Image Filter (Period Photo Look)
+   ═══════════════════════════════════════════════════ */
+
+.scene-image {
+  filter: sepia(0.3) brightness(0.9) contrast(1.1);
+  object-fit: cover;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Animations — Wagon Travel
+   ═══════════════════════════════════════════════════ */
+
 @keyframes wagonTravel {
   0%   { left: 38%; }
   35%  { left: 47%; }
@@ -162,22 +358,95 @@ html, body, #root {
   animation: cloudDrift 4.2s ease-in-out infinite alternate;
 }
 
-/* ═══ Rain animation ═══ */
+
+/* ═══════════════════════════════════════════════════
+   Animations — Rain
+   ═══════════════════════════════════════════════════ */
+
 @keyframes rainFall {
   0%   { transform: translateY(-10%) rotate(10deg); opacity: 0; }
   10%  { opacity: 1; }
   100% { transform: translateY(110%) rotate(10deg); opacity: 0.5; }
 }
+@keyframes rainFallAngled {
+  0%   { transform: translateY(-10%) translateX(0) rotate(18deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateY(110%) translateX(30px) rotate(18deg); opacity: 0.5; }
+}
 
-/* ═══ Moral label animations ═══ */
+/* ═══════════════════════════════════════════════════
+   Animations — Snow / Hail / Lightning / Wind / Water
+   ═══════════════════════════════════════════════════ */
+
+@keyframes snowFall {
+  0%   { transform: translateY(-5%) translateX(0); opacity: 0; }
+  10%  { opacity: 0.9; }
+  50%  { transform: translateY(50%) translateX(15px); }
+  100% { transform: translateY(115%) translateX(-10px); opacity: 0.3; }
+}
+@keyframes snowFallHorizontal {
+  0%   { transform: translateY(-5%) translateX(0); opacity: 0; }
+  10%  { opacity: 0.8; }
+  50%  { transform: translateY(50%) translateX(60px); }
+  100% { transform: translateY(115%) translateX(100px); opacity: 0.2; }
+}
+@keyframes hailBounce {
+  0%   { transform: translateY(-10%); opacity: 0; }
+  10%  { opacity: 1; }
+  80%  { transform: translateY(105%); opacity: 1; }
+  90%  { transform: translateY(95%); opacity: 0.8; }
+  100% { transform: translateY(110%); opacity: 0; }
+}
+@keyframes lightningFlash {
+  0%, 100% { opacity: 0; }
+  5%       { opacity: 0.9; }
+  10%      { opacity: 0; }
+  12%      { opacity: 0.6; }
+  15%      { opacity: 0; }
+}
+@keyframes grassSway {
+  0%, 100% { transform: skewX(0deg); }
+  50%      { transform: skewX(3deg); }
+}
+@keyframes grassSwayStrong {
+  0%, 100% { transform: skewX(-5deg); }
+  50%      { transform: skewX(8deg); }
+}
+@keyframes treeBend {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(3deg); }
+}
+@keyframes treeBendStrong {
+  0%, 100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(6deg); }
+}
+@keyframes heatShimmer {
+  0%, 100% { transform: scaleY(1); opacity: 0.3; }
+  50%      { transform: scaleY(1.02); opacity: 0.5; }
+}
+@keyframes waterRipple {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes dustBlow {
+  0%   { transform: translateX(0); opacity: 0.6; }
+  100% { transform: translateX(120px); opacity: 0; }
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Animations — Moral Labels
+   ═══════════════════════════════════════════════════ */
+
 @keyframes label-pop-in {
   from { transform: scale(0.7); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  to   { transform: scale(1); opacity: 1; }
 }
 @keyframes label-fade-out {
   from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 0; transform: scale(0.9); }
 }
+
 .moral-label-enter {
   animation: label-pop-in 0.35s ease-out;
 }
@@ -185,20 +454,187 @@ html, body, #root {
   animation: label-fade-out 0.6s ease-out forwards;
 }
 
-/* ═══ Knowledge panel pulse ═══ */
+
+/* ═══════════════════════════════════════════════════
+   Animations — Knowledge Panel
+   ═══════════════════════════════════════════════════ */
+
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(212, 160, 23, 0.3); }
-  50% { box-shadow: 0 0 15px rgba(212, 160, 23, 0.7); }
+  0%, 100% { box-shadow: 0 0 5px rgba(192, 178, 121, 0.3); }
+  50%      { box-shadow: 0 0 15px rgba(192, 178, 121, 0.7); }
 }
+
 .knowledge-pulse {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
-/* ═══ No scrollbars ═══ */
+
+/* ═══════════════════════════════════════════════════
+   Scrollbar Hiding
+   ═══════════════════════════════════════════════════ */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Global scrollbar hiding */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 *::-webkit-scrollbar {
   display: none;
+}
+
+/* Custom thin scrollbar (for scrollable panels like supply store) */
+.custom-scrollbar::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--outline-variant);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--outline-variant) transparent;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Background Textures
+   ═══════════════════════════════════════════════════ */
+
+/* Dot grid background (Supply Store, Setup screens) */
+.bg-dot-grid {
+  background-image: radial-gradient(#c0b279 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  background-color: var(--background);
+}
+
+/* Grain overlay (full-screen texture layer) */
+.grain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Supply Store Components
+   ═══════════════════════════════════════════════════ */
+
+/* Shop item card */
+.shop-item-card {
+  background: var(--surface-container-low);
+  border: 1px solid rgba(192, 178, 121, 0.3);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 150ms;
+}
+.shop-item-card:hover {
+  border-color: rgba(74, 93, 35, 0.4);
+}
+
+/* Quantity stepper */
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--outline);
+  height: 1.75rem;
+}
+.qty-stepper button {
+  width: 1.75rem;
+  height: 100%;
+  font-size: 0.75rem;
+  transition: background-color 150ms;
+}
+.qty-stepper button:hover {
+  background-color: var(--surface-variant);
+}
+.qty-stepper input {
+  width: 2rem;
+  background: transparent;
+  border: none;
+  text-align: center;
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0;
+}
+.qty-stepper input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Bill of sale panel */
+.bill-of-sale {
+  background: var(--surface-container);
+  border-left: 1px solid rgba(192, 178, 121, 0.3);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Contextual Menu (Party Member hover)
+   ═══════════════════════════════════════════════════ */
+
+.context-menu {
+  background: white;
+  border: 1px solid var(--outline);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background-image: linear-gradient(135deg, #fdfbf7 0%, #f5eed3 100%);
+  padding: 0.5rem;
+  z-index: 50;
+}
+.context-menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-family: var(--font-headline);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 150ms;
+}
+.context-menu-item:hover {
+  background: var(--primary-container);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Progress Overlay (Scene gradient)
+   ═══════════════════════════════════════════════════ */
+
+.progress-overlay {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Ill Badge
+   ═══════════════════════════════════════════════════ */
+
+.ill-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  background: var(--error);
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 0 0.375rem;
 }
