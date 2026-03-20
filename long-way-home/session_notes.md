@@ -302,4 +302,47 @@ Live playtest revealed 13+ issues across UI, game logic, difficulty, NPC accurac
 
 ---
 
+## Session 13 — Material Design 3 Visual Overhaul (2026-03-20)
+
+### What was done
+
+#### CSS Overhaul to Material Design 3
+- Replaced old trail/game color palettes with full MD3 semantic color system (primary, secondary, tertiary, surface hierarchy, error states)
+- Switched typography from Playfair Display + Crimson Pro to Newsreader (headlines), Noto Serif (body), Work Sans (labels)
+- Set border-radius to 0px for sharp period-document edges
+- Added component classes: decision buttons, party cards, supply store items, dot-grid backgrounds, grain overlay, contextual menus, bill-of-sale panel
+- Legacy color aliases preserved for backward compatibility
+
+#### Terrain-Accurate Trail Scene Visuals
+- TrailSceneCSS: terrain-specific landscapes — plains (flat grasslands), hills (sagebrush/rolling), mountains (peaks/pines), river (water/willows)
+- All 16 weather conditions rendered: rain/snow/hail particles, lightning flashes, fog overlay, dust storm, heat shimmer, cold frost tint, blizzard whiteout
+- Wind affects trees/grass; ground shows mud/ice/snow; temperature tints sky (hot golden, cold blue)
+- New CSS keyframe animations: rainFallAngled, snowFall, snowFallHorizontal, hailBounce, lightningFlash, grassSway, treeBend, heatShimmer, waterRipple, dustBlow
+
+#### Period-Appropriate 1840s Character Portraits
+- CharacterFace: wide-brimmed felt hats (men), prairie sunbonnets (women), newsboy caps (teen boys), pigtails with ribbons (girls), biretta + Roman collar (chaplain)
+- Age-accurate features: big eyes/freckles for children, wrinkles/gray for elders, beards for adult men
+- Health affects opacity/eye bags
+
+#### 15+ Unique Portrait Variations
+- Name-seeded deterministic trait system: each character gets unique skin tone, hair color, eye color, hat/bonnet color, shirt color
+- 15 skin tones, 15 hair colors per gender, 15 eye colors, 15 hat/shirt/ribbon colors
+- Same name always produces same appearance; different names produce visually distinct portraits
+
+#### Other Updates
+- TerrainScene: weather overlays (rain lines, snow circles, fog rect, lightning zigzag, dust particles, snow ground layer), expanded sky color mapping
+- WeatherBox: updated to MD3 color system
+- TravelScreen: now passes terrainType prop to TrailSceneCSS
+
+### Files modified
+- index.css (major rewrite), tailwind.config.js (major rewrite), TrailSceneCSS.jsx, CharacterFace.jsx, TerrainScene.jsx, WeatherBox.jsx, TravelScreen.jsx, index.html
+
+### Key decisions
+- **MD3 over custom** — Material Design 3 provides a proven, systematic design language that pairs well with the period-document aesthetic
+- **Name-seeded portraits** — deterministic hash means characters always look consistent without storing portrait data in game state
+- **All 16 weather conditions** — complete visual coverage means students see the weather they're experiencing, not just text
+- **Legacy color aliases** — backward compatibility avoids breaking any components not yet updated
+
+---
+
 *Add new session entries below as the project evolves.*

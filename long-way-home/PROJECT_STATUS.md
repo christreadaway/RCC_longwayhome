@@ -1,5 +1,5 @@
 # PROJECT_STATUS.md — The Long Way Home
-*Quick-reference status document. Updated 2026-03-07.*
+*Quick-reference status document. Updated 2026-03-20.*
 
 ---
 
@@ -91,14 +91,18 @@ The Long Way Home is a browser-based educational game — Oregon Trail mechanics
 - CSV export, crash report viewer, debug panel
 
 ### Visual Design
+- Material Design 3 period-document aesthetic with semantic color system
+- Typography: Newsreader (headlines), Noto Serif (body), Work Sans (labels)
 - No-scroll viewport-locked layout
 - Responsive: desktop side-by-side, tablet/mobile stacked
 - Animated terrain scene with walking family (age/gender-aware)
-- Procedural SVG character faces
+- Period-appropriate 1840s SVG portraits (felt hats, sunbonnets, newsboy caps, pigtails, biretta)
+- 15+ unique portrait variations per gender via name-seeded deterministic traits
+- Terrain-specific trail scenes (plains, hills, mountains, river) with all 16 weather conditions rendered
 - SVG trail map with 1848 boundaries
-- Pure CSS trail scene with weather overlays
 - SupplyStore with emoji visuals
 - Event category SVG icons
+- CSS keyframe animations for weather, vegetation, and water effects
 
 ---
 
@@ -208,4 +212,4 @@ npm run dev
 
 ---
 
-*Last updated: 2026-03-07 | 12 build sessions completed*
+*Last updated: 2026-03-20 | 13 build sessions completed*

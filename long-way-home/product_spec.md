@@ -8,7 +8,7 @@
 - **Type:** Browser-based educational game (Oregon Trail mechanics, Catholic curriculum)
 - **Grade Bands:** K-2, 3-5, 6-8
 - **Tech Stack:** React + Vite (client), Node.js + Express (server), Tailwind CSS, Framer Motion
-- **Version:** 1.0.12 (MVP)
+- **Version:** 1.0.13 (MVP)
 
 ---
 
@@ -293,18 +293,24 @@ server/
 ### Visual Design
 - [x] No-scroll viewport-locked layout (html/body/root overflow:hidden)
 - [x] Responsive: side-by-side on desktop (scene 44% / panel 56%), stacked on tablet/mobile
-- [x] Playfair Display for headings, Crimson Pro for body (Google Fonts)
-- [x] Color token system: --parchment, --amber, --ink, --gold, etc.
+- [x] Material Design 3 period-document aesthetic with semantic color system (primary, secondary, tertiary, surface hierarchy, error states)
+- [x] Typography: Newsreader (headlines), Noto Serif (body), Work Sans (labels) — period-document feel
+- [x] Sharp 0px border-radius for period-document edges
+- [x] Component classes: decision buttons, party cards, supply store items, dot-grid backgrounds, grain overlay, bill-of-sale panel
 - [x] clamp() font sizing for proportional scaling
 - [x] Animated walking family members (gender/age-aware) in terrain scene
 - [x] Chaplain figure with cross, spinning wagon wheels, animated oxen
-- [x] Pure CSS trail scene with weather overlays and travel animation
-- [x] Procedural SVG character faces parameterized by role, mood, health, age
+- [x] Pure CSS trail scene with terrain-specific landscapes (plains, hills, mountains, river) and all 16 weather conditions rendered (rain/snow/hail particles, lightning, fog, dust storm, heat shimmer, cold frost, blizzard whiteout)
+- [x] Wind affects trees/grass; ground shows mud/ice/snow; temperature tints sky
+- [x] Period-appropriate 1840s SVG character portraits: wide-brimmed felt hats (men), prairie sunbonnets (women), newsboy caps (teen boys), pigtails with ribbons (girls), biretta + Roman collar (chaplain)
+- [x] 15+ unique portrait variations per gender via name-seeded deterministic traits (skin tones, hair colors, eye colors, hat/bonnet colors, shirt colors)
+- [x] Health affects portrait appearance (opacity, eye bags)
 - [x] SVG trail map with 1848 state/territory boundaries, topographical features, zoom/pan
 - [x] Event screen SVG illustration icons per category
 - [x] Moral label centered pop-in animation (green positive, red negative)
 - [x] SupplyStore with emoji visuals, fits one screen
 - [x] Grace pip meter in header
+- [x] CSS keyframe animations: rain, snow, hail, lightning, grass sway, tree bend, heat shimmer, water ripple, dust blow
 
 ### Test Suite
 - [x] 12 weather system tests
@@ -451,6 +457,18 @@ Netlify Functions are stateless — the in-memory session store resets between c
 - Updated CLAUDE.md to match actual project structure
 - Removed aspirational engine/games separation
 - Accurate file tree reflecting all current source files
+
+### v1.0.13 — Material Design 3 Visual Overhaul (2026-03-20)
+- CSS overhaul to Material Design 3 period-document aesthetic
+- New typography: Newsreader, Noto Serif, Work Sans (replaces Playfair Display + Crimson Pro)
+- Full MD3 semantic color system (primary, secondary, tertiary, surface hierarchy, error states)
+- Sharp 0px border-radius, dot-grid backgrounds, grain overlay, bill-of-sale panel
+- TrailSceneCSS: terrain-specific landscapes (plains/hills/mountains/river), all 16 weather conditions rendered with particle effects, wind physics, ground conditions, temperature sky tints
+- CharacterFace: period-appropriate 1840s SVG portraits (felt hats, sunbonnets, newsboy caps, pigtails, biretta)
+- 15+ unique portrait variations per gender via name-seeded deterministic traits
+- TerrainScene: weather overlays (rain, snow, fog, lightning, dust, hail), expanded sky color mapping
+- WeatherBox: updated to MD3 color system
+- New CSS keyframe animations: rain, snow, hail, lightning, grass sway, tree bend, heat shimmer, water ripple, dust blow
 
 ---
 
